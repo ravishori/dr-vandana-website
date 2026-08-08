@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
-import { AppointmentPrepView } from "@/components/appointment/AppointmentPrepView";
+import { AppointmentClosing } from "@/components/appointment/AppointmentClosing";
+import { AppointmentForm } from "@/components/appointment/AppointmentForm";
+import { AppointmentHero } from "@/components/appointment/AppointmentHero";
 import { appointmentEnquirySeo } from "@/data/appointment-enquiry";
 
 export const metadata: Metadata = {
@@ -17,5 +19,11 @@ export const metadata: Metadata = {
 };
 
 export default function BookAppointmentPage() {
-  return <AppointmentPrepView />;
+  return (
+    <>
+      <AppointmentHero />
+      <AppointmentForm />
+      <AppointmentClosing />
+    </>
+  );
 }
