@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 
 import { SkipToContent } from "@/components/a11y/SkipToContent";
+import { SiteShell } from "@/components/layout/SiteShell";
 import { siteConfig } from "@/config/site";
 
 import "./globals.css";
@@ -69,7 +70,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="bg-background text-text flex min-h-full flex-col font-sans">
         <SkipToContent />
-        {children}
+        <SiteShell>{children}</SiteShell>
       </body>
     </html>
   );
