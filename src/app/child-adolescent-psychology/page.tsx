@@ -1,18 +1,41 @@
 import type { Metadata } from "next";
 
-import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
+import { ChildAdolescentCta } from "@/components/child-adolescent/ChildAdolescentCta";
+import { ChildAdolescentHero } from "@/components/child-adolescent/ChildAdolescentHero";
+import { CommonConcernsSection } from "@/components/child-adolescent/CommonConcernsSection";
+import { DevelopmentSection } from "@/components/child-adolescent/DevelopmentSection";
+import { ParentExpectationsSection } from "@/components/child-adolescent/ParentExpectationsSection";
+import { ParentGuidanceSection } from "@/components/child-adolescent/ParentGuidanceSection";
+import { TeenWellbeingSection } from "@/components/child-adolescent/TeenWellbeingSection";
+import { WhenProfessionalGuidanceMayHelp } from "@/components/child-adolescent/WhenProfessionalGuidanceMayHelp";
+import { childAdolescentSeo } from "@/data/child-adolescent";
 
 export const metadata: Metadata = {
-  title: "Child & Adolescent Psychology",
-  description:
-    "Child and adolescent psychology information. Full page content will follow in a later milestone.",
+  title: {
+    absolute: childAdolescentSeo.title,
+  },
+  description: childAdolescentSeo.description,
+  alternates: {
+    canonical: "/child-adolescent-psychology",
+  },
+  openGraph: {
+    title: childAdolescentSeo.title,
+    description: childAdolescentSeo.description,
+    url: "/child-adolescent-psychology",
+  },
 };
 
 export default function ChildAdolescentPsychologyPage() {
   return (
-    <PlaceholderPage
-      title="Child & Adolescent Psychology"
-      description="Child and adolescent support content will be added in a later milestone."
-    />
+    <>
+      <ChildAdolescentHero />
+      <DevelopmentSection />
+      <CommonConcernsSection />
+      <TeenWellbeingSection />
+      <ParentGuidanceSection />
+      <WhenProfessionalGuidanceMayHelp />
+      <ParentExpectationsSection />
+      <ChildAdolescentCta />
+    </>
   );
 }
