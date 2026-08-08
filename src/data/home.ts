@@ -17,7 +17,7 @@ export const homeHero = {
     href: "/book-appointment",
   } satisfies HomeCtaLink,
   secondaryCta: {
-    label: "Learn About Dr. Vandana",
+    label: "About Dr. Vandana",
     href: "/about",
   } satisfies HomeCtaLink,
 } as const;
@@ -161,7 +161,7 @@ export const homeFinalCta = {
     href: "/book-appointment",
   } satisfies HomeCtaLink,
   secondaryCta: {
-    label: "Learn More About Dr. Vandana",
+    label: "About Dr. Vandana",
     href: "/about",
   } satisfies HomeCtaLink,
 } as const;

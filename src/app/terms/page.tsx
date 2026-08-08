@@ -1,18 +1,23 @@
 import type { Metadata } from "next";
 
-import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
+import { LegalDocument } from "@/components/legal/LegalDocument";
+import { termsContent } from "@/data/legal";
 
 export const metadata: Metadata = {
-  title: "Terms",
-  description:
-    "Website terms. Full legal content will follow in a later milestone.",
+  title: {
+    absolute: termsContent.absoluteTitle,
+  },
+  description: termsContent.description,
+  alternates: {
+    canonical: "/terms",
+  },
+  openGraph: {
+    title: termsContent.absoluteTitle,
+    description: termsContent.description,
+    url: "/terms",
+  },
 };
 
 export default function TermsPage() {
-  return (
-    <PlaceholderPage
-      title="Terms"
-      description="Full terms content will be added in a later milestone."
-    />
-  );
+  return <LegalDocument content={termsContent} />;
 }

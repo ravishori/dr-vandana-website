@@ -36,9 +36,6 @@ export const metadata: Metadata = {
     "emotional wellness",
     "mental well-being",
   ],
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     type: "website",
     locale: siteConfig.locale,
@@ -46,11 +43,20 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     title: `${siteConfig.professionalName} | ${siteConfig.profession}`,
     description: `${siteConfig.tagline} ${siteConfig.description}`,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.professionalName} — ${siteConfig.profession}`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${siteConfig.professionalName} | ${siteConfig.profession}`,
     description: siteConfig.tagline,
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,

@@ -22,7 +22,7 @@ export const childAdolescentHero = {
     href: "/book-appointment",
   } satisfies PageCtaLink,
   secondaryCta: {
-    label: "Contact / Learn More",
+    label: "Contact",
     href: "/contact",
   } satisfies PageCtaLink,
 } as const;

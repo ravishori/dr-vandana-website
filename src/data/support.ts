@@ -114,7 +114,7 @@ export const mentalHealthSupportArea: SupportAreaDetail = {
     },
   ],
   closingNote:
-    "Symptoms and experiences can vary. When concerns persist or significantly affect daily functioning, professional assessment may be appropriate. This page does not provide diagnosis or a self-assessment score.",
+    "Experiences and concerns can vary. When concerns persist or significantly affect daily functioning, professional assessment may be appropriate. This page does not provide diagnosis or a self-assessment score.",
 };
 
 export const relationshipsFamilyArea: SupportAreaDetail = {

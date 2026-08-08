@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 
-import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
+import { ContactPageView } from "@/components/contact/ContactPageView";
+import { contactSeo } from "@/data/contact";
 
 export const metadata: Metadata = {
-  title: "Contact",
-  description:
-    "Contact information for Dr. Vandana Rajiv Chaudhary. Verified contact details will follow in a later milestone.",
+  title: contactSeo.title,
+  description: contactSeo.description,
+  alternates: {
+    canonical: "/contact",
+  },
+  openGraph: {
+    title: contactSeo.title.absolute,
+    description: contactSeo.description,
+    url: "/contact",
+  },
 };
 
 export default function ContactPage() {
-  return (
-    <PlaceholderPage
-      title="Contact"
-      description="Verified contact details and location information will be added when confirmed."
-    />
-  );
+  return <ContactPageView />;
 }

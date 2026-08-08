@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 
-import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
+import { AppointmentPrepView } from "@/components/appointment/AppointmentPrepView";
+import { appointmentEnquirySeo } from "@/data/appointment-enquiry";
 
 export const metadata: Metadata = {
-  title: "Book an Appointment",
-  description:
-    "Appointment enquiry page. The booking form will follow in a later milestone.",
+  title: appointmentEnquirySeo.title,
+  description: appointmentEnquirySeo.description,
+  alternates: {
+    canonical: "/book-appointment",
+  },
+  openGraph: {
+    title: appointmentEnquirySeo.title.absolute,
+    description: appointmentEnquirySeo.description,
+    url: "/book-appointment",
+  },
 };
 
 export default function BookAppointmentPage() {
-  return (
-    <PlaceholderPage
-      title="Book an Appointment"
-      description="The appointment enquiry form will be added in a later milestone. No clinical information is requested on this website."
-    />
-  );
+  return <AppointmentPrepView />;
 }
