@@ -1,18 +1,43 @@
 import type { Metadata } from "next";
 
-import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
+import { ChildAdolescentTeaser } from "@/components/support/ChildAdolescentTeaser";
+import { CounsellingBenefits } from "@/components/support/CounsellingBenefits";
+import { EmotionalWellbeingSection } from "@/components/support/EmotionalWellbeingSection";
+import { MentalHealthSupportSection } from "@/components/support/MentalHealthSupportSection";
+import { RelationshipsFamilySection } from "@/components/support/RelationshipsFamilySection";
+import { SupportCta } from "@/components/support/SupportCta";
+import { SupportHero } from "@/components/support/SupportHero";
+import { WhenSupportMayHelp } from "@/components/support/WhenSupportMayHelp";
+import { WorkplaceWellbeingSection } from "@/components/support/WorkplaceWellbeingSection";
+import { supportSeo } from "@/data/support";
 
 export const metadata: Metadata = {
-  title: "Areas of Support",
-  description:
-    "Areas of psychological support. Detailed practice areas will follow in a later milestone.",
+  title: {
+    absolute: supportSeo.title,
+  },
+  description: supportSeo.description,
+  alternates: {
+    canonical: "/areas-of-support",
+  },
+  openGraph: {
+    title: supportSeo.title,
+    description: supportSeo.description,
+    url: "/areas-of-support",
+  },
 };
 
 export default function AreasOfSupportPage() {
   return (
-    <PlaceholderPage
-      title="Areas of Support"
-      description="Detailed support areas will be added in a later milestone."
-    />
+    <>
+      <SupportHero />
+      <EmotionalWellbeingSection />
+      <MentalHealthSupportSection />
+      <RelationshipsFamilySection />
+      <WorkplaceWellbeingSection />
+      <ChildAdolescentTeaser />
+      <WhenSupportMayHelp />
+      <CounsellingBenefits />
+      <SupportCta />
+    </>
   );
 }
