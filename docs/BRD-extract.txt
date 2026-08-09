@@ -87,7 +87,7 @@ Hero Section:
 Heading: Dr. Vandana Rajiv Chaudhary
 Subheading: Psychologist — Compassionate, confidential, and evidence-informed psychological support for children, adolescents, adults, couples, and families.
 Primary CTAs: Book an Appointment, Chat on WhatsApp, Call Direct.
-Trust Badges / Micro-stats: 6+ Years Experience, M.A. Psychology, Master’s in Naturology, 100% Confidential Space.
+Trust Badges / Micro-stats: 6+ Years Experience, Ph.D. in Naturopathy, M.A. Psychology, 100% Confidential Space.
 Philosophy & Approach Teaser: A warm introduction emphasizing safe, non-judgmental care.
 Key Support Areas Grid: Overview cards linking to detailed practice areas.
 Why Choose Dr. Vandana: Key differentiators (Ethical, Evidence-informed, Holistic perspective).
@@ -96,11 +96,11 @@ Call-to-Action Banner: Gentle prompt to initiate contact.
 Page 2: About Dr. Vandana (/about)
 Professional Biography: Detailed narrative outlining qualifications, years of clinical experience, and dedication to mental health.
 Qualifications & Credentials:
+Ph.D. in Naturopathy
 M.A. Psychology
-Master's Degree in Naturology
 Continuous Professional Development Certifications
 Core Philosophy: Emphasis on empowerment, resilience, confidentiality, and active listening.
-Integrated Naturology & Psychological Perspective: How holistic wellness practices complement psychological care.
+Integrated Naturopathy & Psychological Perspective: How holistic wellness practices complement psychological care.
 Page 3: Areas of Psychological Support (/areas-of-support)
 Structured landing page with tabbed or card-based deep dives into:
 Emotional Well-being: Stress, low self-esteem, personal growth, emotional regulation.
@@ -115,7 +115,7 @@ CTA: "Talk to Dr. Vandana about your child's well-being."
 Page 5: Stress, Anxiety & Emotional Wellness (/stress-anxiety-wellness)
 Educational Content: Clear explanations of stress mechanisms, common signs of anxiety, and when everyday stress turns into chronic burnout.
 Self-Assessment Guidance: Informational prompts on when to seek professional consultation.
-Mindfulness & Naturological Wellness: Gentle, natural stress-reduction techniques and daily mental hygiene habits.
+Mindfulness & Naturopathic Wellness: Gentle, natural stress-reduction techniques and daily mental hygiene habits.
 Page 6: Appointment Booking & Inquiries (/book-appointment)
 Interactive 4-Step Form:
 Step 1: Select Consultation Category (Individual Adult, Child/Adolescent, Relationship/Family, Stress & Wellness, Follow-up).

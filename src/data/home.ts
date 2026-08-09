@@ -34,9 +34,9 @@ export const homeHighlights: readonly HomeHighlight[] = [
     label: "Psychology",
   },
   {
-    id: "naturology",
-    value: "Master's",
-    label: "in Naturology",
+    id: "naturopathy",
+    value: "Ph.D.",
+    label: "in Naturopathy",
   },
   {
     id: "confidential",

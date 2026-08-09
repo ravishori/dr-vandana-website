@@ -34,7 +34,7 @@ Domain: https://drvandana.trinetra.net
 
 - Never fabricate professional credentials, testimonials, clinic address, phone, email, timings, certifications, or registration details
 - Use explicit placeholders when verified information is unavailable
-- Verified facts only (see `src/data/professional.ts`): name, Psychologist, M.A. Psychology, Master's Degree in Naturology, 6+ years experience, tagline, core positioning
+- Verified facts only (see `src/data/professional.ts`): name, Psychologist, Ph.D. in Naturopathy, M.A. Psychology, 6+ years experience, tagline, core positioning
 
 ## Psychology ethics & privacy (non-negotiable)
 

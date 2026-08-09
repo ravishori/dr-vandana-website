@@ -122,8 +122,8 @@ export const aboutValues: readonly AboutValue[] = [
 export const aboutHolisticWellness = {
   heading: "A holistic wellness perspective",
   paragraphs: [
-    "Alongside psychological counselling, Dr. Vandana brings a background in naturology. Where appropriate, wellness-oriented practices may complement psychological support as part of a broader conversation about emotional and everyday well-being.",
-    "This perspective is offered carefully and educationally. It does not claim that naturology cures mental illness, that natural remedies replace psychological care, that meditation resolves depression or anxiety on its own, or that wellness practices replace medical treatment when medical care is needed.",
+    "Alongside psychological counselling, Dr. Vandana brings a background in naturopathy. Where appropriate, wellness-oriented practices may complement psychological support as part of a broader conversation about emotional and everyday well-being.",
+    "This perspective is offered carefully and educationally. It does not claim that naturopathy cures mental illness, that natural remedies replace psychological care, that meditation resolves depression or anxiety on its own, or that wellness practices replace medical treatment when medical care is needed.",
     "Psychological support remains the core of the practice, with complementary wellness ideas considered only where they may reasonably support a person's overall sense of balance.",
   ],
 } as const;
