@@ -25,7 +25,7 @@ export const siteConfig: SiteConfig = {
     whatsapp: practiceContact.whatsappDisplay,
   },
   location: {
-    city: practiceContact.locality,
+    city: practiceContact.address.city,
     address: practiceContact.addressLines.join("\n"),
     consultationHours: {
       isPlaceholder: true,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BrandMark } from "@/components/layout/BrandMark";
+import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { Container } from "@/components/ui/Container";
 import {
   getFooterNavItems,
@@ -97,6 +98,14 @@ export function SiteFooter() {
               <p>{practiceContact.locality}</p>
               <p>{practiceContact.cityWithPin}</p>
               <p>
+                <span className="text-text-muted">
+                  {practiceContact.labels.digipin}:{" "}
+                </span>
+                <span className="text-text font-mono tracking-wide">
+                  {practiceContact.digipin}
+                </span>
+              </p>
+              <p>
                 <a
                   href={getMapsHref()}
                   className="text-brand no-underline hover:underline"
@@ -104,7 +113,7 @@ export function SiteFooter() {
                   rel="noopener noreferrer"
                   aria-label={practiceContact.labels.mapsAria}
                 >
-                  {practiceContact.labels.viewOnMaps}
+                  {practiceContact.labels.getDirections}
                 </a>
               </p>
               {!isPlaceholder(hours) ? (
@@ -134,23 +143,26 @@ export function SiteFooter() {
           ) : null}
         </aside>
 
-        <div className="border-brand-muted/25 mt-8 flex flex-col gap-4 border-t pt-6 md:flex-row md:items-center md:justify-between">
-          <p className="text-text-muted text-xs md:text-sm">
-            © {new Date().getFullYear()} {siteConfig.professionalName}. All
-            rights reserved.
-          </p>
-          <ul className="flex flex-wrap gap-x-4 gap-y-2">
-            {legalLinks.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="text-text-muted hover:text-brand text-xs no-underline md:text-sm"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <div className="border-brand-muted/25 mt-8 flex flex-col gap-6 border-t pt-6">
+          <ThemeSwitcher variant="inline" className="max-w-3xl" />
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <p className="text-text-muted text-xs md:text-sm">
+              © {new Date().getFullYear()} {siteConfig.professionalName}. All
+              rights reserved.
+            </p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2">
+              {legalLinks.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-text-muted hover:text-brand text-xs no-underline md:text-sm"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </Container>
     </footer>

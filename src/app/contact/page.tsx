@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ContactPageView } from "@/components/contact/ContactPageView";
 import { contactSeo } from "@/data/contact";
+import { getPracticeJsonLd } from "@/lib/seo/practice-json-ld";
 
 export const metadata: Metadata = {
   title: contactSeo.title,
@@ -17,5 +18,15 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
-  return <ContactPageView />;
+  const jsonLd = getPracticeJsonLd();
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ContactPageView />
+    </>
+  );
 }

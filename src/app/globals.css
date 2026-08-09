@@ -1,23 +1,117 @@
 @import "tailwindcss";
 
 /*
-  Semantic design tokens (BRD palette).
-  Prefer these variable names in CSS and Tailwind utilities (bg-brand, text-text, etc.).
+  Semantic design tokens — palette values live on :root / [data-theme].
+  Tailwind utilities (bg-brand, text-text, etc.) resolve through @theme → CSS vars
+  so theme switches update the entire site without duplicated page CSS.
 */
+
+:root,
+[data-theme="calm-sage"] {
+  --palette-brand: #5a7361;
+  --palette-brand-muted: #88a090;
+  --palette-accent: #d99b82;
+  --palette-background: #fbf9f5;
+  --palette-surface: #ffffff;
+  --palette-surface-soft: #f3f0e8;
+  --palette-text: #2b332c;
+  --palette-text-muted: #626e65;
+  --palette-focus-ring: #5a7361;
+  --palette-border: color-mix(in srgb, #88a090 35%, transparent);
+  --palette-shadow: color-mix(in srgb, #2b332c 10%, transparent);
+}
+
+[data-theme="professional-teal"] {
+  --palette-brand: #0f766e;
+  --palette-brand-muted: #4d9b94;
+  --palette-accent: #e8a87c;
+  --palette-background: #f4faf9;
+  --palette-surface: #ffffff;
+  --palette-surface-soft: #e8f4f2;
+  --palette-text: #14332f;
+  --palette-text-muted: #5a716d;
+  --palette-focus-ring: #0f766e;
+  --palette-border: color-mix(in srgb, #4d9b94 35%, transparent);
+  --palette-shadow: color-mix(in srgb, #14332f 10%, transparent);
+}
+
+[data-theme="serenity-blue"] {
+  --palette-brand: #3b6d9a;
+  --palette-brand-muted: #7fa3c4;
+  --palette-accent: #c4a484;
+  --palette-background: #f5f8fc;
+  --palette-surface: #ffffff;
+  --palette-surface-soft: #e8eef6;
+  --palette-text: #1e2a36;
+  --palette-text-muted: #5c6b7a;
+  --palette-focus-ring: #3b6d9a;
+  --palette-border: color-mix(in srgb, #7fa3c4 38%, transparent);
+  --palette-shadow: color-mix(in srgb, #1e2a36 10%, transparent);
+}
+
+[data-theme="warm-earth"] {
+  --palette-brand: #6b7f5a;
+  --palette-brand-muted: #9aab86;
+  --palette-accent: #c4785a;
+  --palette-background: #f8f4ee;
+  --palette-surface: #fffcf8;
+  --palette-surface-soft: #efe6d9;
+  --palette-text: #3d342c;
+  --palette-text-muted: #6e6358;
+  --palette-focus-ring: #6b7f5a;
+  --palette-border: color-mix(in srgb, #9aab86 40%, transparent);
+  --palette-shadow: color-mix(in srgb, #3d342c 10%, transparent);
+}
+
+[data-theme="elegant-minimal"] {
+  --palette-brand: #3d4a45;
+  --palette-brand-muted: #7a8781;
+  --palette-accent: #6b8f7a;
+  --palette-background: #fafaf9;
+  --palette-surface: #ffffff;
+  --palette-surface-soft: #f0f0ee;
+  --palette-text: #1f2421;
+  --palette-text-muted: #6b7280;
+  --palette-focus-ring: #3d4a45;
+  --palette-border: color-mix(in srgb, #7a8781 32%, transparent);
+  --palette-shadow: color-mix(in srgb, #1f2421 8%, transparent);
+}
+
+[data-theme="nature-wellness"] {
+  --palette-brand: #2f5d3a;
+  --palette-brand-muted: #6b9b6e;
+  --palette-accent: #d4a574;
+  --palette-background: #f3f7f2;
+  --palette-surface: #ffffff;
+  --palette-surface-soft: #e4eee3;
+  --palette-text: #1f2e22;
+  --palette-text-muted: #5a6b5c;
+  --palette-focus-ring: #2f5d3a;
+  --palette-border: color-mix(in srgb, #6b9b6e 38%, transparent);
+  --palette-shadow: color-mix(in srgb, #1f2e22 10%, transparent);
+}
+
 :root {
-  --color-brand: #5a7361;
-  --color-brand-muted: #88a090;
-  --color-accent: #d99b82;
-  --color-background: #fbf9f5;
-  --color-surface: #ffffff;
-  --color-text: #2b332c;
-  --color-text-muted: #626e65;
-  --color-focus-ring: #5a7361;
+  /* Semantic aliases consumed by components and Tailwind */
+  --color-brand: var(--palette-brand);
+  --color-brand-muted: var(--palette-brand-muted);
+  --color-accent: var(--palette-accent);
+  --color-background: var(--palette-background);
+  --color-surface: var(--palette-surface);
+  --color-surface-soft: var(--palette-surface-soft);
+  --color-text: var(--palette-text);
+  --color-text-muted: var(--palette-text-muted);
+  --color-focus-ring: var(--palette-focus-ring);
+  --color-border: var(--palette-border);
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
+
+  --shadow-sm: 0 1px 2px var(--palette-shadow);
+  --shadow-md: 0 4px 12px var(--palette-shadow);
+  --shadow-lg: 0 12px 28px var(--palette-shadow);
 
   --space-page-x: 1.25rem;
   --space-section-y: 4rem;
@@ -26,16 +120,21 @@
 
   --transition-fast: 150ms cubic-bezier(0.22, 1, 0.36, 1);
   --transition-base: 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  --theme-transition: background-color 200ms ease, color 200ms ease,
+    border-color 200ms ease, box-shadow 200ms ease, fill 200ms ease,
+    stroke 200ms ease;
 }
 
 @theme inline {
-  --color-brand: #5a7361;
-  --color-brand-muted: #88a090;
-  --color-accent: #d99b82;
-  --color-background: #fbf9f5;
-  --color-surface: #ffffff;
-  --color-text: #2b332c;
-  --color-text-muted: #626e65;
+  --color-brand: var(--palette-brand);
+  --color-brand-muted: var(--palette-brand-muted);
+  --color-accent: var(--palette-accent);
+  --color-background: var(--palette-background);
+  --color-surface: var(--palette-surface);
+  --color-surface-soft: var(--palette-surface-soft);
+  --color-text: var(--palette-text);
+  --color-text-muted: var(--palette-text-muted);
+  --color-border: var(--palette-border);
   --font-sans: var(--font-plus-jakarta);
   --font-serif: var(--font-playfair);
   --radius-sm: 0.5rem;
@@ -72,6 +171,25 @@
     font-size: 1rem;
     line-height: 1.7;
     text-rendering: optimizeLegibility;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html,
+    body,
+    header,
+    footer,
+    main,
+    section,
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    [class*="bg-"],
+    [class*="text-"],
+    [class*="border-"] {
+      transition: var(--theme-transition);
+    }
   }
 
   h1,

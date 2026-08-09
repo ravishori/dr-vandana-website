@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
+import Script from "next/script";
 
 import { SkipToContent } from "@/components/a11y/SkipToContent";
 import { SiteShell } from "@/components/layout/SiteShell";
+import { themeBootstrapScript } from "@/components/theme/theme-bootstrap";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { DEFAULT_THEME_ID } from "@/config/themes";
 import { siteConfig } from "@/config/site";
 
 import "./globals.css";
@@ -72,11 +76,20 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      data-theme={DEFAULT_THEME_ID}
       className={`${plusJakartaSans.variable} ${playfairDisplay.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="bg-background text-text flex min-h-full flex-col font-sans">
-        <SkipToContent />
-        <SiteShell>{children}</SiteShell>
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: themeBootstrapScript }}
+        />
+        <ThemeProvider>
+          <SkipToContent />
+          <SiteShell>{children}</SiteShell>
+        </ThemeProvider>
       </body>
     </html>
   );

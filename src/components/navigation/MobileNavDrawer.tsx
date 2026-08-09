@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { BrandMark } from "@/components/layout/BrandMark";
 import { NavLinkItem } from "@/components/navigation/NavLinkItem";
+import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { CloseIcon } from "@/components/ui/icons";
 import type { NavCta, NavItem } from "@/types/navigation";
 import { cn } from "@/lib/utils";
@@ -136,6 +137,10 @@ export function MobileNavDrawer({
               </li>
             ))}
           </ul>
+
+          <div className="border-brand-muted/25 mt-6 border-t px-1 pt-5">
+            <ThemeSwitcher variant="inline" onThemeSelected={onClose} />
+          </div>
         </nav>
 
         {cta ? (

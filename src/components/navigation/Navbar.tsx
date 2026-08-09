@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { MobileNavDrawer } from "@/components/navigation/MobileNavDrawer";
 import { NavLinkItem } from "@/components/navigation/NavLinkItem";
+import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { Container } from "@/components/ui/Container";
 import { MenuIcon } from "@/components/ui/icons";
 import {
@@ -20,7 +21,7 @@ export function Navbar() {
 
   return (
     <header className="bg-background/95 border-brand-muted/25 sticky top-0 z-40 border-b backdrop-blur-sm">
-      <Container className="flex min-h-16 items-center justify-between gap-4 py-3">
+      <Container className="flex min-h-16 items-center justify-between gap-3 py-3 sm:gap-4">
         <BrandMark compact className="min-w-0 shrink" />
 
         <nav
@@ -35,26 +36,32 @@ export function Navbar() {
             ))}
           </ul>
 
-          {cta ? (
-            <Link
-              href={cta.href}
-              className="bg-accent text-text hover:bg-accent/90 ml-3 inline-flex min-h-10 items-center justify-center rounded-[var(--radius-md)] px-4 text-sm font-medium whitespace-nowrap no-underline transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none"
-            >
-              {cta.label}
-            </Link>
-          ) : null}
+          <div className="ml-1 flex shrink-0 items-center gap-1 xl:ml-2 xl:gap-2">
+            <ThemeSwitcher />
+            {cta ? (
+              <Link
+                href={cta.href}
+                className="bg-accent text-text hover:bg-accent/90 inline-flex min-h-10 items-center justify-center rounded-[var(--radius-md)] px-3 text-sm font-medium whitespace-nowrap no-underline transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none xl:px-4"
+              >
+                {cta.label}
+              </Link>
+            ) : null}
+          </div>
         </nav>
 
-        <button
-          type="button"
-          className="text-text hover:bg-surface inline-flex min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] items-center justify-center rounded-md lg:hidden"
-          aria-label="Open navigation menu"
-          aria-expanded={menuOpen}
-          aria-controls="mobile-navigation"
-          onClick={() => setMenuOpen(true)}
-        >
-          <MenuIcon className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1 lg:hidden">
+          <ThemeSwitcher />
+          <button
+            type="button"
+            className="text-text hover:bg-surface inline-flex min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] items-center justify-center rounded-md"
+            aria-label="Open navigation menu"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-navigation"
+            onClick={() => setMenuOpen(true)}
+          >
+            <MenuIcon className="h-5 w-5" />
+          </button>
+        </div>
       </Container>
 
       <div id="mobile-navigation">
