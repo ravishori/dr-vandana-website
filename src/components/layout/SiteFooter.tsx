@@ -7,13 +7,20 @@ import {
   getLegalNavItems,
 } from "@/config/navigation";
 import { siteConfig } from "@/config/site";
+import { practiceContact } from "@/data/contact";
 import { emergencyNotice } from "@/data/emergency";
 import { professionalProfile } from "@/data/professional";
-import { resolveDisplayValue } from "@/types/site";
+import {
+  getBookingHref,
+  getMapsHref,
+  getVerifiedWhatsAppHref,
+} from "@/lib/contact-actions";
+import { isPlaceholder, resolveDisplayValue } from "@/types/site";
 
 export function SiteFooter() {
   const quickLinks = getFooterNavItems();
   const legalLinks = getLegalNavItems();
+  const hours = siteConfig.location.consultationHours;
 
   return (
     <footer className="bg-surface border-brand-muted/25 mt-auto border-t">
@@ -48,33 +55,62 @@ export function SiteFooter() {
             <h2 className="font-sans text-sm font-semibold tracking-wide text-[var(--color-brand)] uppercase">
               Contact
             </h2>
-            <ul className="text-text-muted mt-4 space-y-2 text-sm">
-              <li>
-                <span className="text-text">Email:</span>{" "}
-                {resolveDisplayValue(siteConfig.contact.email)}
-              </li>
-              <li>
-                <span className="text-text">Phone:</span>{" "}
-                {resolveDisplayValue(siteConfig.contact.phone)}
-              </li>
-              <li>
-                <span className="text-text">WhatsApp:</span>{" "}
-                {resolveDisplayValue(siteConfig.contact.whatsapp)}
-              </li>
-            </ul>
+            <div className="text-text-muted mt-4 space-y-2 text-sm">
+              <p className="text-text font-medium">
+                {practiceContact.practiceName}
+              </p>
+              <p>{practiceContact.profession}</p>
+              <p>
+                WhatsApp:{" "}
+                <a
+                  href={getVerifiedWhatsAppHref()}
+                  className="text-brand no-underline hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={practiceContact.labels.whatsappAria}
+                >
+                  {practiceContact.whatsappDisplay}
+                </a>
+              </p>
+              <p>
+                <a
+                  href={getBookingHref()}
+                  className="text-brand no-underline hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={practiceContact.labels.bookingAria}
+                >
+                  {practiceContact.labels.bookInstantly}
+                </a>
+              </p>
+              <p className="text-text-muted">
+                Email: {resolveDisplayValue(siteConfig.contact.email)}
+              </p>
+            </div>
           </div>
 
           <div>
             <h2 className="font-sans text-sm font-semibold tracking-wide text-[var(--color-brand)] uppercase">
               Location
             </h2>
-            <ul className="text-text-muted mt-4 space-y-2 text-sm">
-              <li>{resolveDisplayValue(siteConfig.location.city)}</li>
-              <li>{resolveDisplayValue(siteConfig.location.address)}</li>
-              <li>
-                Hours: {resolveDisplayValue(siteConfig.location.consultationHours)}
-              </li>
-            </ul>
+            <div className="text-text-muted mt-4 space-y-2 text-sm">
+              <p>{practiceContact.locality}</p>
+              <p>{practiceContact.cityWithPin}</p>
+              <p>
+                <a
+                  href={getMapsHref()}
+                  className="text-brand no-underline hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={practiceContact.labels.mapsAria}
+                >
+                  {practiceContact.labels.viewOnMaps}
+                </a>
+              </p>
+              {!isPlaceholder(hours) ? (
+                <p>Hours: {resolveDisplayValue(hours)}</p>
+              ) : null}
+            </div>
           </div>
         </div>
 

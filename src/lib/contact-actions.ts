@@ -1,3 +1,4 @@
+import { practiceContact } from "@/data/contact";
 import {
   isPlaceholder,
   resolveDisplayValue,
@@ -7,19 +8,52 @@ import {
 export const WHATSAPP_ENQUIRY_MESSAGE =
   "Hello Dr. Vandana, I would like to enquire about a psychological counselling appointment.";
 
+/** Verified practice telephone link from centralized contact config. */
+export function getVerifiedPhoneHref(): string {
+  return practiceContact.phoneTelHref;
+}
+
+/** Verified practice WhatsApp link (direct wa.me, no prefilled message). */
+export function getVerifiedWhatsAppHref(): string {
+  return practiceContact.whatsappUrl;
+}
+
+/** Primary Bitly booking CTA — do not silently replace. */
+export function getBookingHref(): string {
+  return practiceContact.bookingUrl;
+}
+
+/** Google Maps location link for the verified practice address. */
+export function getMapsHref(): string {
+  return practiceContact.googleMapsUrl;
+}
+
+/**
+ * Legacy helper for VerifiedOrPlaceholder values.
+ * Prefer getVerifiedPhoneHref() for the practice number.
+ */
 export function getPhoneHref(phone: VerifiedOrPlaceholder): string | null {
   if (isPlaceholder(phone)) {
     return null;
   }
 
-  const normalized = resolveDisplayValue(phone).replace(/[^\d+]/g, "");
+  const display = resolveDisplayValue(phone);
+  if (display === practiceContact.whatsappDisplay) {
+    return practiceContact.phoneTelHref;
+  }
+
+  const normalized = display.replace(/[^\d+]/g, "");
   if (!normalized) {
     return null;
   }
 
-  return `tel:${normalized}`;
+  return `tel:${normalized.startsWith("+") ? normalized : `+${normalized}`}`;
 }
 
+/**
+ * Legacy helper for VerifiedOrPlaceholder values.
+ * Prefer getVerifiedWhatsAppHref() for the practice WhatsApp channel.
+ */
 export function getWhatsAppHref(
   whatsapp: VerifiedOrPlaceholder,
 ): string | null {
@@ -27,11 +61,15 @@ export function getWhatsAppHref(
     return null;
   }
 
-  const digits = resolveDisplayValue(whatsapp).replace(/\D/g, "");
+  const display = resolveDisplayValue(whatsapp);
+  if (display === practiceContact.whatsappDisplay) {
+    return practiceContact.whatsappUrl;
+  }
+
+  const digits = display.replace(/\D/g, "");
   if (!digits) {
     return null;
   }
 
-  const text = encodeURIComponent(WHATSAPP_ENQUIRY_MESSAGE);
-  return `https://wa.me/${digits}?text=${text}`;
+  return `https://wa.me/${digits}`;
 }

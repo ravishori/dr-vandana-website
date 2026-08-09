@@ -6,9 +6,11 @@ import {
   useMemo,
   useRef,
   useState,
+  useTransition,
   type FormEvent,
 } from "react";
 
+import { submitAppointmentEnquiry } from "@/app/book-appointment/actions";
 import {
   AppointmentField,
   appointmentControlClassName,
@@ -27,11 +29,26 @@ import {
   validateAppointmentForm,
 } from "@/lib/appointment-form";
 import type {
+  AppointmentActionResult,
   AppointmentFormErrors,
   AppointmentFormValues,
   ContactMethodValue,
 } from "@/types/appointment-enquiry";
 import { cn } from "@/lib/utils";
+
+function mapServerFieldErrors(
+  fieldErrors: NonNullable<
+    Extract<AppointmentActionResult, { success: false }>["fieldErrors"]
+  >,
+): AppointmentFormErrors {
+  const next: AppointmentFormErrors = {};
+  for (const [key, messages] of Object.entries(fieldErrors)) {
+    if (messages && messages.length > 0) {
+      next[key as keyof AppointmentFormValues] = messages[0];
+    }
+  }
+  return next;
+}
 
 export function AppointmentForm() {
   const formId = useId();
@@ -40,7 +57,9 @@ export function AppointmentForm() {
     emptyAppointmentFormValues,
   );
   const [errors, setErrors] = useState<AppointmentFormErrors>({});
-  const [previewMessage, setPreviewMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState("");
+  const [isPending, startTransition] = useTransition();
 
   const enabledModes = useMemo(
     () => getEnabledOptions(appointmentConfig.consultationModes),
@@ -77,11 +96,31 @@ export function AppointmentForm() {
         ? "tel"
         : "off";
 
+  function focusFirstInvalid(
+    nextErrors: AppointmentFormErrors,
+  ) {
+    const errorKeys = Object.keys(nextErrors) as Array<
+      keyof AppointmentFormValues
+    >;
+    if (errorKeys.length === 0) {
+      summaryRef.current?.focus();
+      return;
+    }
+    const firstInvalid = document.getElementById(
+      `${formId}-${errorKeys[0]}`,
+    );
+    if (firstInvalid instanceof HTMLElement) {
+      firstInvalid.focus();
+    } else {
+      summaryRef.current?.focus();
+    }
+  }
+
   function updateField<K extends keyof AppointmentFormValues>(
     key: K,
     value: AppointmentFormValues[K],
   ) {
-    setPreviewMessage(null);
+    setStatusMessage(null);
     setValues((current) => {
       const next = { ...current, [key]: value };
       if (key === "contactMethod") {
@@ -104,28 +143,41 @@ export function AppointmentForm() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // UI-only milestone: validate locally and never transmit or persist values.
     const nextErrors = validateAppointmentForm(values);
     setErrors(nextErrors);
 
-    const errorKeys = Object.keys(nextErrors) as Array<
-      keyof AppointmentFormValues
-    >;
-    if (errorKeys.length > 0) {
-      setPreviewMessage(null);
-      const firstInvalid = document.getElementById(
-        `${formId}-${errorKeys[0]}`,
-      );
-      if (firstInvalid instanceof HTMLElement) {
-        firstInvalid.focus();
-      } else {
-        summaryRef.current?.focus();
-      }
+    if (Object.keys(nextErrors).length > 0) {
+      setStatusMessage(null);
+      focusFirstInvalid(nextErrors);
       return;
     }
 
-    setPreviewMessage(appointmentEnquiryPage.uiOnlySubmitMessage);
-    summaryRef.current?.focus();
+    startTransition(async () => {
+      const result = await submitAppointmentEnquiry({
+        ...values,
+        website: honeypot,
+      });
+
+      if (result.success) {
+        setErrors({});
+        setStatusMessage(result.message);
+        summaryRef.current?.focus();
+        return;
+      }
+
+      const serverErrors = result.fieldErrors
+        ? mapServerFieldErrors(result.fieldErrors)
+        : {};
+      setErrors(serverErrors);
+      setStatusMessage(
+        Object.keys(serverErrors).length > 0 ? null : result.message,
+      );
+      if (Object.keys(serverErrors).length > 0) {
+        focusFirstInvalid(serverErrors);
+      } else {
+        summaryRef.current?.focus();
+      }
+    });
   }
 
   const errorSummary = Object.values(errors).filter(Boolean);
@@ -147,6 +199,25 @@ export function AppointmentForm() {
             {appointmentEnquiryPage.privacyBoundary}
           </p>
 
+          {/*
+            Honeypot: leave blank. tabIndex=-1 keeps it out of keyboard flow.
+            Visually off-screen; label tells assistive tech to ignore it.
+          */}
+          <div className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden">
+            <label htmlFor={`${formId}-website`}>
+              Leave this field blank
+            </label>
+            <input
+              id={`${formId}-website`}
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(event) => setHoneypot(event.target.value)}
+            />
+          </div>
+
           <div
             ref={summaryRef}
             tabIndex={-1}
@@ -163,13 +234,13 @@ export function AppointmentForm() {
                 </p>
               </div>
             ) : null}
-            {previewMessage ? (
+            {statusMessage ? (
               <div
                 className="border-accent/50 bg-accent/15 rounded-[var(--radius-lg)] border px-4 py-3"
                 role="status"
               >
                 <p className="text-text text-sm leading-relaxed">
-                  {previewMessage}
+                  {statusMessage}
                 </p>
               </div>
             ) : null}
@@ -482,9 +553,11 @@ export function AppointmentForm() {
 
           <button
             type="submit"
-            className="bg-accent text-text hover:bg-accent/90 inline-flex min-h-[var(--touch-target-min)] w-full items-center justify-center rounded-[var(--radius-md)] px-5 text-sm font-medium transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none sm:w-auto"
+            disabled={isPending}
+            aria-busy={isPending}
+            className="bg-accent text-text hover:bg-accent/90 inline-flex min-h-[var(--touch-target-min)] w-full items-center justify-center rounded-[var(--radius-md)] px-5 text-sm font-medium transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
           >
-            Submit Appointment Enquiry
+            {isPending ? "Submitting…" : "Submit Appointment Enquiry"}
           </button>
         </form>
       </Container>

@@ -33,11 +33,11 @@ export function getContactFieldLabel(method: ContactMethodValue | ""): string {
   }
 }
 
-function isBasicEmail(value: string): boolean {
+export function isBasicEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-function isBasicIndianMobile(value: string): boolean {
+export function isBasicIndianMobile(value: string): boolean {
   const digits = value.replace(/\D/g, "");
   if (digits.length === 10) {
     return /^[6-9]\d{9}$/.test(digits);

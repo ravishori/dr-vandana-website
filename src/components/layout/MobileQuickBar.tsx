@@ -6,8 +6,11 @@ import {
   WhatsAppIcon,
 } from "@/components/ui/icons";
 import { getNavCta } from "@/config/navigation";
-import { siteConfig } from "@/config/site";
-import { getPhoneHref, getWhatsAppHref } from "@/lib/contact-actions";
+import { practiceContact } from "@/data/contact";
+import {
+  getVerifiedPhoneHref,
+  getVerifiedWhatsAppHref,
+} from "@/lib/contact-actions";
 import { cn } from "@/lib/utils";
 
 const actionClassName =
@@ -15,8 +18,8 @@ const actionClassName =
 
 export function MobileQuickBar() {
   const cta = getNavCta();
-  const phoneHref = getPhoneHref(siteConfig.contact.phone);
-  const whatsappHref = getWhatsAppHref(siteConfig.contact.whatsapp);
+  const phoneHref = getVerifiedPhoneHref();
+  const whatsappHref = getVerifiedWhatsAppHref();
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 lg:hidden">
@@ -41,63 +44,27 @@ export function MobileQuickBar() {
           </li>
 
           <li className="flex flex-1">
-            {whatsappHref ? (
-              <a
-                href={whatsappHref}
-                className={cn(
-                  actionClassName,
-                  "text-brand hover:bg-background",
-                )}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <WhatsAppIcon className="h-4 w-4" />
-                <span>WhatsApp</span>
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                className={cn(
-                  actionClassName,
-                  "text-text-muted cursor-not-allowed opacity-70",
-                )}
-                aria-label="WhatsApp unavailable — number to be confirmed"
-                title="WhatsApp number to be confirmed"
-              >
-                <WhatsAppIcon className="h-4 w-4" />
-                <span>WhatsApp</span>
-              </button>
-            )}
+            <a
+              href={whatsappHref}
+              className={cn(actionClassName, "text-brand hover:bg-background")}
+              rel="noopener noreferrer"
+              target="_blank"
+              aria-label={practiceContact.labels.whatsappAria}
+            >
+              <WhatsAppIcon className="h-4 w-4" />
+              <span>WhatsApp</span>
+            </a>
           </li>
 
           <li className="flex flex-1">
-            {phoneHref ? (
-              <a
-                href={phoneHref}
-                className={cn(
-                  actionClassName,
-                  "text-brand hover:bg-background",
-                )}
-              >
-                <PhoneIcon className="h-4 w-4" />
-                <span>Call</span>
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                className={cn(
-                  actionClassName,
-                  "text-text-muted cursor-not-allowed opacity-70",
-                )}
-                aria-label="Call unavailable — phone number to be confirmed"
-                title="Phone number to be confirmed"
-              >
-                <PhoneIcon className="h-4 w-4" />
-                <span>Call</span>
-              </button>
-            )}
+            <a
+              href={phoneHref}
+              className={cn(actionClassName, "text-brand hover:bg-background")}
+              aria-label={practiceContact.labels.callAria}
+            >
+              <PhoneIcon className="h-4 w-4" />
+              <span>Call</span>
+            </a>
           </li>
         </ul>
       </nav>

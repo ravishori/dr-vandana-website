@@ -1,6 +1,5 @@
+import { practiceContact } from "@/data/contact";
 import { professionalProfile } from "@/data/professional";
-import { siteConfig } from "@/config/site";
-import { resolveDisplayValue } from "@/types/site";
 
 export type LegalSection = {
   heading: string;
@@ -16,7 +15,7 @@ export type LegalPageContent = {
   closingNote: string;
 };
 
-const contactPlaceholder = resolveDisplayValue(siteConfig.contact.email);
+const publicContactReference = `${practiceContact.whatsappDisplay} (WhatsApp) or the Contact page`;
 
 export const privacyPolicyContent: LegalPageContent = {
   title: "Privacy Policy",
@@ -36,7 +35,7 @@ export const privacyPolicyContent: LegalPageContent = {
       heading: "No clinical records through the public website",
       paragraphs: [
         "No clinical records, therapy notes, diagnostic records or electronic health records are maintained through this public website.",
-        "Information submitted through this website, if and when enquiry features become available, will not be represented as an electronic health record (EHR/EMR).",
+        "Information submitted through this website is not stored as an electronic health record (EHR/EMR) by the website application.",
       ],
     },
     {
@@ -46,21 +45,24 @@ export const privacyPolicyContent: LegalPageContent = {
       ],
     },
     {
-      heading: "Future enquiry information",
+      heading: "Appointment enquiry information",
       paragraphs: [
-        "Any future appointment or contact enquiry feature will be limited to information reasonably necessary for responding to the enquiry, such as name, contact details and brief non-clinical preferences.",
+        "The appointment enquiry form collects only the minimum information reasonably needed to respond, such as name, age-group preference, optional preferred day/time, optional brief non-clinical note, and privacy acknowledgement.",
+        "Validated enquiry details are delivered by secure email to the practice for response. The website application does not create a patient database, patient portal, or clinical record from these submissions.",
+        "Submitting an enquiry does not confirm an appointment time and does not establish a therapist–client relationship by itself.",
       ],
     },
     {
       heading: "Third-party services",
       paragraphs: [
-        "Third-party services may be introduced later for hosting, email delivery, analytics or related website operations. When introduced, they will be documented appropriately in this policy.",
+        "Website hosting and email-delivery infrastructure may process enquiry messages as needed to operate the site and deliver messages to the practice.",
+        "This public website does not currently use marketing analytics, advertising pixels, or AI processing of enquiry content.",
       ],
     },
     {
       heading: "Contact about privacy",
       paragraphs: [
-        `If you have questions about this Privacy Policy, please use the contact channels listed on the website once verified details are published. Current placeholder contact reference: ${contactPlaceholder}.`,
+        `If you have questions about this Privacy Policy, please use the verified contact channels on the Contact page. Current public contact reference: ${publicContactReference}.`,
       ],
     },
   ],
@@ -164,7 +166,7 @@ export const termsContent: LegalPageContent = {
     {
       heading: "Contact",
       paragraphs: [
-        `For website-related questions, please use verified contact details when published. Current placeholder contact reference: ${contactPlaceholder}.`,
+        `For website-related questions, please use the verified contact channels on the Contact page. Current public contact reference: ${publicContactReference}.`,
       ],
     },
   ],

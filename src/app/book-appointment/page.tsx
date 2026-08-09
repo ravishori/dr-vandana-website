@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { AppointmentClosing } from "@/components/appointment/AppointmentClosing";
 import { AppointmentForm } from "@/components/appointment/AppointmentForm";
 import { AppointmentHero } from "@/components/appointment/AppointmentHero";
+import { AppointmentWhatsAppCta } from "@/components/appointment/AppointmentWhatsAppCta";
 import { appointmentEnquirySeo } from "@/data/appointment-enquiry";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function BookAppointmentPage() {
   return (
     <>
       <AppointmentHero />
+      <AppointmentWhatsAppCta />
       <AppointmentForm />
       <AppointmentClosing />
     </>

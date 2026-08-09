@@ -30,18 +30,31 @@ export const appointmentEnquiryPage = {
     "This website is not an emergency service. If you are in immediate danger or experiencing a mental-health emergency, seek urgent help through your local emergency medical service or nearest emergency medical facility.",
   uiOnlySubmitMessage:
     "Form preview only — appointment enquiry submission will be enabled in a later milestone.",
+  validationAcceptedMessage:
+    "Your enquiry has passed validation and is ready for the next processing step.",
+  enquirySubmittedMessage:
+    "Your enquiry has been submitted successfully. The practice will contact you regarding availability.",
+  deliveryFailedMessage:
+    "We couldn't process your enquiry right now. Please try again later.",
+  unexpectedSubmissionError:
+    "Something went wrong while processing your enquiry. Please try again.",
+  abuseRejectedMessage:
+    "Unable to process this request. Please try again later.",
+  rateLimitedMessage:
+    "Please wait a little while before trying again.",
   consultationModesUnavailable:
     "Consultation options will be confirmed by the practice.",
   contactMethodsUnavailable:
-    "Contact methods will be confirmed by the practice.",
+    "Additional contact methods will be confirmed by the practice.",
   closing:
     "Your enquiry is a request for a response. It does not confirm an appointment time.",
 } as const;
 
 /**
  * Practice-facing enquiry configuration.
- * Consultation modes and contact methods default to disabled until verified in Milestone 5G.
- * Do not invent verified phone/email/WhatsApp values here.
+ * Enable contact methods only when verified.
+ * Phone and Email remain disabled until separately verified.
+ * Consultation modes remain disabled until independently verified (5G).
  */
 export const appointmentConfig = {
   briefReasonMaxLength: 300,
@@ -70,7 +83,7 @@ export const appointmentConfig = {
   ] satisfies ConfigOption<ConsultationModeValue>[],
   contactMethods: [
     { value: "phone", label: "Phone", enabled: false },
-    { value: "whatsapp", label: "WhatsApp", enabled: false },
+    { value: "whatsapp", label: "WhatsApp", enabled: true },
     { value: "email", label: "Email", enabled: false },
   ] satisfies ConfigOption<ContactMethodValue>[],
   preferredDays: [

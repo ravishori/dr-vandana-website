@@ -1,14 +1,15 @@
+import { practiceContact } from "@/data/contact";
 import type { SiteConfig } from "@/types/site";
 
 /**
  * Central site configuration.
- * Contact, social, and location fields use placeholders until verified.
- * Do not invent live clinic details.
+ * Verified contact/location values are sourced from practiceContact.
+ * Remaining unverified fields stay as placeholders — do not invent details.
  */
 export const siteConfig: SiteConfig = {
   name: "Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice",
-  professionalName: "Dr. Vandana Rajiv Chaudhary",
-  profession: "Psychologist",
+  professionalName: practiceContact.practiceName,
+  profession: practiceContact.profession,
   tagline: "Your Mental Well-being Matters.",
   domain: "drvandana.trinetra.net",
   url: "https://drvandana.trinetra.net",
@@ -20,24 +21,12 @@ export const siteConfig: SiteConfig = {
       isPlaceholder: true,
       value: "[Email to be confirmed]",
     },
-    phone: {
-      isPlaceholder: true,
-      value: "[Phone to be confirmed]",
-    },
-    whatsapp: {
-      isPlaceholder: true,
-      value: "[WhatsApp number to be confirmed]",
-    },
+    phone: practiceContact.whatsappDisplay,
+    whatsapp: practiceContact.whatsappDisplay,
   },
   location: {
-    city: {
-      isPlaceholder: true,
-      value: "[City to be confirmed]",
-    },
-    address: {
-      isPlaceholder: true,
-      value: "[Clinic address to be confirmed]",
-    },
+    city: practiceContact.locality,
+    address: practiceContact.addressLines.join("\n"),
     consultationHours: {
       isPlaceholder: true,
       value: "[Consultation hours to be confirmed]",

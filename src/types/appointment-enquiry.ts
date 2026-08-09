@@ -44,6 +44,31 @@ export type AppointmentFormValues = {
   privacyAccepted: boolean;
 };
 
+/**
+ * Payload accepted by the Server Action.
+ * `website` is a honeypot field — not part of the enquiry domain model.
+ */
+export type AppointmentEnquirySubmission = AppointmentFormValues & {
+  website?: string;
+};
+
 export type AppointmentFormErrors = Partial<
   Record<keyof AppointmentFormValues, string>
 >;
+
+/**
+ * Structured Server Action result for appointment enquiry submission.
+ * Success means the validated enquiry was accepted by the email provider
+ * for delivery to the configured practice inbox — not that an appointment
+ * was booked or a consultation time was confirmed.
+ */
+export type AppointmentActionResult =
+  | {
+      success: true;
+      message: string;
+    }
+  | {
+      success: false;
+      message: string;
+      fieldErrors?: Partial<Record<keyof AppointmentFormValues, string[]>>;
+    };

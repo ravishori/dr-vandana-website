@@ -151,3 +151,29 @@ export const LeafIcon = createStrokeIcon(
 );
 
 export const ArrowRightIcon = createStrokeIcon("M5 12h14M13 6l6 6-6 6");
+
+export function MapPinIcon({ className, title }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={title ? undefined : true}
+      role={title ? "img" : undefined}
+    >
+      {title ? <title>{title}</title> : null}
+      <path d="M12 21s-6.5-5.2-6.5-10.2a6.5 6.5 0 1 1 13 0C18.5 15.8 12 21 12 21z" />
+      <circle cx="12" cy="10.5" r="2.2" />
+    </svg>
+  );
+}
+
+export const CopyIcon = createStrokeIcon(
+  "M8.5 8.5H6A1.5 1.5 0 0 0 4.5 10v9A1.5 1.5 0 0 0 6 20.5h9A1.5 1.5 0 0 0 16.5 19v-2.5M8.5 4.5H18A1.5 1.5 0 0 1 19.5 6v9.5A1.5 1.5 0 0 1 18 17H8.5A1.5 1.5 0 0 1 7 15.5V6A1.5 1.5 0 0 1 8.5 4.5z",
+);
+
+export const CheckIcon = createStrokeIcon("M5 12.5l4.5 4.5L19 7.5");

@@ -8,6 +8,9 @@ type ButtonLinkProps = {
   children: ReactNode;
   variant?: "primary" | "secondary" | "ghost" | "inverse";
   className?: string;
+  /** Opens in a new tab with noopener noreferrer when true. */
+  external?: boolean;
+  "aria-label"?: string;
 };
 
 const variantClasses = {
@@ -21,21 +24,35 @@ const variantClasses = {
     "bg-surface text-brand hover:bg-background border border-transparent",
 } as const;
 
+const baseClassName =
+  "inline-flex min-h-[var(--touch-target-min)] items-center justify-center rounded-[var(--radius-md)] px-5 text-sm font-medium no-underline transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none";
+
 export function ButtonLink({
   href,
   children,
   variant = "primary",
   className,
+  external = false,
+  "aria-label": ariaLabel,
 }: ButtonLinkProps) {
+  const classes = cn(baseClassName, variantClasses[variant], className);
+
+  if (external) {
+    return (
+      <a
+        href={href}
+        className={classes}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={ariaLabel}
+      >
+        {children}
+      </a>
+    );
+  }
+
   return (
-    <Link
-      href={href}
-      className={cn(
-        "inline-flex min-h-[var(--touch-target-min)] items-center justify-center rounded-[var(--radius-md)] px-5 text-sm font-medium no-underline transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none",
-        variantClasses[variant],
-        className,
-      )}
-    >
+    <Link href={href} className={classes} aria-label={ariaLabel}>
       {children}
     </Link>
   );
