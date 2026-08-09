@@ -144,7 +144,7 @@ export function SiteFooter() {
         </aside>
 
         <div className="border-brand-muted/25 mt-8 flex flex-col gap-6 border-t pt-6">
-          <ThemeSwitcher variant="inline" className="max-w-3xl" />
+          <ThemeSwitcher variant="panel" className="max-w-3xl" />
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <p className="text-text-muted text-xs md:text-sm">
               © {new Date().getFullYear()} {siteConfig.professionalName}. All

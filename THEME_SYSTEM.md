@@ -26,7 +26,9 @@ Presentation-layer visual themes for the Dr. Vandana psychology website. Themes 
 5. **FOUC prevention** — `src/components/theme/theme-bootstrap.ts`  
    Injected with `next/script` `beforeInteractive` to set `data-theme` on `<html>` before paint.
 6. **UI** — `src/components/theme/ThemeSwitcher.tsx`  
-   Popover control in the navbar; inline grid in the mobile drawer and footer.
+   - `popover` — compact header control  
+   - `inline` — always-visible grid (mobile drawer)  
+   - `panel` — collapsible slice-in/out Appearance section in the footer
 
 ## Token surface
 

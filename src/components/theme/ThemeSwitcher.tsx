@@ -3,13 +3,17 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { useTheme } from "@/components/theme/ThemeProvider";
-import { CheckIcon } from "@/components/ui/icons";
+import { CheckIcon, ChevronDownIcon } from "@/components/ui/icons";
 import { themes, type ThemeId } from "@/config/themes";
 import { cn } from "@/lib/utils";
 
 type ThemeSwitcherProps = {
-  /** popover: compact header control; inline: always-visible list (mobile drawer / footer) */
-  variant?: "popover" | "inline";
+  /**
+   * popover — compact header control
+   * inline — always-visible list (mobile drawer)
+   * panel — collapsible slice-in/out Appearance section (footer)
+   */
+  variant?: "popover" | "inline" | "panel";
   className?: string;
   /** Called after a theme is chosen (e.g. close mobile menu). */
   onThemeSelected?: () => void;
@@ -39,9 +43,7 @@ function ThemePreviewSwatches({
         className="h-3 w-3 rounded-full"
         style={{ backgroundColor: colors[1] }}
       />
-      <span
-        className="h-3 w-3 rounded-full border border-black/10 bg-white"
-      />
+      <span className="h-3 w-3 rounded-full border border-black/10 bg-white" />
     </span>
   );
 }
@@ -53,6 +55,7 @@ function ThemeOptionButton({
   preview,
   selected,
   onSelect,
+  className,
 }: {
   themeId: ThemeId;
   name: string;
@@ -60,6 +63,7 @@ function ThemeOptionButton({
   preview: readonly [string, string, string];
   selected: boolean;
   onSelect: (id: ThemeId) => void;
+  className?: string;
 }) {
   return (
     <button
@@ -67,10 +71,11 @@ function ThemeOptionButton({
       aria-pressed={selected}
       onClick={() => onSelect(themeId)}
       className={cn(
-        "relative flex w-full flex-col gap-2 rounded-[var(--radius-md)] border p-2.5 text-left transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none",
+        "appearance-theme-card relative flex w-full flex-col gap-2 rounded-[var(--radius-md)] border p-2.5 text-left transition-[color,background-color,border-color,box-shadow,transform] duration-[var(--transition-fast)] motion-reduce:transition-none",
         selected
           ? "border-brand bg-surface-soft shadow-sm"
           : "border-brand-muted/30 bg-surface hover:border-brand-muted/60 hover:bg-background",
+        className,
       )}
     >
       <ThemePreviewSwatches colors={preview} selected={selected} />
@@ -91,7 +96,10 @@ function ThemeOptionButton({
             <CheckIcon className="h-3 w-3" />
           </span>
         ) : (
-          <span className="mt-0.5 inline-block h-5 w-5 shrink-0" aria-hidden="true" />
+          <span
+            className="mt-0.5 inline-block h-5 w-5 shrink-0"
+            aria-hidden="true"
+          />
         )}
       </span>
       <span className="sr-only">
@@ -105,16 +113,18 @@ function ThemeOptionsGrid({
   themeId,
   onSelect,
   labelledBy,
+  cardClassName,
 }: {
   themeId: ThemeId;
   onSelect: (id: ThemeId) => void;
   labelledBy: string;
+  cardClassName?: string;
 }) {
   return (
     <div
       role="group"
       aria-labelledby={labelledBy}
-      className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+      className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2 sm:grid-cols-3"
     >
       {themes.map((theme) => (
         <ThemeOptionButton
@@ -125,8 +135,87 @@ function ThemeOptionsGrid({
           preview={theme.preview}
           selected={theme.id === themeId}
           onSelect={onSelect}
+          className={cardClassName}
         />
       ))}
+    </div>
+  );
+}
+
+function AppearancePanel({
+  className,
+  onThemeSelected,
+}: {
+  className?: string;
+  onThemeSelected?: () => void;
+}) {
+  const { themeId, theme, setThemeId } = useTheme();
+  const [open, setOpen] = useState(false);
+  const labelId = useId();
+  const panelId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleSelect = (id: ThemeId) => {
+    setThemeId(id);
+    onThemeSelected?.();
+    // Keep panel open so visitors can compare themes.
+  };
+
+  return (
+    <div
+      id="site-appearance"
+      className={cn(
+        "border-brand-muted/30 bg-surface w-full overflow-hidden rounded-[var(--radius-lg)] border",
+        className,
+      )}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        className="text-text hover:bg-background/80 flex min-h-[var(--touch-target-min)] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="min-w-0">
+          <span
+            id={labelId}
+            className="text-text-muted block text-xs font-semibold tracking-[0.16em] uppercase"
+          >
+            Appearance
+          </span>
+          <span className="text-text mt-0.5 block truncate text-sm font-medium">
+            {theme.name}
+          </span>
+        </span>
+        <ChevronDownIcon
+          className={cn(
+            "text-text-muted h-4 w-4 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      <div
+        id={panelId}
+        className="appearance-slice"
+        data-open={open ? "true" : "false"}
+        inert={open ? undefined : true}
+      >
+        <div className="appearance-slice__clip">
+          <div className="appearance-slice__body border-brand-muted/25 border-t px-3 pt-3 pb-4 sm:px-4">
+            <p className="text-text-muted mb-3 text-xs leading-relaxed">
+              Choose a visual style. Content and navigation stay the same.
+            </p>
+            <ThemeOptionsGrid
+              themeId={themeId}
+              onSelect={handleSelect}
+              labelledBy={labelId}
+              cardClassName="appearance-slice__card"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -182,6 +271,12 @@ export function ThemeSwitcher({
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open, variant]);
+
+  if (variant === "panel") {
+    return (
+      <AppearancePanel className={className} onThemeSelected={onThemeSelected} />
+    );
+  }
 
   if (variant === "inline") {
     return (
