@@ -45,11 +45,15 @@ const INJECTION_PATTERNS = [
 const CRISIS_PATTERNS = [
   /\b(emergency|call an ambulance|right now i('m| am) in danger)\b/i,
   /\b(someone is (going to|about to) (hurt|kill|harm))\b/i,
+  /\b(i('m| am) (in )?(immediate )?danger)\b/i,
+  /\b(threat(ening)? (to )?(kill|hurt)|active shooter)\b/i,
 ];
 
 const SELF_HARM_PATTERNS = [
   /\b(suicid(e|al)|kill myself|end my life|want to die|self[- ]harm|cut myself|hang myself)\b/i,
   /\b(no reason to live|better off dead)\b/i,
+  /\b(i (just )?(tried|attempted) (to )?(kill|hurt) myself)\b/i,
+  /\b(plan(ning)? to (kill|hurt) myself)\b/i,
 ];
 
 const VIOLENCE_PATTERNS = [

@@ -30,6 +30,11 @@ export const navigationConfig: NavigationConfig = {
       href: "/ask-a-question",
       enabled: true,
     },
+    {
+      label: "Get Help Now",
+      href: "/mental-health-support",
+      enabled: true,
+    },
     { label: "Contact", href: "/contact", enabled: true },
     // Phase 2 — enable only when routes exist
     { label: "Resources", href: "/resources", enabled: false },
@@ -47,6 +52,11 @@ export const navigationConfig: NavigationConfig = {
     {
       label: "Stress & Wellness",
       href: "/stress-anxiety-wellness",
+      enabled: true,
+    },
+    {
+      label: "Emergency & Mental Health Support",
+      href: "/mental-health-support",
       enabled: true,
     },
     { label: "Contact", href: "/contact", enabled: true },

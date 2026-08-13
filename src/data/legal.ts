@@ -60,6 +60,15 @@ export const privacyPolicyContent: LegalPageContent = {
       ],
     },
     {
+      heading: "Emergency and helpline directory",
+      paragraphs: [
+        "The Mental Health Support & Emergency Help page lists publicly available government and authorized helpline information for safety awareness.",
+        "Dr. Vandana Rajiv Chaudhary and this website do not operate those external helplines or emergency services and cannot guarantee their availability, response times, or confidentiality practices.",
+        "Calling a third-party or government service is subject to that service's own terms and privacy practices. This website does not collect account details to browse the directory and does not store crisis-search history from that page.",
+        "In urgent situations, contact emergency services directly (for example 112 in India) rather than relying on this website.",
+      ],
+    },
+    {
       heading: "Contact about privacy",
       paragraphs: [
         `If you have questions about this Privacy Policy, please use the verified contact channels on the Contact page. Current public contact reference: ${publicContactReference}.`,

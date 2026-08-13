@@ -253,10 +253,11 @@ export const whenProfessionalSupport = {
 
 export const stressEmergencyBoundary = {
   title: emergencyNotice.title,
-  message:
-    "If you are in immediate danger or experiencing a mental-health emergency, seek urgent help through your local emergency medical service or the nearest emergency medical facility.",
+  message: emergencyNotice.message,
   clarification: emergencyNotice.clarification,
-  note: "Verified emergency helpline details will be added when confirmed. No unsupported emergency contacts are listed here.",
+  note: "See the Mental Health Support & Emergency Help page for verified Government of India numbers including 112, Tele-MANAS 14416, and Child Helpline 1098.",
+  href: emergencyNotice.supportPageHref,
+  ctaLabel: "View verified helplines",
 } as const;
 
 export const stressWellnessCta = {

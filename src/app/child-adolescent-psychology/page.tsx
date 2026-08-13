@@ -8,6 +8,7 @@ import { ParentExpectationsSection } from "@/components/child-adolescent/ParentE
 import { ParentGuidanceSection } from "@/components/child-adolescent/ParentGuidanceSection";
 import { TeenWellbeingSection } from "@/components/child-adolescent/TeenWellbeingSection";
 import { WhenProfessionalGuidanceMayHelp } from "@/components/child-adolescent/WhenProfessionalGuidanceMayHelp";
+import { EmergencyBoundary } from "@/components/stress-wellness/EmergencyBoundary";
 import { childAdolescentSeo } from "@/data/child-adolescent";
 
 export const metadata: Metadata = {
@@ -35,6 +36,7 @@ export default function ChildAdolescentPsychologyPage() {
       <ParentGuidanceSection />
       <WhenProfessionalGuidanceMayHelp />
       <ParentExpectationsSection />
+      <EmergencyBoundary />
       <ChildAdolescentCta />
     </>
   );

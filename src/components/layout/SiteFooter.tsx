@@ -136,11 +136,18 @@ export function SiteFooter() {
           <p className="text-text-muted mt-2 text-sm leading-relaxed">
             {emergencyNotice.clarification}
           </p>
-          {emergencyNotice.isPlaceholder ? (
-            <p className="text-text-muted mt-2 text-xs">
-              Verified emergency helpline details will be added when confirmed.
-            </p>
-          ) : null}
+          <p className="text-text-muted mt-2 text-sm leading-relaxed">
+            If you are experiencing a mental-health crisis or immediate danger,
+            please seek appropriate emergency or professional help.
+          </p>
+          <p className="mt-3 text-sm">
+            <Link
+              href={emergencyNotice.supportPageHref}
+              className="text-brand font-medium no-underline hover:underline"
+            >
+              {emergencyNotice.supportPageLabel}
+            </Link>
+          </p>
         </aside>
 
         <div className="border-brand-muted/25 mt-8 flex flex-col gap-6 border-t pt-6">
