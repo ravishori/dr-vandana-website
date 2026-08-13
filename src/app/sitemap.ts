@@ -11,6 +11,7 @@ const routes = [
   "/child-adolescent-psychology",
   "/stress-anxiety-wellness",
   "/mental-health-support",
+  "/understanding-counselling",
   "/book-appointment",
   "/contact",
   "/privacy-policy",
