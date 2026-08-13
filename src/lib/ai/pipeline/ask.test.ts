@@ -113,8 +113,12 @@ describe("Ask Dr. Vandana AI pipeline", () => {
     if (!result.ok) {
       return;
     }
-    assert.match(result.response.answer, /educational scenario|teaching/i);
-    assert.doesNotMatch(result.response.answer, /Dr\. Vandana treated this person/i);
+    assert.match(result.response.answer, /educational scenario|fictional/i);
+    assert.match(result.response.answer, /not a real patient/i);
+    assert.doesNotMatch(
+      result.response.answer,
+      /Dr\. Vandana treated this patient/i,
+    );
   });
 
   it("redirects out-of-scope questions", async () => {
