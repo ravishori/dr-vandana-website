@@ -20,6 +20,11 @@ export const navigationConfig: NavigationConfig = {
       href: "/stress-anxiety-wellness",
       enabled: true,
     },
+    {
+      label: "Ask AI",
+      href: "/psychology/ask-dr-vandana-ai",
+      enabled: true,
+    },
     { label: "Contact", href: "/contact", enabled: true },
     // Phase 2 — enable only when routes exist
     { label: "Resources", href: "/resources", enabled: false },
@@ -40,6 +45,16 @@ export const navigationConfig: NavigationConfig = {
       enabled: true,
     },
     { label: "Contact", href: "/contact", enabled: true },
+    {
+      label: "Ask Dr. Vandana AI",
+      href: "/psychology/ask-dr-vandana-ai",
+      enabled: true,
+    },
+    {
+      label: "Case Studies",
+      href: "/psychology/case-studies",
+      enabled: true,
+    },
     { label: "Book an Appointment", href: "/book-appointment", enabled: true },
   ],
   legal: [
