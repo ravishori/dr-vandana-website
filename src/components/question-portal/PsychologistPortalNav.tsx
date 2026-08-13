@@ -23,6 +23,9 @@ export function PsychologistPortalNav({
           <ButtonLink href="/psychologist/crisis" variant="secondary">
             Crisis resources
           </ButtonLink>
+          <ButtonLink href="/psychologist/practice" variant="secondary">
+            Practice PMS
+          </ButtonLink>
           <form action={psychologistLogoutAction}>
             <button
               type="submit"

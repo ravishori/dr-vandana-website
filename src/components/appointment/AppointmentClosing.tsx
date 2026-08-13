@@ -12,7 +12,11 @@ export function AppointmentClosing() {
           About this enquiry
         </h2>
         <p className="text-text-muted text-sm leading-relaxed md:text-base">
-          {appointmentEnquiryPage.closing} You can also read the{" "}
+          {appointmentEnquiryPage.closing} Registered patients can also{" "}
+          <Link href="/patient" className="text-brand">
+            request an appointment in the patient portal
+          </Link>
+          . You can also read the{" "}
           <Link href="/privacy-policy" className="text-brand">
             Privacy Policy
           </Link>{" "}

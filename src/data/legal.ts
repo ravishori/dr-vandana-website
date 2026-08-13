@@ -21,9 +21,9 @@ export const privacyPolicyContent: LegalPageContent = {
   title: "Privacy Policy",
   absoluteTitle: `Privacy Policy | ${professionalProfile.name}`,
   description:
-    "Privacy information for the public website of Dr. Vandana Rajiv Chaudhary. This site is primarily informational and is not used to maintain clinical records.",
+    "Privacy information for the public website and optional patient practice portal of Dr. Vandana Rajiv Chaudhary.",
   intro:
-    "This Privacy Policy explains how the public website at drvandana.trinetra.net is intended to work. It is informational and does not constitute legal advice.",
+    "This Privacy Policy explains how the public website at drvandana.trinetra.net and the optional secure patient/practice portal are intended to work. It is informational and does not constitute legal advice.",
   sections: [
     {
       heading: "Informational website",
@@ -32,31 +32,42 @@ export const privacyPolicyContent: LegalPageContent = {
       ],
     },
     {
-      heading: "No clinical records through the public website",
+      heading: "Public website forms (appointment enquiry)",
       paragraphs: [
-        "No clinical records, therapy notes, diagnostic records or electronic health records are maintained through this public website.",
-        "Information submitted through this website is not stored as an electronic health record (EHR/EMR) by the website application.",
+        "The public appointment enquiry form collects only the minimum information reasonably needed to respond, such as name, age-group preference, optional preferred day/time, optional brief non-clinical note, and privacy acknowledgement.",
+        "Validated enquiry details are delivered by secure email to the practice for response. Submitting an enquiry does not confirm an appointment time and does not establish a therapist–client relationship by itself.",
+        "The public enquiry form is separate from the optional patient practice portal described below.",
+      ],
+    },
+    {
+      heading: "Patient & practice portal (optional clinical practice tools)",
+      paragraphs: [
+        "When enabled, registered patients and the psychologist may use a secure practice portal for account registration, appointment requests and confirmations, consultation summaries the psychologist chooses to share, and documents the psychologist marks as patient-visible.",
+        "Psychologist private clinical notes and private documents are intended for practice use only and are not shown to patients through the portal.",
+        "Portal accounts require authentication. Mobile one-time passwords (OTP), WhatsApp transactional messages, and multi-factor authentication may be used depending on configuration. Production SMS/WhatsApp delivery requires separate provider credentials and is not automatic.",
+        "Practice portal records are stored using a durable store configured for the deployment (for example SQLite on a persistent host). Ephemeral serverless disk is not appropriate for long-term clinical practice data.",
+        "By creating a portal account and accepting the portal privacy acknowledgement, you consent to processing of the account and appointment information needed to operate these practice tools.",
       ],
     },
     {
       heading: "Sensitive clinical information",
       paragraphs: [
-        "This site should not be used to submit sensitive clinical information. Users should avoid including detailed medical history, diagnosis details, medication information, therapy notes or session content in any general website enquiry.",
+        "Do not use public enquiry forms to submit detailed medical history, diagnosis details, medication lists, therapy notes, or crisis content that requires immediate emergency response.",
+        "Portal notes and documents are managed by the practice under professional confidentiality expectations, subject to applicable ethical and legal limits (including safety-related disclosures).",
       ],
     },
     {
-      heading: "Appointment enquiry information",
+      heading: "Retention and access",
       paragraphs: [
-        "The appointment enquiry form collects only the minimum information reasonably needed to respond, such as name, age-group preference, optional preferred day/time, optional brief non-clinical note, and privacy acknowledgement.",
-        "Validated enquiry details are delivered by secure email to the practice for response. The website application does not create a patient database, patient portal, or clinical record from these submissions.",
-        "Submitting an enquiry does not confirm an appointment time and does not establish a therapist–client relationship by itself.",
+        "Account, appointment, consultation, and document records are retained for as long as needed for clinical continuity, professional obligations, and legitimate practice administration, unless a longer or shorter period is required by applicable law or professional standards.",
+        "Patients may request access corrections for their account profile through verified contact channels. Some clinical records may be retained even after an account is deactivated where retention is required.",
       ],
     },
     {
       heading: "Third-party services",
       paragraphs: [
-        "Website hosting and email-delivery infrastructure may process enquiry messages as needed to operate the site and deliver messages to the practice.",
-        "This public website does not currently use marketing analytics, advertising pixels, or AI processing of enquiry content.",
+        "Website hosting, email-delivery infrastructure, optional SMS/OTP providers, and optional WhatsApp Business API providers may process messages as needed to operate the site and portal.",
+        "This public website does not currently use marketing analytics, advertising pixels, or AI processing of portal clinical notes.",
       ],
     },
     {
@@ -76,7 +87,7 @@ export const privacyPolicyContent: LegalPageContent = {
     },
   ],
   closingNote:
-    "This policy may be updated as website functionality changes. Continued use of the website after updates means the revised policy applies to future visits.",
+    "This policy may be updated as website and portal functionality changes. Continued use of the website or portal after updates means the revised policy applies to future visits and portal use.",
 };
 
 export const disclaimerContent: LegalPageContent = {
