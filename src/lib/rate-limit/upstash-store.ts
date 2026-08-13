@@ -9,6 +9,8 @@ let appointmentWindow: Ratelimit | null = null;
 let errorReportLimit: Ratelimit | null = null;
 let aiAskLimit: Ratelimit | null = null;
 let aiAskLimitPerMinute = 12;
+let questionSubmitLimit: Ratelimit | null = null;
+let questionLoginLimit: Ratelimit | null = null;
 
 function getRedis(): Redis {
   if (!redisClient) {
@@ -164,11 +166,65 @@ export async function enforceUpstashErrorReportLimit(
   }
 }
 
-/** Test helper — clears cached Redis/ratelimit clients. */
+export async function enforceUpstashQuestionLimit(
+  clientIp: string,
+  maxAttempts: number,
+): Promise<UpstashLimitResult> {
+  try {
+    if (!questionSubmitLimit) {
+      questionSubmitLimit = new Ratelimit({
+        redis: getRedis(),
+        limiter: Ratelimit.slidingWindow(maxAttempts, "900 s"),
+        prefix: "drvandana:rl:qportal:submit",
+        analytics: false,
+      });
+    }
+    const result = await questionSubmitLimit.limit(`ip:${clientIp}`);
+    if (!result.success) {
+      return {
+        ok: true,
+        allowed: false,
+        retryAfterSeconds: retryAfterSeconds(result.reset),
+      };
+    }
+    return { ok: true, allowed: true };
+  } catch {
+    return { ok: false, reason: "store_error" };
+  }
+}
+
+export async function enforceUpstashQuestionLoginLimit(
+  clientIp: string,
+  maxAttempts: number,
+): Promise<UpstashLimitResult> {
+  try {
+    if (!questionLoginLimit) {
+      questionLoginLimit = new Ratelimit({
+        redis: getRedis(),
+        limiter: Ratelimit.slidingWindow(maxAttempts, "900 s"),
+        prefix: "drvandana:rl:qportal:login",
+        analytics: false,
+      });
+    }
+    const result = await questionLoginLimit.limit(`ip:${clientIp}`);
+    if (!result.success) {
+      return {
+        ok: true,
+        allowed: false,
+        retryAfterSeconds: retryAfterSeconds(result.reset),
+      };
+    }
+    return { ok: true, allowed: true };
+  } catch {
+    return { ok: false, reason: "store_error" };
+  }
+}
 export function resetUpstashClientsForTests(): void {
   redisClient = null;
   appointmentBurst = null;
   appointmentWindow = null;
   errorReportLimit = null;
   aiAskLimit = null;
+  questionSubmitLimit = null;
+  questionLoginLimit = null;
 }

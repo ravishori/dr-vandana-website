@@ -16,6 +16,7 @@ const routes = [
   "/disclaimer",
   "/terms",
   "/psychology/ask-dr-vandana-ai",
+  "/ask-a-question",
   "/psychology/case-studies",
   ...psychologyTopicPages.map((page) => `/psychology/${page.slug}`),
   ...caseStudyRecords.map((study) => `/psychology/case-studies/${study.slug}`),

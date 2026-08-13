@@ -25,6 +25,11 @@ export const navigationConfig: NavigationConfig = {
       href: "/psychology/ask-dr-vandana-ai",
       enabled: true,
     },
+    {
+      label: "Ask a Question",
+      href: "/ask-a-question",
+      enabled: true,
+    },
     { label: "Contact", href: "/contact", enabled: true },
     // Phase 2 — enable only when routes exist
     { label: "Resources", href: "/resources", enabled: false },
@@ -48,6 +53,11 @@ export const navigationConfig: NavigationConfig = {
     {
       label: "Ask Dr. Vandana AI",
       href: "/psychology/ask-dr-vandana-ai",
+      enabled: true,
+    },
+    {
+      label: "Ask a Question",
+      href: "/ask-a-question",
       enabled: true,
     },
     {
