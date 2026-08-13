@@ -8,6 +8,10 @@ import {
   resolveAppointmentRateLimitStoreMode,
 } from "@/config/appointment-submission";
 import { isAiLlmConfigured } from "@/config/ai";
+import {
+  isPsychologistAuthConfigured,
+  resolveQuestionStoreMode,
+} from "@/config/question-portal";
 import { logStructured } from "@/lib/observability/logger";
 
 /**
@@ -75,6 +79,26 @@ export function validateServerConfigAtStartup(): void {
         source: "CONFIGURATION",
         message:
           "Ask Dr. Vandana AI is using the educational retrieval fallback because AI_API_KEY is not configured.",
+        operation: "validateServerConfigAtStartup",
+      });
+    }
+
+    if (!isPsychologistAuthConfigured()) {
+      logStructured("WARNING", {
+        code: "CONFIG_MISSING",
+        source: "CONFIGURATION",
+        message:
+          "Psychologist portal login is not fully configured (email, password hash, and SESSION_SECRET).",
+        operation: "validateServerConfigAtStartup",
+      });
+    }
+
+    if (resolveQuestionStoreMode() === "misconfigured") {
+      logStructured("ERROR", {
+        code: "CONFIG_MISSING",
+        source: "CONFIGURATION",
+        message:
+          "Question portal storage is misconfigured. Set QUESTION_STORE=upstash with Upstash credentials, or sqlite with a persistent path on a Node host.",
         operation: "validateServerConfigAtStartup",
       });
     }
