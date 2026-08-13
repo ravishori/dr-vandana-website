@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/ai/**/*.test.ts src/lib/question-portal/**/*.test.ts src/lib/crisis/**/*.test.ts",
+    "test": "tsx --test src/lib/ai/**/*.test.ts src/lib/question-portal/**/*.test.ts src/lib/crisis/**/*.test.ts src/lib/counselling-faq/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

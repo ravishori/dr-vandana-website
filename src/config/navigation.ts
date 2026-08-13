@@ -35,6 +35,11 @@ export const navigationConfig: NavigationConfig = {
       href: "/mental-health-support",
       enabled: true,
     },
+    {
+      label: "FAQ",
+      href: "/understanding-counselling",
+      enabled: true,
+    },
     { label: "Contact", href: "/contact", enabled: true },
     // Phase 2 — enable only when routes exist
     { label: "Resources", href: "/resources", enabled: false },
@@ -52,6 +57,11 @@ export const navigationConfig: NavigationConfig = {
     {
       label: "Stress & Wellness",
       href: "/stress-anxiety-wellness",
+      enabled: true,
+    },
+    {
+      label: "Understanding Counselling",
+      href: "/understanding-counselling",
       enabled: true,
     },
     {
