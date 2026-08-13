@@ -1,3 +1,4 @@
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { stressEmergencyBoundary } from "@/data/stress-wellness";
@@ -25,6 +26,16 @@ export function EmergencyBoundary() {
           <p className="text-text-muted mt-2 text-xs leading-relaxed">
             {stressEmergencyBoundary.note}
           </p>
+          {"href" in stressEmergencyBoundary && stressEmergencyBoundary.href ? (
+            <div className="mt-4">
+              <ButtonLink
+                href={stressEmergencyBoundary.href}
+                variant="secondary"
+              >
+                {stressEmergencyBoundary.ctaLabel ?? "View verified helplines"}
+              </ButtonLink>
+            </div>
+          ) : null}
         </aside>
       </Container>
     </Section>

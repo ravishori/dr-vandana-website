@@ -29,6 +29,17 @@ export function MobileQuickBar() {
       >
         <ul className="mx-auto flex max-w-lg items-stretch gap-1">
           <li className="flex flex-1">
+            <Link
+              href="/mental-health-support"
+              className={cn(actionClassName, "text-brand hover:bg-background")}
+              aria-label="Get mental health support and emergency help"
+            >
+              <PhoneIcon className="h-4 w-4" />
+              <span>Help</span>
+            </Link>
+          </li>
+
+          <li className="flex flex-1">
             {cta ? (
               <Link
                 href={cta.href}

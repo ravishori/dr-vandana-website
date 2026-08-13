@@ -10,6 +10,7 @@ const routes = [
   "/areas-of-support",
   "/child-adolescent-psychology",
   "/stress-anxiety-wellness",
+  "/mental-health-support",
   "/book-appointment",
   "/contact",
   "/privacy-policy",

@@ -5,17 +5,22 @@ export { EDUCATIONAL_DISCLAIMER };
 
 export const CRISIS_ANSWER = [
   "I'm concerned about your safety, and I want you to get immediate help rather than relying on this chat.",
-  emergencyNotice.message,
+  "This assistant cannot keep you safe, is not a therapist, and must not replace emergency services.",
+  "If you are in immediate danger, call 112 (India's unified emergency response number) or go to the nearest emergency department: https://112.gov.in/",
+  "For 24×7 tele-mental-health support in India, contact Tele-MANAS at 14416 or 1800-89-14416.",
+  "If a child needs protection or care, Child Helpline 1098 may be appropriate.",
+  "If possible, stay with someone you trust while you seek help.",
+  `Verified public helpline information: ${emergencyNotice.supportPageHref}`,
   emergencyNotice.clarification,
-  "If you can, please contact local emergency services or someone nearby who can stay with you until help is available.",
 ].join("\n\n");
 
 export const SELF_HARM_ANSWER = CRISIS_ANSWER;
 
 export const VIOLENCE_ANSWER = [
   "I can't help with harming anyone, and I want people to stay safe.",
-  "If you or someone else may be in immediate danger, contact local emergency services.",
+  "If you or someone else may be in immediate danger, call 112 or contact local emergency services.",
   emergencyNotice.clarification,
+  `Verified public helpline information: ${emergencyNotice.supportPageHref}`,
 ].join("\n\n");
 
 export const DIAGNOSTIC_ANSWER = [
