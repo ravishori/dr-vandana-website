@@ -40,6 +40,11 @@ export const navigationConfig: NavigationConfig = {
       href: "/understanding-counselling",
       enabled: true,
     },
+    {
+      label: "Patient Portal",
+      href: "/patient",
+      enabled: true,
+    },
     { label: "Contact", href: "/contact", enabled: true },
     // Phase 2 — enable only when routes exist
     { label: "Resources", href: "/resources", enabled: false },
@@ -78,6 +83,11 @@ export const navigationConfig: NavigationConfig = {
     {
       label: "Ask a Question",
       href: "/ask-a-question",
+      enabled: true,
+    },
+    {
+      label: "Patient Portal",
+      href: "/patient",
       enabled: true,
     },
     {

@@ -1,304 +1,103 @@
-# Patient & Practice Management System — Architecture Review (Phase 0)
+# Patient & Practice Management System — Architecture & Implementation Status
 
-**Status:** HARD STOP — implementation deferred pending product, legal, and provider decisions  
+**Status:** Option **C** implemented in-app with honest readiness labels  
 **Date:** 2026-08-14  
-**Branch:** `cursor/patient-practice-management-plan-a302`  
-**Audited codebase tip:** counselling FAQ + crisis + psychologist question portal stack  
-
-This document is the required **INSPECT → PLAN** deliverable. No PMS application code has been added, because the repository’s current product boundary, privacy policy, and missing third-party providers conflict with a production-ready clinical practice-management system.
+**Branch:** `cursor/patient-practice-management-a302`  
+**Decision:** Stakeholder selected Option C (full clinical PMS) after Phase 0 HARD STOP review.
 
 ---
 
-## 1. Existing architecture
+## Product decision
 
-| Layer | Finding |
+| Option | Outcome |
 | --- | --- |
-| App type | Public marketing / education site + lead intake + limited psychologist admin |
-| Frontend | Next.js 16 App Router, React 19, TypeScript, Tailwind 4 |
-| Backend | Next.js Server Actions + 2 Route Handlers (`/api/ai/ask`, `/api/internal/errors`) |
-| Design | Brand tokens / themes (`calm-sage` etc.), `Container` / `Section` / `ButtonLink` |
-| Domain | `drvandana.trinetra.net` |
-| Persistence | **No ORM.** Repository adapters: SQLite (`node:sqlite`) / Upstash Redis / memory for question portal + crisis directory only |
-| Email | Nodemailer SMTP (appointment enquiry, question notify/reply, error alerts) |
-| WhatsApp | **Outbound deep links only** (`wa.me`, Bitly booking URL) — not WhatsApp Business API |
-| SMS / OTP | **None** |
-| MFA / 2FA | **None** |
-| Patient accounts | **None** |
-| Document storage | **None** |
-| CI | No GitHub Actions workflows found |
-| Deploy hints | Vercel / Node; Upstash required for production rate limits / durable Redis stores |
+| A — Keep site non-clinical | Not selected |
+| B — Non-clinical booking only | Not selected |
+| **C — Full clinical PMS** | **Selected and implemented** (local/sqlite + mocks) |
+
+Privacy policy updated to describe the optional patient/practice portal, private vs patient-visible notes/documents, retention, and third-party OTP/WhatsApp configuration needs.
 
 ---
 
-## 2. Existing authentication architecture
+## What shipped
 
-Single staff auth system for the psychologist portal:
-
-- Env identity: `PSYCHOLOGIST_LOGIN_EMAIL` + `PSYCHOLOGIST_PASSWORD_HASH` (scrypt)
-- Session: HMAC-signed cookie `drvandana_portal_session` (`SESSION_SECRET`, 8h TTL)
-- Middleware guard: `/psychologist/*` except login
-- Role: only `PSYCHOLOGIST`
-- Password helper: `src/lib/question-portal/password.ts`
-- Session helper: `src/lib/question-portal/session.ts`
-- Auth helpers: `src/lib/question-portal/auth.ts`
-
-**There is no patient registration, patient session, OTP, MFA, password-reset for patients, or multi-user staff table.**
-
----
-
-## 3. Existing database architecture
-
-| Domain | Storage | Notes |
+| Area | Routes / modules | Status |
 | --- | --- | --- |
-| Appointment enquiries | **Not stored** | Email to practice only |
-| Psychology questions | SQLite / Upstash / memory | Private question portal records + audit events |
-| Crisis helplines | SQLite / Upstash / memory | Verified directory CMS |
-| Ask AI conversations | In-process memory | Ephemeral |
-| Theme preference | `localStorage` | Client only |
+| Patient registration + consent | `/patient/register` | **TESTED** (unit) |
+| Email verification | `/patient/verify-email` | **TESTED**; delivery **MOCKED** without SMTP |
+| Mobile OTP | `/patient/verify` | **MOCKED** (`OTP_PROVIDER=mock`); **CONFIGURATION REQUIRED** for SMS |
+| Patient login / portal | `/patient/login`, dashboard, profile | **TESTED** (session HMAC) |
+| Password reset | `/patient/forgot-password`, `/patient/reset-password` | **TESTED** pattern; email **MOCKED** without SMTP |
+| Psychologist MFA (TOTP) | `/psychologist/practice/security`, `/mfa` | **TESTED** (TOTP unit); optional enable |
+| Appointments + availability | patient request + psychologist confirm/reject/cancel/complete/no-show | **TESTED** (double-book) |
+| Calendar / availability admin | `/psychologist/practice/calendar` | **TESTED** via service logic |
+| Consultations + notes | private vs `PATIENT_VISIBLE` | **TESTED** (IDOR / 403) |
+| Documents | upload + authz download `/api/practice/documents/[id]` | Local disk store; object storage **CONFIGURATION REQUIRED** for multi-instance |
+| Notifications | email + WhatsApp outbox | Email **MOCKED/SENT** by SMTP; WhatsApp **MOCKED** |
+| Audit log | `/psychologist/practice/audit` | **TESTED** via service writes |
+| RBAC | PATIENT / PSYCHOLOGIST (+ STAFF reserved) | **TESTED** ownership checks |
+| Middleware | `/patient/*` + `/psychologist/practice/*` practice cookie | Implemented (Edge-safe session read) |
 
-No patient, appointment-slot, consultation, document, or notification-queue tables exist.
+Public `/book-appointment` enquiry path is unchanged and still available; closing copy links to the patient portal.
 
-Production durability: SQLite on ephemeral serverless disk is unsafe; Upstash or a dedicated Node host with persistent disk is required for any new durable store.
+Psychologist **question portal** (`drvandana_portal_session`) remains separate from **practice PMS** (`drvandana_practice_session`). Practice login is via `/patient/login` (psychologist bootstrap from `PSYCHOLOGIST_LOGIN_*`).
 
 ---
 
-## 4. Existing UI structure
+## Persistence
 
-Public: Home, About, Areas of Support, Child/Adolescent, Stress & Wellness, Understanding Counselling, Mental Health Support, Contact, Book Appointment (enquiry), Ask a Question, Ask AI, case studies, legal pages.
-
-Staff: `/psychologist/login`, dashboard, questions review, crisis resource admin.
-
-No `/patient/*` portal routes.
-
----
-
-## 5. Existing notification capabilities
-
-| Channel | Capability | Status |
+| Mode | Env | Notes |
 | --- | --- | --- |
-| Email | SMTP via Nodemailer | **TESTED pattern** for enquiry/question/error mail when SMTP env is set |
-| WhatsApp | Click-to-chat links | **NOT CONNECTED** as transactional messaging |
-| SMS / OTP | — | **CONFIGURATION REQUIRED** (no provider abstraction exists) |
-| Push / in-app | — | Absent |
+| SQLite snapshot | `PRACTICE_STORE=sqlite` (default non-prod / prod default) | Single-practice Node host with **persistent disk** |
+| Memory | `PRACTICE_STORE=memory` | Dev/tests only; rejected in production |
+| Postgres / managed DB | — | **CONFIGURATION REQUIRED** for multi-instance / serverless |
 
-SMTP variables are used in code (`SMTP_*`, `APPOINTMENT_TO_EMAIL`) but are **missing from `.env.example`** — ops gap.
-
----
-
-## 6. Existing appointment capabilities
-
-Current flow is **appointment enquiry**, not booking:
-
-1. `/book-appointment` multi-field form  
-2. Honeypot + rate limit  
-3. Zod validation  
-4. Email to practice  
-5. Success message that enquiry was received  
-
-Explicitly **does not**:
-
-- Persist appointments  
-- Confirm slots  
-- Manage availability calendar  
-- Prevent double booking  
-- Create patient records  
-
-External Bitly WhatsApp booking CTA exists as a separate channel.
-
-Privacy policy and BRD state that submitting an enquiry does **not** confirm an appointment and does **not** create a patient database / EHR.
+Documents: `PRACTICE_DOCUMENT_DIR` (default `data/practice-documents`).
 
 ---
 
-## 7. Gaps identified (vs requested PMS)
+## Honest readiness labels
 
-Missing entirely (or only partially present):
-
-- Patient registration / email verify / mobile OTP  
-- Patient login / portal / notification preferences  
-- Psychologist MFA  
-- Multi-role RBAC (patient / psychologist / future staff)  
-- Configurable consultation types + availability engine  
-- Appointment state machine with history  
-- Double-booking protection  
-- Calendar day/week/month views  
-- Consultation records + private vs patient-visible notes  
-- Secure document vault + signed URLs  
-- Central notification service + WhatsApp templates  
-- Audit logging for clinical access  
-- Patient search directory  
-- Reporting suite  
-
----
-
-## 8. Proposed architecture (if / when approved)
-
-Prefer a **modular monolith** inside the existing Next.js app (no microservices), extending repository + server-action patterns already used by the question portal.
-
-### Recommended product boundary options
-
-| Option | Description | Recommendation |
-| --- | --- | --- |
-| **A — Keep site non-clinical** | Improve enquiry + psychologist inbox only; real scheduling via Cal.com/Calendly embed | Matches current BRD/privacy |
-| **B — Non-clinical booking portal** | Patient accounts + slot requests + confirmations + neutral notifications; **no clinical notes/documents/EHR** | Possible after privacy policy update |
-| **C — Full clinical PMS** | Private notes, documents, consultation charting as requested | Requires **new legal/privacy basis**, dedicated secure hosting, provider credentials, and likely a separate subdomain/app |
-
-**This review recommends Option A or B for this repository.** Option C should not be built on the current public website without an explicit rewrite of BRD § EHR prohibition and privacy policy.
-
-### If Option B is chosen later
-
-1. **Auth module** (`src/lib/practice-auth/`): users, roles (`PATIENT`, `PSYCHOLOGIST`, reserved `STAFF`), sessions, email verification tokens, password reset, TOTP MFA for psychologist. Extend—do not discard—existing psychologist cookie session pattern; migrate env psychologist into a provisioned user row.  
-2. **OTP abstraction** (`OtpProvider`): interface only until SMS/WhatsApp OTP credentials exist; default `MockOtpProvider` for tests.  
-3. **Appointment engine**: availability rules, exceptions, appointments + status history, transactional slot locking (SQLite transaction or Redis lock + unique constraint).  
-4. **Notification service**: queue + templates + EmailProvider (reuse Nodemailer) + WhatsAppProvider (stub until Business API approved). Neutral copy only.  
-5. **Patient portal** `/patient/*` and expanded `/psychologist/*` for calendar/appointments (non-clinical).  
-6. **Do not implement** private clinical notes or clinical document vault in Option B.
-
-### If Option C is insisted upon
-
-Requires separate architecture review for:
-
-- Hosting with encrypted persistent database (not Redis-as-primary-DB, not ephemeral SQLite)  
-- Object storage + malware scanning + signed URLs  
-- Stricter retention/backup/restore  
-- Legal counsel review of privacy/terms  
-- Explicit consent model for clinical data processing  
-
----
-
-## 9. Database changes (proposed, not applied)
-
-Would be additive migrations only after Option B/C approval. Example Option B tables:
-
-- `users`, `user_roles`, `sessions`  
-- `email_verifications`, `password_resets`  
-- `otp_challenges` (hashed OTP only)  
-- `patients` (public_id `PAT-…`)  
-- `consultation_types`  
-- `availability_rules`, `availability_exceptions`  
-- `appointments`, `appointment_status_history`  
-- `notification_outbox`, `notification_preferences`  
-- `audit_events`  
-
-Option C additionally: `consultations`, `consultation_notes` (visibility enum), `patient_documents`, `document_access`.
-
-**No migrations run in this Phase 0 branch.**
-
----
-
-## 10. API changes (proposed)
-
-Follow existing Server Action style rather than inventing a parallel REST style unless a dedicated API is required.
-
-Groups: auth, patient/me, appointments, availability, psychologist patients/appointments, notifications, audit.
-
-All mutations server-side with auth + role + ownership checks.
-
----
-
-## 11. Frontend changes (proposed)
-
-- Patient routes under `/patient/*` (`noindex`)  
-- Psychologist calendar/appointments under `/psychologist/*` (extend existing portal)  
-- Reuse existing UI primitives and brand tokens  
-- Keep public SEO pages intact  
-- Mobile-first psychologist “Today” view  
-
----
-
-## 12. Security changes (proposed)
-
-- Hash passwords with existing scrypt approach (or argon2 if dependency approved)  
-- MFA mandatory for psychologist  
-- Rate limits on auth/OTP/booking (reuse Upstash pattern)  
-- Server-side authorization on every sensitive action  
-- Append-only audit events  
-- Never log OTP/passwords/clinical note bodies  
-- Neutral notification copy  
-- Private file storage with authz (Option C only)  
-
----
-
-## 13. Third-party integrations required
-
-| Integration | Status | Needed for |
-| --- | --- | --- |
-| SMTP | Pattern exists; credentials ops-dependent | Email verify + appointment mail |
-| SMS OTP provider | **CONFIGURATION REQUIRED** | Mobile verification |
-| WhatsApp Business API | **NOT CONNECTED** | Transactional WhatsApp |
-| Object storage (S3-compatible) | **CONFIGURATION REQUIRED** | Documents (Option C) |
-| Durable DB (Postgres recommended for Option B/C) | **CONFIGURATION REQUIRED** | Production patient/appointment data |
-| Upstash Redis | Partially used | Rate limits / queues |
-
-No credentials were fabricated.
-
----
-
-## 14. Migration strategy
-
-1. Freeze product decision (A / B / C).  
-2. Update privacy policy + disclaimer if moving beyond enquiry-only.  
-3. Provision durable DB + secrets in staging.  
-4. Migrate env psychologist account into user table (no public psychologist registration).  
-5. Keep current `/book-appointment` enquiry path until booking portal is proven; then deprecate carefully.  
-6. Preserve question portal and crisis features untouched.  
-7. No destructive production migrations without backup/restore drill.
-
----
-
-## 15. Testing strategy (when implementation resumes)
-
-- Unit: auth, OTP expiry/attempts, appointment state machine, double-booking, RBAC denials  
-- Integration: email outbox, notification retries (mocked providers)  
-- E2E scenarios A–G from the product brief (with mocked OTP/WhatsApp until live)  
-- Security: IDOR, private-note 403, document visibility  
-- Explicitly label: **MOCKED** / **CONFIGURATION REQUIRED** / **TESTED** / **PRODUCTION READY**
-
----
-
-## HARD STOP conditions triggered
-
-1. **Existing BRD + privacy policy forbid EHR/clinical records on this website** — conflicts with private clinical notes, consultation charting, and clinical document vault.  
-2. **OTP / SMS provider not configured** — mobile verification cannot be production-ready.  
-3. **WhatsApp Business API not configured / approved** — WhatsApp notifications cannot be claimed working.  
-4. **No durable production patient database** approved (Vercel + SQLite is insufficient for clinical/PII appointment systems).  
-5. **Authorization model for clinical data** cannot be declared adequate without Option C hosting + legal review.  
-6. **SMTP env vars incomplete in `.env.example`** — email flows are configuration-dependent and not assumed production-ready.
-
----
-
-## What will NOT be claimed
-
-| Item | Label |
+| Capability | Label |
 | --- | --- |
-| Full PMS implementation | **NOT STARTED** (by design) |
-| Patient registration/OTP | **CONFIGURATION REQUIRED** |
-| WhatsApp transactional messaging | **NOT CONNECTED** |
-| Clinical notes / documents | **BLOCKED** by current privacy/BRD |
-| Double-booking calendar | **NOT STARTED** |
-| MFA | **NOT STARTED** |
+| Core register / appoint / notes / docs flows (local sqlite) | **TESTED** |
+| SMS OTP delivery | **MOCKED** / **CONFIGURATION REQUIRED** |
+| WhatsApp Business transactional | **MOCKED** / **NOT CONNECTED** |
+| SMTP appointment/auth email | **CONFIGURATION REQUIRED** (SENT when SMTP configured) |
+| Multi-instance durable DB | **CONFIGURATION REQUIRED** |
+| Object storage + malware scan | **CONFIGURATION REQUIRED** |
+| Legal counsel sign-off | **CONFIGURATION REQUIRED** (policy text updated in-repo only) |
+| Production clinical claim | **Not PRODUCTION READY** until providers + hosting + legal review |
 
 ---
 
-## Safe near-term work (does not require lifting HARD STOP)
+## Security notes
 
-These can be done later without building an EHR:
-
-1. Document SMTP variables in `.env.example`.  
-2. Improve psychologist dashboard UX for existing question + crisis modules.  
-3. Optional Cal.com/Calendly embed behind feature flag (external scheduling).  
-4. Stronger MFA for the **existing** single psychologist login (TOTP) without creating patient EHR.  
-5. Formal product decision workshop for Option A vs B vs C.
+- Passwords: existing scrypt helper  
+- OTP stored hashed only; mock provider may return `devCode` outside production  
+- Practice session: HMAC cookie, Edge-readable verifier  
+- Private notes/documents denied to patients (403)  
+- Neutral notification copy (no clinical detail in email/WhatsApp bodies)  
+- Psychologist MFA recommended before production use  
 
 ---
 
-## Decision checklist for stakeholders
+## Ops checklist before production
 
-- [ ] Confirm Option **A**, **B**, or **C**  
-- [ ] If B/C: approve privacy policy rewrite  
-- [ ] Provide SMS/OTP provider choice + credentials (staging)  
-- [ ] Provide WhatsApp Business approval path (or defer WhatsApp)  
-- [ ] Provide durable database + backup/restore owner  
-- [ ] If C: approve clinical data hosting model and retention policy  
-- [ ] Confirm timezone Asia/Kolkata and practice booking rules  
+1. Set `PRACTICE_SESSION_SECRET` (≥32 chars)  
+2. Configure SMTP  
+3. Replace `OTP_PROVIDER=mock` with a real SMS/WhatsApp OTP vendor  
+4. Replace WhatsApp mock with Business API templates  
+5. Host on persistent disk **or** migrate store to managed Postgres + object storage  
+6. Backup/restore drill for practice DB + documents  
+7. Confirm legal retention policy with counsel  
 
-**No PMS feature implementation will proceed until these decisions are recorded.**
+---
+
+## Related files
+
+- Config: `src/config/practice.ts`  
+- Services: `src/lib/practice/*`  
+- UI: `src/app/patient/*`, `src/app/psychologist/practice/*`  
+- Tests: `src/lib/practice/practice.test.ts`  
+- Env template: `.env.example`  
