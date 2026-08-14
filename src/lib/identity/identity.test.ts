@@ -145,28 +145,32 @@ describe("phase 1 identity foundation", () => {
     it("normalizes email uniqueness", async () => {
       const w = await world();
       assert.equal((await registerPatient(w.ctx, patientInput())).ok, true);
+      const emails = w.email.messages.length;
       const duplicate = await registerPatient(
         w.ctx,
         patientInput({ email: "Asha@Example.test", mobile: "9876543211" }),
       );
-      assert.equal(duplicate.ok, false);
-      if (!duplicate.ok) {
-        assert.equal(duplicate.message, SAFE_MESSAGES.registrationFailure);
-        assert.doesNotMatch(duplicate.message, /patient/i);
-      }
+      assert.equal(duplicate.ok, true);
+      const rows = await w.ctx.db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.emailNormalized, "asha@example.test"));
+      assert.equal(rows.length, 1);
+      assert.equal(w.email.messages.length, emails);
     });
 
     it("rejects duplicate mobile with a privacy-safe message", async () => {
       const w = await world();
       assert.equal((await registerPatient(w.ctx, patientInput())).ok, true);
+      const emails = w.email.messages.length;
       const duplicate = await registerPatient(
         w.ctx,
         patientInput({ email: "other@example.test", mobile: "+91 98765 43210" }),
       );
-      assert.equal(duplicate.ok, false);
-      if (!duplicate.ok) {
-        assert.equal(duplicate.message, SAFE_MESSAGES.registrationFailure);
-      }
+      assert.equal(duplicate.ok, true);
+      const rows = await w.ctx.db.select({ id: users.id }).from(users);
+      assert.equal(rows.length, 1);
+      assert.equal(w.email.messages.length, emails);
     });
 
     it("rejects invalid input", async () => {
@@ -338,6 +342,30 @@ describe("phase 1 identity foundation", () => {
         ip: "203.0.113.10",
       });
       assert.equal(expired.ok, false);
+    });
+
+    it("rate-limits OTP verification before revealing whether the account is pending", async () => {
+      const w = await world();
+      for (let index = 0; index < IDENTITY_RATE_LIMITS.otpVerifyIp.max; index += 1) {
+        const result = await verifyPhoneOtpAndActivate(w.ctx, {
+          email: "nobody@example.test",
+          code: "000000",
+          ip: "198.51.100.77",
+        });
+        assert.equal(result.ok, false);
+        if (!result.ok) {
+          assert.equal(result.message, SAFE_MESSAGES.otpInvalid);
+        }
+      }
+      const limited = await verifyPhoneOtpAndActivate(w.ctx, {
+        email: "nobody@example.test",
+        code: "000000",
+        ip: "198.51.100.77",
+      });
+      assert.equal(limited.ok, false);
+      if (!limited.ok) {
+        assert.equal(limited.code, "RATE_LIMITED");
+      }
     });
 
     it("enforces OTP attempt limits and resend cooldown", async () => {
@@ -545,6 +573,8 @@ describe("phase 1 identity foundation", () => {
       if (!disabled.ok) {
         assert.equal(disabled.code, "DISABLED");
       }
+      const stale = await readSession(w.ctx, ok.token);
+      assert.equal(stale, null);
     });
 
     it("rate limits login attempts", async () => {
@@ -658,6 +688,16 @@ describe("phase 1 identity foundation", () => {
       assert.equal(missing.ok, true);
       assert.equal(missing.message, SAFE_MESSAGES.passwordResetAccepted);
 
+      const loginBeforeReset = await loginWithPassword(w.ctx, {
+        email: "asha@example.test",
+        password: STRONG_PASSWORD,
+        ip: "203.0.113.9",
+      });
+      assert.equal(loginBeforeReset.ok, true);
+      if (!loginBeforeReset.ok) {
+        return;
+      }
+
       const requested = await requestPasswordReset(w.ctx, {
         email: "asha@example.test",
         ip: "203.0.113.11",
@@ -671,6 +711,8 @@ describe("phase 1 identity foundation", () => {
         passwordConfirm: "new-correct-horse-1",
       });
       assert.equal(reset.ok, true);
+      assert.equal("token" in reset, false);
+      assert.equal(await readSession(w.ctx, loginBeforeReset.token), null);
       const reused = await resetPasswordWithToken(w.ctx, {
         token,
         password: "another-correct-horse",
@@ -1052,6 +1094,16 @@ describe("phase 1 identity foundation", () => {
       assert.equal(replayLogin.ok, false);
       const completed = await readSession(w.ctx, login.token);
       assert.equal(completed?.mfaCompleted, true);
+      const burned = await consumeRecoveryCode(w.ctx, {
+        userId: provisioned.userId,
+        sessionId: login.sessionId,
+        code: confirmed.recoveryCodes[0],
+        ip: "203.0.113.10",
+      });
+      assert.equal(burned.ok, false);
+      if (!burned.ok) {
+        assert.equal(burned.message, SAFE_MESSAGES.unauthorized);
+      }
 
       const login2 = await loginWithPassword(w.ctx, {
         email: "vandana@example.test",

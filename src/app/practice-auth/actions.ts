@@ -49,6 +49,9 @@ async function requirePendingMfaSession(role: RoleName) {
   if (!principal.roles.includes(role)) {
     return { ok: false as const, message: SAFE_MESSAGES.unauthorized };
   }
+  if (session.mfaCompleted) {
+    return { ok: false as const, message: SAFE_MESSAGES.unauthorized };
+  }
   return { ok: true as const, ctx: identity.ctx, session, principal };
 }
 
