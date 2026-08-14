@@ -1,13 +1,13 @@
 # Phase 2 Appointment Engine
 
-**Status:** Phase 2E implemented in code; **not** a production launch  
+**Status:** Phase 2F implemented in code; **not** a production launch  
 **Date:** 14 August 2026  
 **Product:** Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice  
 **Tagline:** Your Mental Well-being Matters.
 
-This document describes the appointment domain through **Phase 2E (Patient Appointment Portal)**. It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
+This document describes the appointment domain through **Phase 2F (Notification Architecture)**. It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
 
-**PRODUCTION remains BLOCKED.** Patient registration stays disabled. This phase does not deploy, choose a PostgreSQL vendor, enable OTP, or send appointment notifications.
+**PRODUCTION remains BLOCKED.** Patient registration stays disabled. This phase does not deploy, choose a PostgreSQL vendor, enable OTP, or activate production SMTP/Twilio WhatsApp.
 
 ---
 
@@ -19,8 +19,9 @@ This document describes the appointment domain through **Phase 2E (Patient Appoi
 | Phase 2B — server-side availability and slot engine | Present in `src/lib/appointments/availability.ts` |
 | Phase 2C — secure appointment booking workflow | Present in `src/lib/appointments/booking.ts` |
 | Phase 2D — psychologist appointment management and lifecycle | Present in `src/lib/appointments/lifecycle.ts` |
-| Phase 2E — patient appointment portal and history | **This document** |
-| Notifications (email / WhatsApp / reminders) | **Not implemented** |
+| Phase 2E — patient appointment portal and history | Present in `src/lib/appointments/patient-portal.ts` |
+| Phase 2F — notification outbox, email, Twilio WhatsApp | **This document** |
+| Production notification activation | **Not done** — SMTP/Twilio secrets, templates, opt-in legal review, worker hosting |
 
 ---
 
@@ -34,7 +35,8 @@ PostgreSQL is the system of record. Tables:
 - `availability_exceptions` — `FULL_DAY_CLOSURE`, `CUSTOM_AVAILABILITY`, `UNAVAILABLE_PERIOD`
 - `appointments` — public id `APT-…`, `timestamptz` instants, occupied range including buffers, optimistic `version`
 - `appointment_history` — append-only (trigger rejects `UPDATE`/`DELETE`)
-- `appointment_notification_outbox` — foundation only; **no sender in Phase 2**
+- `appointment_notification_outbox` — durable domain events; dispatcher expands to deliveries
+- `appointment_notification_deliveries` / `appointment_notification_attempts` — Phase 2F channel attempts
 - `booking_idempotency` — Phase 2C; scoped to authenticated user + `appointment.request`
 
 `btree_gist` is created so `EXCLUDE USING gist` can combine `psychologist_user_id =` with `tstzrange(occupied_starts_at, occupied_ends_at, '[)') &&` for blocking statuses. PGlite test runtimes may skip the constraint; occupancy queries still use `tstzrange`.
@@ -554,17 +556,103 @@ Patient cancel vs psychologist cancel: one winner. Patient reschedule request vs
 
 ### Unresolved policy (still OPEN)
 
-Same as Phase 2D: cancellation window production value, reschedule notice, practice hours, duration, buffers, notification provider.
+Same as Phase 2D: cancellation window production value, reschedule notice, practice hours, duration, buffers. Notification production activation is Phase 2F and remains **OPEN**.
+
+---
+
+## Phase 2F — Notification Architecture
+
+Notification delivery is **never** part of the appointment transaction.
+
+```text
+DOMAIN TRANSACTION (appointment + history + audit + outbox)
+        ↓ commit
+notification_outbox
+        ↓
+NotificationDispatcher (claim / retry / dead-letter)
+        ↓
+EmailService          WhatsAppService
+        ↓                      ↓
+Nodemailer SMTP       TwilioWhatsAppProvider
+                              ↓
+                     Twilio WhatsApp Business API
+```
+
+If SMTP or Twilio is down, times out, or returns an error, the appointment row stays committed. If the outbox insert fails, the appointment transaction rolls back.
+
+There is no public `POST /api/send-notification` route. Outbox rows are created only by authorized booking/lifecycle mutations. Recipients, channels, templates, and Twilio destinations cannot be supplied by the client.
+
+### Outbox states
+
+| Status | Meaning |
+|---|---|
+| `PENDING` | Written by the domain transaction; not fully processed |
+| `PROCESSING` | Reserved for claimed work / compatibility |
+| `RETRY` | Transient provider failure; `next_attempt_at` is set |
+| `SENT` | All deliveries are `SENT` or `SKIPPED` (or the event is policy-skipped) |
+| `FAILED` | Retained on the CHECK constraint; the dispatcher writes `DEAD` |
+| `DEAD` | Permanent failure or retry exhaustion (dead-letter) |
+
+Deliveries also use `SKIPPED` when email is unverified, WhatsApp opt-in is missing, or a channel is disabled.
+
+Processing is **at-least-once**. Exactly-once delivery is not guaranteed. Dedup is `(outbox_id, channel, recipient_role)` plus a stable delivery id used as the Twilio `I-Twilio-Idempotency-Token`. Provider timeouts after a successful accept can still duplicate; tests assert worker-restart safety after a recorded `SENT`.
+
+### Dispatcher / worker
+
+`processNotificationBatch` expands due outbox rows, claims deliveries with `SELECT … FOR UPDATE SKIP LOCKED`, sends independently, and records attempts. A crashed worker leaves `PROCESSING` + `locked_at`; another worker may reclaim after the lease.
+
+Hosting is compatible with scheduled/serverless invocation. `npm run notifications:process` is a **development/test** command (refuses `NODE_ENV=production`). Production worker hosting (O15) remains **OPEN**. Batch size, lease, backoff, and max attempts are configurable; production values are not an approved SLA.
+
+### Email
+
+Appointment code does not import Nodemailer. The dispatcher calls `EmailService.send` through a classified adapter with an explicit timeout. Existing `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`, and `SMTP_FROM_NAME` are reused. `EMAIL_PROVIDER=test|mock` is refused in production. Unverified patient/psychologist email is not used (`email_verified_at` required).
+
+### Twilio WhatsApp
+
+`WhatsAppService.sendTemplateMessage` is the only WhatsApp port. `TwilioWhatsAppProvider` is the infrastructure adapter (HTTP to Twilio Messages + ContentSid). Appointment services do not import Twilio.
+
+Production remains fail-closed:
+
+- `TWILIO_WHATSAPP_ENABLED=false` by default
+- missing Account SID, Auth Token, or sender → not configured
+- missing Content SID → `MISSING_TEMPLATE` (permanent)
+- `WHATSAPP_PROVIDER=test|mock|sandbox` refused in production
+- Twilio Sandbox is not a production sender
+
+Verified mobile is **not** consent. WhatsApp is created only when dispatch is enabled **and** `patient_profiles.whatsapp_notifications_enabled` with a later opt-in than opt-out. Destination is the authenticated profile `mobile_normalized`, never a client-supplied number. No SMS fallback, no `wa.me`, no Bitly. The public site WhatsApp CTA is unchanged and is not this dispatcher.
+
+Twilio Message SID is stored as `provider_message_id`. Auth tokens and authorization headers are not stored or logged.
+
+### Templates
+
+Central registry in `src/lib/notifications/templates.ts`. Logical keys such as `appointment_confirmed` are mapped to Twilio Content SIDs only inside the Twilio adapter (`TWILIO_TEMPLATE_*`). Missing variables do not send. Subjects are `Appointment update from Dr. Vandana`. Copy is operational and must not include diagnosis, symptoms, notes, assessment, or treatment detail. Psychologist rejection notes are not sent to patients.
+
+Completion and no-show events are written to the outbox; email/WhatsApp stay off unless `NOTIFICATION_COMPLETED_EMAIL` / `NOTIFICATION_NO_SHOW_EMAIL` are explicitly true. That communication policy is **OPEN**.
+
+### Recipients
+
+Patient and psychologist only. Super Admin and staff are not notified. Psychologist WhatsApp is not sent (no psychologist WhatsApp consent model).
+
+### Privacy, logs, retention
+
+Payloads hold public appointment id, type, times, and timezone — not emails, phones, OTPs, passwords, MFA, session tokens, or clinical content. Logs use event key, channel, role, error category, and latency. Retention of delivery/attempt rows is **OPEN** (O10). Production copy, WhatsApp opt-in wording, processor terms, and Twilio/Meta cross-border processing still require legal/privacy review (O11, O18). This implementation does not claim DPDP, HIPAA, or medical compliance.
+
+Twilio/Meta WhatsApp **pricing is not encoded**. Recheck current Twilio pricing before production activation (noted 14 August 2026; no price figures recorded).
+
+### Observability
+
+Batch logs: expanded, claimed, sent, retry, dead, skipped. Provider latency and normalized error codes. Dead deliveries may write `NOTIFICATION_DELIVERY_DEAD` audit rows (channel, role, error code only). Consent changes write `PATIENT_WHATSAPP_OPT_IN` / `PATIENT_WHATSAPP_OPT_OUT`.
 
 ---
 
 ## What later phases still do not implement
 
-Phase 2E added the patient appointment portal. Still not implemented:
+Phase 2F added asynchronous email and Twilio WhatsApp dispatch. Still not implemented:
 
-- Email / WhatsApp / SMS / reminders / push
-- Super Admin appointment console
+- Super Admin appointment console or provider-secret UI
 - Clinical records, documents, payments, teleconsultation, calendar sync
+- Marketing, bulk, or promotional WhatsApp
+- Production worker scheduling
 
 The public `/book-appointment` enquiry form is unchanged and is **not** this engine.
 
@@ -580,6 +668,8 @@ Appointment accounts and booking will require updates to Privacy Policy, Terms, 
 
 Phase 1C gates remain: PostgreSQL provider/region, OTP provider, SMTP, privacy/terms/consent, MFA recovery, production secrets, backups, monitoring, deployment verification, security review, `PATIENT_REGISTRATION_ENABLED=false`.
 
+Phase 2F adds: Twilio production account/sender/template approval, WhatsApp opt-in legal wording, notification retention, worker hosting, and data-residency review for Twilio/Meta. Notification infrastructure is implemented; production provider activation is **not** complete.
+
 ---
 
 ## Testing
@@ -590,7 +680,8 @@ Phase 1C gates remain: PostgreSQL provider/region, OTP provider, SMTP, privacy/t
 - Lifecycle transitions, dashboard filters, IDOR, history immutability, rollback
 - Patient portal ownership, filters, pagination, cancellation, reschedule request, and IDOR
 - PGlite concurrent booking, lifecycle, and patient-portal tests
-- Optional PostgreSQL 16 concurrent tests when `APPOINTMENT_PG_URL` is set (CI job `appointment-pg-concurrency`)
+- Dispatcher claim/retry/dead-letter, email/Twilio failure, opt-in, privacy, and isolation tests
+- Optional PostgreSQL 16 concurrent tests when `APPOINTMENT_PG_URL` is set (CI job `appointment-pg-concurrency`, including notification claiming)
 - Identity tests remain in the suite
 
-Run: `npm test` (includes `src/lib/appointments/**/*.test.ts`).
+Run: `npm test` (includes `src/lib/appointments/**/*.test.ts` and `src/lib/notifications/**/*.test.ts`). Dev/test dispatch: `npm run notifications:process`.

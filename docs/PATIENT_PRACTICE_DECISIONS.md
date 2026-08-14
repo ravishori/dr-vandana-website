@@ -217,7 +217,7 @@ Cancellation **policy** (windows, approval): **OPEN**. Architecture must be conf
 | Pattern | Transactional outbox in the **same database transaction** as the appointment change | **APPROVED** |
 | Appointment commit vs SMTP/WhatsApp failure | Appointment must still commit | **APPROVED** |
 | Email | Wrap existing Nodemailer SMTP behind `EmailService` | **APPROVED** |
-| WhatsApp | WhatsApp Business API / approved BSP — **not** `wa.me`, **not** Bitly | **APPROVED** (channel); vendor **OPEN** |
+| WhatsApp | WhatsApp Business API via **Twilio** adapter — **not** `wa.me`, **not** Bitly | **APPROVED** (channel + Twilio direction); production activation **OPEN** |
 | Copy | No diagnosis, notes, condition, assessment, or sensitive document detail in email or WhatsApp (including subject/preview) | **APPROVED** |
 | Production mocks | `OTP_PROVIDER=mock` or mocked WhatsApp `ok: true` forbidden in production | **APPROVED** |
 
@@ -315,7 +315,7 @@ Hard-coded public contact/hours/DIGIPIN in `src/data` migrate **during a future 
 | O2 | PostgreSQL region | India preference; not selected |
 | O3 | ORM / database client | See §5 recommendation; not locked |
 | O4 | OTP / SMS vendor | India delivery, OTP, rate limits, receipts; provider-agnostic architecture |
-| O5 | WhatsApp BSP / provider | Business API; templates need approval |
+| O5 | WhatsApp BSP / provider | **Twilio** is the approved adapter direction. Production account, sender, templates, and activation remain **OPEN** |
 | O6 | Object storage vendor | Extension point only; **do not implement** while documents are deferred |
 | O7 | Practice working hours | Configurable later; do not invent hours now |
 | O8 | Consultation duration | Configurable types; do not assume 30/45/60 |
@@ -541,7 +541,7 @@ This milestone did **not** approve open scheduling policy, notification provider
 | Initial durable status | `PENDING` (history records `REQUESTED`) |
 | Availability vs booking | Availability is **advisory**; transaction + exclusion constraint are authoritative |
 | Idempotency | User + `appointment.request` + hashed key |
-| Notifications | Outbox row only; **email / WhatsApp / SMS NOT IMPLEMENTED** |
+| Notifications | Phase 2F dispatcher implemented; production email/WhatsApp activation **OPEN** |
 | One-appointment-per-day | **Not implemented** (not approved) |
 | Multi-psychologist coexistence | Not a Phase 2 product feature; occupancy is per `psychologist_user_id` |
 | Cancellation / reschedule / complete / no-show | **Implemented in Phase 2D** (policies remain **OPEN**) |
@@ -562,7 +562,7 @@ This milestone did **not** approve cancellation windows, reschedule notice, or n
 | Reschedule | Immediate `CONFIRMED`; history `RESCHEDULED`; window **OPEN** |
 | Super Admin appointment access | **Not granted** |
 | Patient appointment history UI | **Implemented in Phase 2E** |
-| Notifications | Outbox rows only; **email / WhatsApp / SMS NOT IMPLEMENTED** |
+| Notifications | Phase 2F dispatcher implemented; production email/WhatsApp activation **OPEN** |
 
 ---
 
@@ -578,7 +578,27 @@ This milestone did **not** approve cancellation windows, reschedule notice, or n
 | Patient cancellation UI | Calls Phase 2D `cancelAppointment`; policy **OPEN** |
 | Patient reschedule | `REQUEST_RESCHEDULE` (proposed slot); not immediate `CONFIRMED`; window **OPEN** |
 | Super Admin appointment access | **Not granted** |
-| Notifications | Outbox rows only; **email / WhatsApp / SMS NOT IMPLEMENTED** |
+| Notifications | Phase 2F dispatcher implemented; production email/WhatsApp activation **OPEN** |
+
+---
+
+## 17. Phase 2F notification notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md` (Phase 2F — Notification Architecture). **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**. `TWILIO_WHATSAPP_ENABLED` remains **false**.
+
+This milestone implemented transactional outbox dispatch, SMTP email, and a Twilio WhatsApp adapter. It did **not** activate production providers, approve legal copy, or close data-residency/retention decisions.
+
+| Topic | Status |
+|---|---|
+| Outbox + dispatcher | Implemented; appointment transactions do not call providers |
+| Email | `EmailService` / Nodemailer SMTP; production SMTP config **OPEN** |
+| WhatsApp | `WhatsAppService` → `TwilioWhatsAppProvider`; production disabled |
+| WhatsApp opt-in | Schema + patient account checkbox; default off; legal wording **OPEN** |
+| Completion / no-show mail | Events exist; delivery flags default **false** (policy **OPEN**) |
+| Worker hosting | Dispatcher + `npm run notifications:process` (dev/test); O15 **OPEN** |
+| Retention | Notification log retention **OPEN** (O10) |
+| Data residency / Twilio-Meta transfers | **OPEN** (O18) |
+| Twilio/Meta pricing | Operational concern only; not encoded. Recheck current Twilio WhatsApp pricing before activation (noted 14 August 2026; no price figures recorded) |
 
 ---
 
