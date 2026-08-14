@@ -35,7 +35,6 @@ export default async function UnderstandingCounsellingPage() {
     "@type": "FAQPage",
     mainEntity: faqs
       .filter((faq) => !faq.emergencyRelated)
-      .slice(0, 20)
       .map((faq) => ({
         "@type": "Question",
         name: faq.question,

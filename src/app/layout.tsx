@@ -75,7 +75,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="en-IN"
       data-theme={DEFAULT_THEME_ID}
       className={`${plusJakartaSans.variable} ${playfairDisplay.variable} h-full antialiased`}
       suppressHydrationWarning

@@ -43,7 +43,7 @@ export const practiceContact = {
   phoneTelHref: "tel:+919322369829",
   whatsappUrl: "https://wa.me/919322369829",
   /** Primary instant booking CTA (Bitly). Do not silently replace. */
-  bookingUrl: "http://bit.ly/4c2u9te",
+  bookingUrl: "https://bit.ly/4c2u9te",
   labels: {
     visitPractice: "Visit the Practice",
     practiceAddress: "Practice Address",

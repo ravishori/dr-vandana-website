@@ -43,20 +43,22 @@ export function FAQExplorer({ faqs }: FAQExplorerProps) {
         </label>
         <input
           id={searchId}
+          type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search your question…"
           className={appointmentControlClassName}
           autoComplete="off"
           enterKeyHint="search"
+          aria-describedby={`${searchId}-privacy`}
         />
-        <p className="text-text-muted text-xs">
+        <p id={`${searchId}-privacy`} className="text-text-muted text-xs">
           Search stays on this device. Queries are not sent to analytics.
         </p>
       </div>
 
       <div
-        role="tablist"
+        role="group"
         aria-label="FAQ categories"
         className="flex gap-2 overflow-x-auto pb-1"
       >
@@ -203,8 +205,7 @@ function CategoryChip({
   return (
     <button
       type="button"
-      role="tab"
-      aria-selected={selected}
+      aria-pressed={selected}
       onClick={onClick}
       className={cn(
         "shrink-0 rounded-full border px-3 py-2 text-sm whitespace-nowrap",

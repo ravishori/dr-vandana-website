@@ -129,6 +129,12 @@ export function PublicQuestionForm() {
                 className={appointmentControlClassName}
                 value={values.email}
                 autoComplete="email"
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={
+                  errors.email
+                    ? `${formId}-email-error ${formId}-email-helper`
+                    : `${formId}-email-helper`
+                }
                 onChange={(event) => update("email", event.target.value)}
               />
             </AppointmentField>
@@ -142,6 +148,10 @@ export function PublicQuestionForm() {
                 id={`${formId}-category`}
                 className={appointmentControlClassName}
                 value={values.category}
+                aria-invalid={Boolean(errors.category)}
+                aria-describedby={
+                  errors.category ? `${formId}-category-error` : undefined
+                }
                 onChange={(event) => update("category", event.target.value)}
               >
                 <option value="">Select a category</option>
@@ -186,6 +196,10 @@ export function PublicQuestionForm() {
                 rows={7}
                 className={cn(appointmentControlClassName, "resize-y")}
                 value={values.question}
+                aria-invalid={Boolean(errors.question)}
+                aria-describedby={
+                  errors.question ? `${formId}-question-error` : undefined
+                }
                 onChange={(event) => update("question", event.target.value)}
               />
             </AppointmentField>
@@ -196,6 +210,7 @@ export function PublicQuestionForm() {
                 type="checkbox"
                 className="mt-1 h-4 w-4"
                 checked={values.consentGiven}
+                aria-invalid={Boolean(errors.consentGiven)}
                 onChange={(event) => update("consentGiven", event.target.checked)}
               />
               <label htmlFor={`${formId}-consent`} className="text-sm leading-relaxed">
