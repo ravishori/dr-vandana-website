@@ -69,7 +69,7 @@ export function PatientBookingForm({
           –{formatSlot(confirmation.end, confirmation.timezone)} ({confirmation.timezone})
         </p>
         <p>Status: appointment request pending. This is not a confirmed appointment.</p>
-        <p>No email, WhatsApp, or SMS notification is sent in this phase.</p>
+        <p>Appointment updates may be emailed after this request is recorded. WhatsApp messages are sent only with explicit opt-in and when the practice has activated WhatsApp.</p>
         <p>
           <Link className="underline" href="/patient/appointments">
             View my appointments

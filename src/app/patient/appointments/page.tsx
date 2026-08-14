@@ -78,8 +78,10 @@ export default async function PatientAppointmentsPage({
           <h1 className="mt-4">Your appointments</h1>
           <p className="text-text-muted mt-3 max-w-2xl text-sm leading-relaxed">
             Times are shown in IST (Asia/Kolkata). A pending request is not a
-            confirmed appointment. No email, WhatsApp, or SMS is sent in this
-            phase.
+            confirmed appointment. Email updates are queued after changes when
+            your email is verified. WhatsApp appointment messages require
+            explicit opt-in on your account page and stay disabled until the
+            practice activates them.
           </p>
           <PatientAppointmentsNav active="home" />
           <p className="mt-4 text-sm">

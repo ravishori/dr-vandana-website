@@ -118,7 +118,9 @@ export default async function PatientAppointmentDetailPage({
           </ol>
         )}
         <p className="text-text-muted mt-8 text-sm">
-          No email, WhatsApp, or SMS notification is sent in this phase.
+          Appointment updates may be emailed when your email is verified.
+          WhatsApp appointment messages require explicit opt-in and remain
+          disabled until the practice activates them.
         </p>
         <p className="mt-6 text-sm">
           <Link className="underline" href="/patient/appointments">
