@@ -301,6 +301,8 @@ describe("notification dispatcher", () => {
     const first = await claimDeliveries(dispatcher);
     const second = await claimDeliveries(dispatcher);
     assert.ok(first.length > 0);
+    assert.ok(typeof first[0]?.id === "string");
+    assert.ok(first[0]?.lockedAt instanceof Date);
     assert.equal(second.length, 0);
   });
 
@@ -322,6 +324,34 @@ describe("notification dispatcher", () => {
     w.advanceMs(50);
     const recovered = await claimDeliveries(dispatcher);
     assert.equal(recovered.length, claimed.length);
+  });
+
+  it("does not let a late worker overwrite SENT", async () => {
+    const w = await world();
+    await istBook(w);
+    const email = createRecordingEmailSender();
+    const dispatcher = deps(w, { email });
+    await processNotificationBatch({
+      ...dispatcher,
+      settings: { ...dispatcher.settings, batchSize: 0 },
+    });
+    const claimed = await claimDeliveries(dispatcher);
+    assert.ok(claimed.length > 0);
+    await w.ctx.db
+      .update(appointmentNotificationDeliveries)
+      .set({
+        status: "SENT",
+        lockedAt: null,
+        sentAt: w.ctx.now(),
+      })
+      .where(eq(appointmentNotificationDeliveries.id, claimed[0]!.id));
+    await processNotificationBatch(dispatcher);
+    const [row] = await w.ctx.db
+      .select()
+      .from(appointmentNotificationDeliveries)
+      .where(eq(appointmentNotificationDeliveries.id, claimed[0]!.id));
+    assert.equal(row.status, "SENT");
+    assert.equal(email.sent.length, 0);
   });
 
   it("keeps booking, confirm, cancel, and reschedule successful when providers fail", async () => {

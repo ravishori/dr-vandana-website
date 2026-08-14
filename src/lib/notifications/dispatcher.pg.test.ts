@@ -169,7 +169,9 @@ describe("phase 2F postgres notification claim concurrency", { skip: !enabled },
         settings: { ...TEST_NOTIFICATION_SETTINGS, batchSize: 50 },
       }),
     ]);
-    const intersection = claimedA.filter((id) => claimedB.includes(id));
+    const intersection = claimedA.filter((item) =>
+      claimedB.some((other) => other.id === item.id),
+    );
     assert.equal(intersection.length, 0);
     assert.equal(claimedA.length + claimedB.length, pending.length);
   });

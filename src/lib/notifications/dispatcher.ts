@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import {
@@ -87,9 +87,9 @@ export async function processNotificationBatch(
   stats.expanded = await expandDueOutbox(deps);
   const claimed = await claimDeliveries(deps);
   stats.claimed = claimed.length;
-  for (const deliveryId of claimed) {
+  for (const item of claimed) {
     try {
-      const result = await processClaimedDelivery(deps, deliveryId);
+      const result = await processClaimedDelivery(deps, item.id, item.lockedAt);
       stats[result] += 1;
     } catch {
       logStructured("ERROR", {
@@ -217,7 +217,7 @@ async function insertPlannedDeliveries(
 
 export async function claimDeliveries(
   deps: NotificationDispatcherDeps,
-): Promise<string[]> {
+): Promise<{ id: string; lockedAt: Date }[]> {
   const now = deps.now();
   const leaseExpired = new Date(now.getTime() - deps.settings.leaseMs);
   return deps.db.transaction(async (tx) => {
@@ -245,21 +245,28 @@ export async function claimDeliveries(
     if (ids.length === 0) {
       return [];
     }
-    await tx
+    const claimed = await tx
       .update(appointmentNotificationDeliveries)
       .set({
         status: "PROCESSING",
         lockedAt: now,
         updatedAt: now,
       })
-      .where(inArray(appointmentNotificationDeliveries.id, ids));
-    return ids;
+      .where(inArray(appointmentNotificationDeliveries.id, ids))
+      .returning({
+        id: appointmentNotificationDeliveries.id,
+        lockedAt: appointmentNotificationDeliveries.lockedAt,
+      });
+    return claimed
+      .filter((row): row is { id: string; lockedAt: Date } => Boolean(row.lockedAt))
+      .map((row) => ({ id: row.id, lockedAt: row.lockedAt }));
   });
 }
 
 async function processClaimedDelivery(
   deps: NotificationDispatcherDeps,
   deliveryId: string,
+  claimedLockedAt: Date,
 ): Promise<"sent" | "retry" | "dead" | "skipped"> {
   const now = deps.now();
   const [delivery] = await deps.db
@@ -277,13 +284,20 @@ async function processClaimedDelivery(
         ? "skipped"
         : "dead";
   }
+  if (
+    delivery.status !== "PROCESSING" ||
+    !delivery.lockedAt ||
+    delivery.lockedAt.getTime() !== claimedLockedAt.getTime()
+  ) {
+    return "skipped";
+  }
   const [outbox] = await deps.db
     .select()
     .from(appointmentNotificationOutbox)
     .where(eq(appointmentNotificationOutbox.id, delivery.outboxId))
     .limit(1);
-  if (!outbox?.appointmentId) {
-    return finalizeDelivery(deps, delivery, {
+    if (!outbox?.appointmentId) {
+    return finalizeDelivery(deps, delivery, claimedLockedAt, {
       result: "DEAD",
       errorCode: "INVALID_REQUEST",
       durationMs: 0,
@@ -291,7 +305,7 @@ async function processClaimedDelivery(
   }
   const context = await loadDeliveryContext(deps.db, outbox.appointmentId);
   if (!context) {
-    return finalizeDelivery(deps, delivery, {
+    return finalizeDelivery(deps, delivery, claimedLockedAt, {
       result: "DEAD",
       errorCode: "INVALID_REQUEST",
       durationMs: 0,
@@ -299,7 +313,7 @@ async function processClaimedDelivery(
   }
   const skip = await classifySkip(deps, delivery, context);
   if (skip) {
-    return finalizeDelivery(deps, delivery, {
+    return finalizeDelivery(deps, delivery, claimedLockedAt, {
       result: "SKIPPED",
       errorCode: skip,
       durationMs: 0,
@@ -311,7 +325,7 @@ async function processClaimedDelivery(
     vars,
   );
   if (!rendered.ok) {
-    return finalizeDelivery(deps, delivery, {
+    return finalizeDelivery(deps, delivery, claimedLockedAt, {
       result: "DEAD",
       errorCode: rendered.code,
       durationMs: 0,
@@ -348,7 +362,7 @@ async function processClaimedDelivery(
   }
   const durationMs = Date.now() - started;
   if (sendResult.ok) {
-    const result = await finalizeDelivery(deps, delivery, {
+    const result = await finalizeDelivery(deps, delivery, claimedLockedAt, {
       result: "SENT",
       providerMessageId: sendResult.providerMessageId,
       durationMs,
@@ -377,7 +391,7 @@ async function processClaimedDelivery(
       providerMessageId: null,
       durationMs,
     });
-    await deps.db
+    const updated = await deps.db
       .update(appointmentNotificationDeliveries)
       .set({
         status: "RETRY",
@@ -387,7 +401,17 @@ async function processClaimedDelivery(
         lastErrorCode: sendResult.code,
         updatedAt: now,
       })
-      .where(eq(appointmentNotificationDeliveries.id, delivery.id));
+      .where(
+        and(
+          eq(appointmentNotificationDeliveries.id, delivery.id),
+          eq(appointmentNotificationDeliveries.status, "PROCESSING"),
+          eq(appointmentNotificationDeliveries.lockedAt, claimedLockedAt),
+        ),
+      )
+      .returning({ id: appointmentNotificationDeliveries.id });
+    if (updated.length === 0) {
+      return "skipped";
+    }
     await rollupOutbox(deps, delivery.outboxId);
     logStructured("WARNING", {
       operation: "notificationDelivery",
@@ -400,7 +424,7 @@ async function processClaimedDelivery(
     });
     return "retry";
   }
-  return finalizeDelivery(deps, delivery, {
+  return finalizeDelivery(deps, delivery, claimedLockedAt, {
     result: "DEAD",
     errorCode: sendResult.code,
     durationMs,
@@ -543,6 +567,7 @@ function buildTemplateVariables(
 async function finalizeDelivery(
   deps: NotificationDispatcherDeps,
   delivery: DeliveryRow,
+  claimedLockedAt: Date,
   input: {
     result: "SENT" | "DEAD" | "SKIPPED";
     errorCode?: NotificationErrorCode;
@@ -552,17 +577,7 @@ async function finalizeDelivery(
 ): Promise<"sent" | "dead" | "skipped"> {
   const now = deps.now();
   const attemptCount = delivery.attemptCount + (input.result === "SKIPPED" ? 0 : 1);
-  await deps.db.insert(appointmentNotificationAttempts).values({
-    id: generateUuid(),
-    deliveryId: delivery.id,
-    attemptNumber: Math.max(attemptCount, 1),
-    attemptedAt: now,
-    result: input.result,
-    errorCode: input.errorCode ?? null,
-    providerMessageId: input.providerMessageId ?? null,
-    durationMs: input.durationMs,
-  });
-  await deps.db
+  const updated = await deps.db
     .update(appointmentNotificationDeliveries)
     .set({
       status: input.result,
@@ -574,7 +589,27 @@ async function finalizeDelivery(
       lastErrorCode: input.errorCode ?? delivery.lastErrorCode,
       updatedAt: now,
     })
-    .where(eq(appointmentNotificationDeliveries.id, delivery.id));
+    .where(
+      and(
+        eq(appointmentNotificationDeliveries.id, delivery.id),
+        eq(appointmentNotificationDeliveries.status, "PROCESSING"),
+        eq(appointmentNotificationDeliveries.lockedAt, claimedLockedAt),
+      ),
+    )
+    .returning({ id: appointmentNotificationDeliveries.id });
+  if (updated.length === 0) {
+    return "skipped";
+  }
+  await deps.db.insert(appointmentNotificationAttempts).values({
+    id: generateUuid(),
+    deliveryId: delivery.id,
+    attemptNumber: Math.max(attemptCount, 1),
+    attemptedAt: now,
+    result: input.result,
+    errorCode: input.errorCode ?? null,
+    providerMessageId: input.providerMessageId ?? null,
+    durationMs: input.durationMs,
+  });
   await rollupOutbox(deps, delivery.outboxId);
   if (input.result === "DEAD" && deps.auditCtx) {
     await appendAuditLog(deps.auditCtx, {
