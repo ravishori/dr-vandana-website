@@ -28,6 +28,7 @@ import { createStaticConsentReader } from "@/lib/notifications/consent";
 import {
   claimDeliveries,
   processNotificationBatch,
+  rollupOutbox,
   type NotificationDispatcherDeps,
 } from "@/lib/notifications/dispatcher";
 import {
@@ -352,6 +353,25 @@ describe("notification dispatcher", () => {
       .where(eq(appointmentNotificationDeliveries.id, claimed[0]!.id));
     assert.equal(row.status, "SENT");
     assert.equal(email.sent.length, 0);
+  });
+
+  it("does not let a dead-letter rollup overwrite a SENT outbox", async () => {
+    const w = await world();
+    await istBook(w);
+    const dispatcher = deps(w, { email: createRecordingEmailSender() });
+    await processNotificationBatch(dispatcher);
+    const [outbox] = await w.ctx.db.select().from(appointmentNotificationOutbox);
+    assert.equal(outbox.status, "SENT");
+    await w.ctx.db
+      .update(appointmentNotificationDeliveries)
+      .set({ status: "DEAD", lastErrorCode: "TIMEOUT" })
+      .where(eq(appointmentNotificationDeliveries.outboxId, outbox.id));
+    await rollupOutbox(dispatcher, outbox.id);
+    const [after] = await w.ctx.db
+      .select()
+      .from(appointmentNotificationOutbox)
+      .where(eq(appointmentNotificationOutbox.id, outbox.id));
+    assert.equal(after.status, "SENT");
   });
 
   it("keeps booking, confirm, cancel, and reschedule successful when providers fail", async () => {

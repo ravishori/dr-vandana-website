@@ -559,6 +559,10 @@ describe("phase 2D appointment lifecycle", () => {
         booked.publicId,
       );
       assert.equal(stolenDetail.ok, false);
+      if (!stolenDetail.ok) {
+        assert.equal(stolenDetail.code, "NOT_FOUND");
+        assert.equal(stolenDetail.message, missing.message);
+      }
     });
 
     it("does not let a patient read the psychologist detail", async () => {
