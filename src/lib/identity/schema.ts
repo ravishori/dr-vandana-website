@@ -232,6 +232,7 @@ export const mfaCredentials = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     failedAttempts: integer("failed_attempts").notNull(),
     lockedUntil: timestamp("locked_until", { withTimezone: true }),
+    lastVerifiedStep: integer("last_verified_step"),
   },
   (table) => [uniqueIndex("mfa_credentials_user_id_uidx").on(table.userId)],
 );

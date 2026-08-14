@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, lt, or } from "drizzle-orm";
 import * as OTPAuth from "otpauth";
 
 import { appendAuditLog, recordSecurityEvent } from "@/lib/identity/audit";
@@ -12,12 +12,14 @@ import {
   hashWithSecret,
   isMfaKeyUsable,
 } from "@/lib/identity/crypto";
+import type { IdentityDb } from "@/lib/identity/db";
 import { IDENTITY_RATE_LIMITS } from "@/lib/identity/rate-limit";
 import { mfaCredentials, mfaRecoveryCodes, users } from "@/lib/identity/schema";
 import { markSessionMfaCompleted } from "@/lib/identity/sessions";
 import { userHasRole } from "@/lib/identity/principal";
 
 const ISSUER = "Dr. Vandana Practice";
+const TOTP_PERIOD_SECONDS = 30;
 
 function totpFromSecret(secretBase32: string, label: string): OTPAuth.TOTP {
   return new OTPAuth.TOTP({
@@ -25,9 +27,17 @@ function totpFromSecret(secretBase32: string, label: string): OTPAuth.TOTP {
     label,
     algorithm: "SHA1",
     digits: 6,
-    period: 30,
+    period: TOTP_PERIOD_SECONDS,
     secret: OTPAuth.Secret.fromBase32(secretBase32),
   });
+}
+
+function acceptedTotpStep(timestampMs: number, delta: number): number {
+  return Math.floor(timestampMs / (TOTP_PERIOD_SECONDS * 1000)) + delta;
+}
+
+function normalizeRecoveryCode(code: string): string {
+  return code.trim().toUpperCase();
 }
 
 export async function beginMfaEnrollment(
@@ -84,6 +94,7 @@ export async function beginMfaEnrollment(
         enrolledAt: null,
         failedAttempts: 0,
         lockedUntil: null,
+        lastVerifiedStep: null,
       })
       .where(eq(mfaCredentials.id, existing.id));
   } else {
@@ -95,6 +106,7 @@ export async function beginMfaEnrollment(
       createdAt: now,
       failedAttempts: 0,
       lockedUntil: null,
+      lastVerifiedStep: null,
     });
   }
   return {
@@ -112,7 +124,9 @@ async function hashRecoveryCodes(
   if (!secret) {
     throw new Error("AUTH_SESSION_SECRET_MISSING");
   }
-  return codes.map((code) => hashWithSecret(code, secret));
+  return codes.map((code) =>
+    hashWithSecret("mfa-recovery", normalizeRecoveryCode(code), secret),
+  );
 }
 
 export async function confirmMfaEnrollment(
@@ -146,10 +160,11 @@ export async function confirmMfaEnrollment(
     ctx.config.mfaEncryptionKey as string,
   );
   const totp = totpFromSecret(secretBase32, user.email);
+  const timestamp = input.timestamp ?? ctx.now().getTime();
   const delta = totp.validate({
     token: input.code.trim(),
     window: ctx.config.mfaStepWindow,
-    timestamp: input.timestamp ?? ctx.now().getTime(),
+    timestamp,
   });
   if (delta === null) {
     await recordSecurityEvent(ctx, {
@@ -159,30 +174,46 @@ export async function confirmMfaEnrollment(
     });
     return { ok: false, message: SAFE_MESSAGES.mfaInvalid };
   }
+  const acceptedStep = acceptedTotpStep(timestamp, delta);
 
   const recoveryCodes = Array.from({ length: ctx.config.recoveryCodeCount }, () =>
     generateRecoveryCode(),
   );
   const hashes = await hashRecoveryCodes(ctx, recoveryCodes);
   const now = ctx.now();
-  await ctx.db.transaction(async (tx) => {
-    await tx
-      .update(mfaCredentials)
-      .set({ enrolledAt: now, failedAttempts: 0, lockedUntil: null })
-      .where(eq(mfaCredentials.id, credential.id));
-    await tx
-      .delete(mfaRecoveryCodes)
-      .where(eq(mfaRecoveryCodes.userId, input.userId));
-    await tx.insert(mfaRecoveryCodes).values(
-      hashes.map((codeHash) => ({
-        id: generateUuid(),
-        userId: input.userId,
-        codeHash,
-        usedAt: null,
-        createdAt: now,
-      })),
-    );
-  });
+  try {
+    await ctx.db.transaction(async (tx) => {
+      const enrolled = await tx
+        .update(mfaCredentials)
+        .set({
+          enrolledAt: now,
+          failedAttempts: 0,
+          lockedUntil: null,
+          lastVerifiedStep: acceptedStep,
+        })
+        .where(
+          and(eq(mfaCredentials.id, credential.id), isNull(mfaCredentials.enrolledAt)),
+        )
+        .returning({ id: mfaCredentials.id });
+      if (enrolled.length === 0) {
+        throw new Error("MFA_ALREADY_ENROLLED");
+      }
+      await tx
+        .delete(mfaRecoveryCodes)
+        .where(eq(mfaRecoveryCodes.userId, input.userId));
+      await tx.insert(mfaRecoveryCodes).values(
+        hashes.map((codeHash) => ({
+          id: generateUuid(),
+          userId: input.userId,
+          codeHash,
+          usedAt: null,
+          createdAt: now,
+        })),
+      );
+    });
+  } catch {
+    return { ok: false, message: SAFE_MESSAGES.mfaInvalid };
+  }
   await recordSecurityEvent(ctx, {
     userId: input.userId,
     eventType: "MFA_ENABLED",
@@ -248,17 +279,54 @@ export async function verifyMfaChallenge(
     ctx.config.mfaEncryptionKey as string,
   );
   const totp = totpFromSecret(secretBase32, user.email);
+  const timestamp = input.timestamp ?? ctx.now().getTime();
   const delta = totp.validate({
     token: input.code.trim(),
     window: ctx.config.mfaStepWindow,
-    timestamp: input.timestamp ?? ctx.now().getTime(),
+    timestamp,
   });
   if (delta !== null) {
-    await ctx.db
-      .update(mfaCredentials)
-      .set({ failedAttempts: 0, lockedUntil: null })
-      .where(eq(mfaCredentials.id, credential.id));
-    await markSessionMfaCompleted(ctx, input.sessionId);
+    const acceptedStep = acceptedTotpStep(timestamp, delta);
+    try {
+      await ctx.db.transaction(async (tx) => {
+        const guarded = await tx
+          .update(mfaCredentials)
+          .set({
+            failedAttempts: 0,
+            lockedUntil: null,
+            lastVerifiedStep: acceptedStep,
+          })
+          .where(
+            and(
+              eq(mfaCredentials.id, credential.id),
+              or(
+                isNull(mfaCredentials.lastVerifiedStep),
+                lt(mfaCredentials.lastVerifiedStep, acceptedStep),
+              ),
+            ),
+          )
+          .returning({ id: mfaCredentials.id });
+        if (guarded.length === 0) {
+          throw new Error("MFA_REPLAY");
+        }
+        const inner: IdentityContext = { ...ctx, db: tx as IdentityDb };
+        const sessionOk = await markSessionMfaCompleted(
+          inner,
+          input.sessionId,
+          input.userId,
+        );
+        if (!sessionOk) {
+          throw new Error("MFA_SESSION_MISMATCH");
+        }
+      });
+    } catch {
+      await recordSecurityEvent(ctx, {
+        userId: input.userId,
+        eventType: "MFA_FAILURE",
+        metadata: { reason: "totp_replay_or_session" },
+      });
+      return { ok: false, message: SAFE_MESSAGES.mfaInvalid };
+    }
     return { ok: true };
   }
 
@@ -295,21 +363,37 @@ export async function consumeRecoveryCode(
     return { ok: false, message: SAFE_MESSAGES.rateLimited };
   }
   const presented = hashWithSecret(
-    input.code.trim().toUpperCase(),
+    "mfa-recovery",
+    normalizeRecoveryCode(input.code),
     ctx.config.sessionSecret,
   );
-  const [row] = await ctx.db
-    .select()
-    .from(mfaRecoveryCodes)
-    .where(
-      and(
-        eq(mfaRecoveryCodes.userId, input.userId),
-        eq(mfaRecoveryCodes.codeHash, presented),
-        isNull(mfaRecoveryCodes.usedAt),
-      ),
-    )
-    .limit(1);
-  if (!row) {
+  try {
+    await ctx.db.transaction(async (tx) => {
+      const consumed = await tx
+        .update(mfaRecoveryCodes)
+        .set({ usedAt: ctx.now() })
+        .where(
+          and(
+            eq(mfaRecoveryCodes.userId, input.userId),
+            eq(mfaRecoveryCodes.codeHash, presented),
+            isNull(mfaRecoveryCodes.usedAt),
+          ),
+        )
+        .returning({ id: mfaRecoveryCodes.id });
+      if (consumed.length === 0) {
+        throw new Error("MFA_RECOVERY_INVALID");
+      }
+      const inner: IdentityContext = { ...ctx, db: tx as IdentityDb };
+      const sessionOk = await markSessionMfaCompleted(
+        inner,
+        input.sessionId,
+        input.userId,
+      );
+      if (!sessionOk) {
+        throw new Error("MFA_SESSION_MISMATCH");
+      }
+    });
+  } catch {
     await recordSecurityEvent(ctx, {
       userId: input.userId,
       eventType: "MFA_FAILURE",
@@ -317,11 +401,6 @@ export async function consumeRecoveryCode(
     });
     return { ok: false, message: SAFE_MESSAGES.mfaInvalid };
   }
-  await ctx.db
-    .update(mfaRecoveryCodes)
-    .set({ usedAt: ctx.now() })
-    .where(eq(mfaRecoveryCodes.id, row.id));
-  await markSessionMfaCompleted(ctx, input.sessionId);
   await appendAuditLog(ctx, {
     actorUserId: input.userId,
     action: "MFA_RECOVERY_USED",

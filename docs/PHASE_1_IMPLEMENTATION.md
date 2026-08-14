@@ -60,6 +60,10 @@ APPLY_IDENTITY_MIGRATION=true DATABASE_URL=postgres://... npm run db:migrate
 
 The application **does not** auto-migrate on boot.
 
+Additive follow-up: `drizzle/0002_mfa_replay_guard.sql` adds `mfa_credentials.last_verified_step` so a TOTP code cannot be replayed inside the validation window. Apply after 0001 with the same explicit flag. Not destructive.
+
+A Phase 1B code-level review is recorded in `docs/PHASE_1B_SECURITY_AUDIT.md`. **Status: PRODUCTION BLOCKED.**
+
 ---
 
 ## Environment variables (names only)
@@ -151,20 +155,22 @@ Clinical permissions exist in the catalog and are **granted to nobody**. Option 
 
 ## Session model
 
-- Opaque token in httpOnly cookie `drv_practice_session`
-- SHA-256 HMAC hash stored server-side
+- Opaque 32-byte token in httpOnly cookie `drv_practice_session` (not derived from user id, email, or timestamp)
+- SHA-256 HMAC hash stored server-side with purpose prefix `session:` (also `otp`, `email-verify`, `password-reset`, `mfa-recovery`, `ip`, `user-agent`)
 - Idle + absolute expiry (shorter for psychologist and Super Admin)
 - Revocation timestamp
-- MFA completion timestamp for privileged roles
-- Cookie flags: `HttpOnly`, `Secure` in production, `Path=/`, **`SameSite=Lax`**
+- MFA completion timestamp for privileged roles; completion requires the session to belong to that user and not be revoked
+- Cookie flags: `HttpOnly`, `Secure` in production, `Path=/`, host-only (no Domain), **`SameSite=Lax`**
 
-**SameSite decision (O14 still OPEN in the decision register; Phase 1 implementation choice):** Lax, so email verification and password-reset links can complete a top-level GET without dropping a just-established session. The existing question-portal HMAC cookie remains `SameSite=Strict`. CSRF for mutations relies on Next.js Server Action origin checks plus httpOnly cookies (not localStorage).
+**SameSite decision (O14 still OPEN in the decision register; Phase 1 implementation choice):** Lax, so email verification and password-reset links can complete a top-level GET without dropping a just-established session. The existing question-portal HMAC cookie remains `SameSite=Strict`. CSRF for mutations relies on Next.js Server Action origin checks plus httpOnly cookies (not localStorage). SameSite alone is not treated as a complete CSRF control.
+
+Private identity layouts set `dynamic = "force-dynamic"` so cookie-backed pages are not statically prerendered.
 
 ---
 
 ## Password hashing
 
-Existing scrypt helper (`src/lib/question-portal/password.ts`) is reused. **Argon2id remains OPEN** (decision O13). No weakening. Dual-hash migration is not implemented because the algorithm did not change.
+Existing scrypt helper (`src/lib/question-portal/password.ts`) is reused with **explicit** Node parameters `N=16384, r=8, p=1`, 16-byte random salt, 64-byte key, and `timingSafeEqual`. These match Node’s historical defaults and the psychologist portal hashes. **Argon2id remains OPEN** (decision O13). Phase 1B did not switch algorithms: a dual-hash migration would be required, and scrypt here is not a weakening. Dual-hash migration is not implemented because the algorithm did not change.
 
 Policy: minimum 12 characters, reject a short common-password list, reject passwords containing the email local-part.
 
@@ -172,9 +178,13 @@ Policy: minimum 12 characters, reject a short common-password list, reject passw
 
 ## MFA
 
-TOTP via `otpauth` (SHA1, 6 digits, 30s). Secrets stored with AES-256-GCM using `MFA_ENCRYPTION_KEY`. Recovery codes are hashed, one-time, shown only at enrollment.
+TOTP via `otpauth` (SHA1, 6 digits, 30s). Secrets stored with AES-256-GCM using `MFA_ENCRYPTION_KEY`. Recovery codes are hashed, one-time, shown only at enrollment. The last accepted TOTP time-step is stored so the same code cannot be reused in-window.
+
+Email verification is **not** consumed on GET. The patient confirms via a Server Action so mail scanners cannot prefetch the single-use link.
 
 There is **no** production MFA bypass flag or hidden URL.
+
+Passwords are **not** permanently locked out by brute force. Login uses IP + account rate limits. MFA uses a temporary lockout (8 failures / 15 minutes). That is intentional, to avoid locking the sole psychologist out with trivial attempts.
 
 ### Lockout recovery (sole psychologist)
 
@@ -207,8 +217,9 @@ Identity mail goes through `EmailService` wrapping existing Nodemailer SMTP. Ver
 ## Security controls
 
 - Rate limits on register, login, reset, email resend, OTP send/verify, MFA verify (memory in development/tests; Upstash in production when the existing appointment rate-limit store is `upstash`; fail-closed if production is misconfigured)
-- Enumeration-safe messages
-- Append-only `audit_logs` and `security_events` (no passwords, OTPs, tokens, or clinical notes)
+- Enumeration-safe messages for registration, login, password reset, and public email/OTP resend (cooldown and provider failure do not disclose whether an account exists; IP-wide limits may still ask the client to wait)
+- Single-use email, OTP, password-reset, and MFA recovery values are consumed with conditional updates so concurrent requests cannot win twice
+- Append-only `audit_logs` and `security_events` (no passwords, OTPs, tokens, or clinical notes; metadata keys matching password/otp/token/secret/cookie/authorization/recovery are stripped)
 - No Super Admin UI for unrestricted database manipulation
 - Private routes send `X-Robots-Tag: noindex, nofollow`, `robots.ts` disallows `/patient`, `/psychologist`, `/super-admin`, and those layouts set `robots: noindex`
 - Existing security headers in `next.config.ts` are unchanged
@@ -219,7 +230,7 @@ Identity mail goes through `EmailService` wrapping existing Nodemailer SMTP. Ver
 
 Identity tests use an isolated in-memory PGlite database and apply the SQL migration. No real patient data.
 
-Covered: registration, email verification, OTP, login, password reset, sessions, RBAC/IDOR, MFA, rate limits, injection-as-data, session fixation, forged/expired/revoked sessions.
+Covered: registration, email verification, OTP, login, password reset, sessions, RBAC/IDOR, MFA, rate limits, injection-as-data, session fixation, forged/expired/revoked sessions, concurrent token consume, OTP/TOTP replay, public OTP enumeration, PATIENT verification defense in depth.
 
 ---
 
@@ -250,9 +261,10 @@ Patient registration must **not** be treated as production-ready until:
 - OTP provider approved and configured (**PRODUCTION PROVIDER CONFIGURATION REQUIRED**)
 - SMTP configured
 - MFA enrolled for psychologist and Super Admin, recovery verified
-- Security review completed
+- Security review completed (`docs/PHASE_1B_SECURITY_AUDIT.md` records the code review; environment/provider review is still required)
 - Deployment verified
 - `PATIENT_REGISTRATION_ENABLED` remains `false` until those gates pass
+- MFA recovery policy if the authenticator **and** backup codes are lost (O12)
 
 WhatsApp is **not implemented**.
 

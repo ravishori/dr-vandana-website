@@ -5,24 +5,28 @@ import type { SecurityEventType } from "@/lib/identity/constants";
 
 export type AuditResult = "SUCCESS" | "FAILURE" | "DENIED";
 
+function isSensitiveMetadataKey(key: string): boolean {
+  const lowered = key.toLowerCase();
+  if (
+    lowered === "code" ||
+    lowered === "session" ||
+    lowered === "token" ||
+    lowered === "cookie"
+  ) {
+    return true;
+  }
+  return /(password|otp|token|secret|cookie|authorization|recovery)/i.test(key);
+}
+
 function stripSecrets(
   metadata: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
   if (!metadata) {
     return undefined;
   }
-  const blocked = new Set([
-    "password",
-    "otp",
-    "token",
-    "secret",
-    "recoveryCode",
-    "code",
-    "sessionToken",
-  ]);
   const safe: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(metadata)) {
-    if (blocked.has(key)) {
+    if (isSensitiveMetadataKey(key)) {
       continue;
     }
     if (typeof value === "string" && value.length > 500) {

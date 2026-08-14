@@ -469,6 +469,22 @@ No other code/decision conflicts require a silent code change.
 
 ---
 
+## 11. Phase 1B audit notes (14 August 2026)
+
+Code-level review: `docs/PHASE_1B_SECURITY_AUDIT.md`. **Production launch remains BLOCKED.**
+
+This audit did **not** change approved architecture. Open items below stay OPEN:
+
+| ID | Phase 1B note | Status |
+|---|---|---|
+| O12 | Lost authenticator **and** lost recovery codes still have no in-app recovery. No production MFA bypass was added. | **OPEN** |
+| O13 | scrypt retained (explicit Node `N=16384,r=8,p=1`) for compatibility with the psychologist portal. Argon2id not adopted; dual-hash migration would be required. | **OPEN** |
+| O14 | Implementation remains `SameSite=Lax` on `drv_practice_session` so email/reset GET landings work. Question portal stays Strict. Formal confirmation still required. | **OPEN** |
+
+Do not start Phase 2 from the Phase 1B audit.
+
+---
+
 ## Document control
 
 | Field | Value |

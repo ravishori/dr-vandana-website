@@ -78,6 +78,7 @@ export const IDENTITY_RATE_LIMITS = {
   emailResendIp: { max: 5, windowMs: 15 * 60 * 1000 },
   otpSendIp: { max: 5, windowMs: 15 * 60 * 1000 },
   otpSendAccount: { max: 5, windowMs: 15 * 60 * 1000 },
+  otpPublicIp: { max: 5, windowMs: 15 * 60 * 1000 },
   otpVerifyIp: { max: 10, windowMs: 15 * 60 * 1000 },
   mfaVerifyIp: { max: 10, windowMs: 15 * 60 * 1000 },
 } as const;

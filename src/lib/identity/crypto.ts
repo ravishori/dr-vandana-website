@@ -26,8 +26,21 @@ export function generateOpaqueToken(bytes = 32): string {
   return randomBytes(bytes).toString("base64url");
 }
 
-export function hashWithSecret(value: string, secret: string): string {
-  return createHmac("sha256", secret).update(value).digest("hex");
+export type HashPurpose =
+  | "session"
+  | "otp"
+  | "email-verify"
+  | "password-reset"
+  | "mfa-recovery"
+  | "ip"
+  | "user-agent";
+
+export function hashWithSecret(
+  purpose: HashPurpose,
+  value: string,
+  secret: string,
+): string {
+  return createHmac("sha256", secret).update(`${purpose}:${value}`).digest("hex");
 }
 
 export function tokensMatch(

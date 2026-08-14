@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 
 import { appendAuditLog, recordSecurityEvent } from "@/lib/identity/audit";
 import { SAFE_MESSAGES } from "@/lib/identity/constants";
@@ -7,8 +7,7 @@ import { generateOpaqueToken, generateUuid, hashWithSecret } from "@/lib/identit
 import { passwordResetEmailContent } from "@/lib/identity/email-service";
 import { evaluatePasswordPolicy } from "@/lib/identity/password-policy";
 import { IDENTITY_RATE_LIMITS } from "@/lib/identity/rate-limit";
-import { passwordResetTokens, users } from "@/lib/identity/schema";
-import { revokeAllUserSessions } from "@/lib/identity/sessions";
+import { passwordResetTokens, sessions, users } from "@/lib/identity/schema";
 import { hashPassword } from "@/lib/question-portal/password";
 
 const GENERIC_RESET = {
@@ -47,14 +46,25 @@ export async function requestPasswordReset(
     return GENERIC_RESET;
   }
 
+  const now = ctx.now();
+  await ctx.db
+    .update(passwordResetTokens)
+    .set({ usedAt: now })
+    .where(
+      and(
+        eq(passwordResetTokens.userId, user.id),
+        isNull(passwordResetTokens.usedAt),
+      ),
+    );
+
   const token = generateOpaqueToken(32);
   await ctx.db.insert(passwordResetTokens).values({
     id: generateUuid(),
     userId: user.id,
-    tokenHash: hashWithSecret(token, ctx.config.sessionSecret),
-    expiresAt: new Date(ctx.now().getTime() + ctx.config.passwordResetTtlMs),
+    tokenHash: hashWithSecret("password-reset", token, ctx.config.sessionSecret),
+    expiresAt: new Date(now.getTime() + ctx.config.passwordResetTtlMs),
     usedAt: null,
-    createdAt: ctx.now(),
+    createdAt: now,
   });
   const content = passwordResetEmailContent({
     appBaseUrl: ctx.config.appBaseUrl,
@@ -79,37 +89,56 @@ export async function resetPasswordWithToken(
     return { ok: false, message: policy.message };
   }
 
-  const tokenHash = hashWithSecret(input.token, ctx.config.sessionSecret);
-  const [row] = await ctx.db
-    .select()
-    .from(passwordResetTokens)
-    .where(eq(passwordResetTokens.tokenHash, tokenHash))
-    .limit(1);
-  if (!row || row.usedAt || row.expiresAt.getTime() <= ctx.now().getTime()) {
+  const tokenHash = hashWithSecret("password-reset", input.token, ctx.config.sessionSecret);
+  const passwordHash = await hashPassword(input.password);
+  const now = ctx.now();
+  let userId: string | null = null;
+
+  await ctx.db.transaction(async (tx) => {
+    const consumed = await tx
+      .update(passwordResetTokens)
+      .set({ usedAt: now })
+      .where(
+        and(
+          eq(passwordResetTokens.tokenHash, tokenHash),
+          isNull(passwordResetTokens.usedAt),
+          gt(passwordResetTokens.expiresAt, now),
+        ),
+      )
+      .returning({ userId: passwordResetTokens.userId });
+    if (!consumed[0]) {
+      return;
+    }
+    userId = consumed[0].userId;
+    await tx
+      .update(users)
+      .set({ passwordHash, updatedAt: now })
+      .where(eq(users.id, userId));
+    await tx
+      .update(sessions)
+      .set({ revokedAt: now })
+      .where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt)));
+  });
+
+  if (!userId) {
     return { ok: false, message: SAFE_MESSAGES.passwordResetInvalid };
   }
 
-  const passwordHash = await hashPassword(input.password);
-  await ctx.db.transaction(async (tx) => {
-    await tx
-      .update(passwordResetTokens)
-      .set({ usedAt: ctx.now() })
-      .where(eq(passwordResetTokens.id, row.id));
-    await tx
-      .update(users)
-      .set({ passwordHash, updatedAt: ctx.now() })
-      .where(eq(users.id, row.userId));
-  });
-  await revokeAllUserSessions(ctx, row.userId);
   await recordSecurityEvent(ctx, {
-    userId: row.userId,
+    userId,
+    eventType: "SESSION_REVOKED",
+    metadata: { allSessions: true },
+  });
+  await recordSecurityEvent(ctx, {
+    userId,
     eventType: "PASSWORD_RESET",
+    metadata: { allSessions: true },
   });
   await appendAuditLog(ctx, {
-    actorUserId: row.userId,
+    actorUserId: userId,
     action: "PASSWORD_RESET",
     targetType: "user",
-    targetId: row.userId,
+    targetId: userId,
     result: "SUCCESS",
   });
   return { ok: true };

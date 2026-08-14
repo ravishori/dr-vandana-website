@@ -8,6 +8,7 @@ import {
   resendEmailAction,
   resetPasswordAction,
   sendPhoneOtpAction,
+  verifyEmailAction,
   verifyPhoneAction,
 } from "@/app/patient/actions";
 import {
@@ -238,6 +239,46 @@ export function VerifyPhoneForm() {
           {pending ? "Checking…" : "Verify code"}
         </button>
       </form>
+    </IdentityShell>
+  );
+}
+
+export function VerifyEmailConfirmForm({ token }: { token: string }) {
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [verified, setVerified] = useState(false);
+  return (
+    <IdentityShell kicker="Patient accounts" title="Verify your email">
+      <p>
+        Confirm this request to finish email verification. This extra step
+        prevents email scanners from using the link automatically.
+      </p>
+      {verified ? (
+        <p>
+          <a className="underline" href="/patient/verify-phone">
+            Continue to mobile verification
+          </a>
+        </p>
+      ) : (
+        <form
+          className="space-y-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            startTransition(async () => {
+              const result = await verifyEmailAction(token);
+              setMessage(result.message ?? null);
+              if (result.ok) {
+                setVerified(true);
+              }
+            });
+          }}
+        >
+          <Message value={message} />
+          <button type="submit" disabled={pending} className={identityButtonClassName}>
+            {pending ? "Verifying…" : "Verify email"}
+          </button>
+        </form>
+      )}
     </IdentityShell>
   );
 }

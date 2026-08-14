@@ -1,11 +1,13 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNull } from "drizzle-orm";
 
 import { appendAuditLog, recordSecurityEvent } from "@/lib/identity/audit";
 import { SAFE_MESSAGES } from "@/lib/identity/constants";
 import type { IdentityContext } from "@/lib/identity/context";
 import { generateOpaqueToken, hashWithSecret } from "@/lib/identity/crypto";
 import { generateUuid } from "@/lib/identity/crypto";
+import type { IdentityDb } from "@/lib/identity/db";
 import { verificationEmailContent } from "@/lib/identity/email-service";
+import { consumeLatestPhoneOtp } from "@/lib/identity/otp";
 import { IDENTITY_RATE_LIMITS } from "@/lib/identity/rate-limit";
 import { emailVerifications, users } from "@/lib/identity/schema";
 
@@ -16,41 +18,44 @@ export async function verifyEmailToken(
   if (!ctx.config.sessionSecret || !token) {
     return { ok: false, message: SAFE_MESSAGES.verificationInvalid };
   }
-  const tokenHash = hashWithSecret(token, ctx.config.sessionSecret);
-  const [row] = await ctx.db
-    .select()
-    .from(emailVerifications)
-    .where(eq(emailVerifications.tokenHash, tokenHash))
-    .limit(1);
-  if (!row) {
-    return { ok: false, message: SAFE_MESSAGES.verificationInvalid };
-  }
-  if (row.usedAt) {
-    return { ok: false, message: SAFE_MESSAGES.verificationInvalid };
-  }
-  if (row.expiresAt.getTime() <= ctx.now().getTime()) {
-    return { ok: false, message: SAFE_MESSAGES.verificationInvalid };
-  }
+  const tokenHash = hashWithSecret("email-verify", token, ctx.config.sessionSecret);
+  const now = ctx.now();
+  let userId: string | null = null;
 
   await ctx.db.transaction(async (tx) => {
-    await tx
+    const consumed = await tx
       .update(emailVerifications)
-      .set({ usedAt: ctx.now() })
-      .where(eq(emailVerifications.id, row.id));
+      .set({ usedAt: now })
+      .where(
+        and(
+          eq(emailVerifications.tokenHash, tokenHash),
+          isNull(emailVerifications.usedAt),
+          gt(emailVerifications.expiresAt, now),
+        ),
+      )
+      .returning({ userId: emailVerifications.userId });
+    if (!consumed[0]) {
+      return;
+    }
+    userId = consumed[0].userId;
     await tx
       .update(users)
-      .set({ emailVerifiedAt: ctx.now(), updatedAt: ctx.now() })
-      .where(eq(users.id, row.userId));
+      .set({ emailVerifiedAt: now, updatedAt: now })
+      .where(eq(users.id, userId));
   });
+
+  if (!userId) {
+    return { ok: false, message: SAFE_MESSAGES.verificationInvalid };
+  }
   await recordSecurityEvent(ctx, {
-    userId: row.userId,
+    userId,
     eventType: "EMAIL_VERIFIED",
   });
   await appendAuditLog(ctx, {
-    actorUserId: row.userId,
+    actorUserId: userId,
     action: "EMAIL_VERIFIED",
     targetType: "user",
-    targetId: row.userId,
+    targetId: userId,
     result: "SUCCESS",
   });
   return { ok: true };
@@ -97,7 +102,7 @@ export async function resendEmailVerification(
     ctx.now().getTime() - latest.createdAt.getTime() <
       ctx.config.emailResendCooldownMs
   ) {
-    return { ok: false, message: SAFE_MESSAGES.rateLimited, code: "COOLDOWN" };
+    return generic;
   }
 
   const token = generateOpaqueToken(32);
@@ -113,7 +118,7 @@ export async function resendEmailVerification(
   await ctx.db.insert(emailVerifications).values({
     id: generateUuid(),
     userId: user.id,
-    tokenHash: hashWithSecret(token, ctx.config.sessionSecret),
+    tokenHash: hashWithSecret("email-verify", token, ctx.config.sessionSecret),
     expiresAt: new Date(ctx.now().getTime() + ctx.config.emailVerificationTtlMs),
     usedAt: null,
     createdAt: ctx.now(),
@@ -138,6 +143,15 @@ export async function requestPhoneOtpForPendingUser(
     ok: true as const,
     message: "If this account needs mobile verification, we sent a code.",
   };
+  const ipLimit = await ctx.rateLimit.consume(
+    `otp-public-ip:${input.ip}`,
+    IDENTITY_RATE_LIMITS.otpPublicIp.max,
+    IDENTITY_RATE_LIMITS.otpPublicIp.windowMs,
+  );
+  if (!ipLimit.allowed) {
+    return { ok: false, message: SAFE_MESSAGES.rateLimited, code: "RATE_LIMITED" };
+  }
+
   const emailNormalized = input.email.trim().toLowerCase();
   const [user] = await ctx.db
     .select()
@@ -159,11 +173,7 @@ export async function requestPhoneOtpForPendingUser(
     ip: input.ip,
   });
   if (!sent.ok) {
-    return {
-      ok: false,
-      message: sent.message,
-      code: sent.code,
-    };
+    return generic;
   }
   return generic;
 }
@@ -181,33 +191,83 @@ export async function verifyPhoneOtpAndActivate(
   if (!user || !user.emailVerifiedAt || user.status !== "PENDING_VERIFICATION") {
     return { ok: false, message: SAFE_MESSAGES.otpInvalid };
   }
-  const verified = await ctx.otp.verifyPhoneOtp({
-    userId: user.id,
-    code: input.code,
-    ip: input.ip,
-  });
-  if (!verified.ok) {
-    return verified;
+
+  const ipLimit = await ctx.rateLimit.consume(
+    `otp-verify-ip:${input.ip}`,
+    IDENTITY_RATE_LIMITS.otpVerifyIp.max,
+    IDENTITY_RATE_LIMITS.otpVerifyIp.windowMs,
+  );
+  if (!ipLimit.allowed) {
+    return { ok: false, message: SAFE_MESSAGES.rateLimited, code: "RATE_LIMITED" };
   }
-  await completePhoneVerificationAndActivate(ctx, user.id);
-  return { ok: true };
+
+  const now = ctx.now();
+  let outcome: { ok: true } | { ok: false; message: string; code?: string } = {
+    ok: false,
+    message: SAFE_MESSAGES.otpInvalid,
+  };
+
+  try {
+    await ctx.db.transaction(async (tx) => {
+      const inner: IdentityContext = { ...ctx, db: tx as IdentityDb };
+      const verified = await consumeLatestPhoneOtp(inner, {
+        userId: user.id,
+        code: input.code,
+        ip: input.ip,
+      });
+      if (!verified.ok) {
+        outcome = verified;
+        return;
+      }
+      const activated = await tx
+        .update(users)
+        .set({
+          mobileVerifiedAt: now,
+          status: "ACTIVE",
+          updatedAt: now,
+        })
+        .where(
+          and(eq(users.id, user.id), eq(users.status, "PENDING_VERIFICATION")),
+        )
+        .returning({ id: users.id });
+      if (activated.length === 0) {
+        throw new Error("PHONE_ACTIVATE_FAILED");
+      }
+      outcome = { ok: true };
+    });
+  } catch {
+    return { ok: false, message: SAFE_MESSAGES.otpInvalid };
+  }
+
+  if (outcome.ok) {
+    await recordSecurityEvent(ctx, {
+      userId: user.id,
+      eventType: "PHONE_VERIFIED",
+    });
+  }
+  return outcome;
 }
 
 export async function completePhoneVerificationAndActivate(
   ctx: IdentityContext,
   userId: string,
-): Promise<void> {
+): Promise<boolean> {
   const now = ctx.now();
-  await ctx.db
+  const updated = await ctx.db
     .update(users)
     .set({
       mobileVerifiedAt: now,
       status: "ACTIVE",
       updatedAt: now,
     })
-    .where(eq(users.id, userId));
+    .where(and(eq(users.id, userId), eq(users.status, "PENDING_VERIFICATION")))
+    .returning({ id: users.id });
+  if (updated.length === 0) {
+    return false;
+  }
   await recordSecurityEvent(ctx, {
     userId,
     eventType: "PHONE_VERIFIED",
   });
+  return true;
 }

@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith("/super-admin")) {
-    if (pathname === "/super-admin/login" || pathname.startsWith("/super-admin/mfa")) {
+    if (pathname === "/super-admin/login") {
       return nextPrivate();
     }
     const token = request.cookies.get(PRACTICE_SESSION_COOKIE)?.value;
@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/psychologist/practice")) {
     const token = request.cookies.get(PRACTICE_SESSION_COOKIE)?.value;
-    if (!token && pathname !== "/psychologist/practice/mfa") {
+    if (!token) {
       return withPrivateHeaders(
         NextResponse.redirect(
           new URL("/psychologist/practice/login", request.url),

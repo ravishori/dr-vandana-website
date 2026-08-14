@@ -123,6 +123,8 @@ export async function registerPatient(
     };
   }
 
+  const passwordHash = await hashPassword(input.password);
+
   const [emailExists] = await ctx.db
     .select({ id: users.id })
     .from(users)
@@ -153,7 +155,6 @@ export async function registerPatient(
   const now = ctx.now();
   const userId = generateUuid();
   const profileId = generateUuid();
-  const passwordHash = await hashPassword(input.password);
   const token = generateOpaqueToken(32);
 
   try {
@@ -192,7 +193,7 @@ export async function registerPatient(
       await tx.insert(emailVerifications).values({
         id: generateUuid(),
         userId,
-        tokenHash: hashWithSecret(token, ctx.config.sessionSecret as string),
+        tokenHash: hashWithSecret("email-verify", token, ctx.config.sessionSecret as string),
         expiresAt: new Date(now.getTime() + ctx.config.emailVerificationTtlMs),
         usedAt: null,
         createdAt: now,
@@ -214,7 +215,7 @@ export async function registerPatient(
   await recordSecurityEvent(ctx, {
     userId,
     eventType: "REGISTRATION",
-    ipHash: hashWithSecret(input.ip, ctx.config.sessionSecret),
+    ipHash: hashWithSecret("ip", input.ip, ctx.config.sessionSecret),
     metadata: { emailDelivered: sent.ok },
   });
   await appendAuditLog(ctx, {

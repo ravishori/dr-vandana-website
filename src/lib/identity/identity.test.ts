@@ -272,11 +272,25 @@ describe("phase 1 identity foundation", () => {
         ip: "203.0.113.11",
       });
       assert.equal(first.ok, true);
+      const sentCount = w.email.messages.length;
       const cooldown = await resendEmailVerification(w.ctx, {
         email: "asha@example.test",
         ip: "203.0.113.11",
       });
-      assert.equal(cooldown.ok, false);
+      assert.equal(cooldown.ok, true);
+      assert.equal(w.email.messages.length, sentCount);
+    });
+
+    it("consumes an email token only once under concurrent attempts", async () => {
+      const w = await world();
+      await registerPatient(w.ctx, patientInput());
+      const token = extractTokenFromLastEmail(w.email, "verify");
+      assert.ok(token);
+      const [first, second] = await Promise.all([
+        verifyEmailToken(w.ctx, token),
+        verifyEmailToken(w.ctx, token),
+      ]);
+      assert.equal([first.ok, second.ok].filter(Boolean).length, 1);
     });
   });
 
@@ -302,6 +316,12 @@ describe("phase 1 identity foundation", () => {
         ip: "203.0.113.10",
       });
       assert.equal(valid.ok, true);
+      const replay = await verifyPhoneOtpAndActivate(w.ctx, {
+        email: "asha@example.test",
+        code,
+        ip: "203.0.113.10",
+      });
+      assert.equal(replay.ok, false);
 
       const w2 = await world();
       await registerAndVerifyEmail(w2, "exp@example.test", "9876543211");
@@ -331,7 +351,21 @@ describe("phase 1 identity foundation", () => {
         email: "asha@example.test",
         ip: "203.0.113.10",
       });
-      assert.equal(cooldown.ok, false);
+      assert.equal(cooldown.ok, true);
+      const [user] = await w.ctx.db
+        .select()
+        .from(users)
+        .where(eq(users.emailNormalized, "asha@example.test"));
+      assert.ok(user?.mobileNormalized);
+      const serviceCooldown = await w.ctx.otp.sendPhoneVerification({
+        userId: user.id,
+        mobileNormalized: user.mobileNormalized,
+        ip: "203.0.113.10",
+      });
+      assert.equal(serviceCooldown.ok, false);
+      if (!serviceCooldown.ok) {
+        assert.equal(serviceCooldown.code, "COOLDOWN");
+      }
       for (let index = 0; index < w.ctx.config.otpMaxAttempts; index += 1) {
         const result = await verifyPhoneOtpAndActivate(w.ctx, {
           email: "asha@example.test",
@@ -364,7 +398,18 @@ describe("phase 1 identity foundation", () => {
         email: "asha@example.test",
         ip: "203.0.113.10",
       });
-      assert.equal(sent.ok, false);
+      assert.equal(sent.ok, true);
+      const [user] = await w.ctx.db
+        .select()
+        .from(users)
+        .where(eq(users.emailNormalized, "asha@example.test"));
+      assert.ok(user?.mobileNormalized);
+      const direct = await w.ctx.otp.sendPhoneVerification({
+        userId: user.id,
+        mobileNormalized: user.mobileNormalized,
+        ip: "203.0.113.10",
+      });
+      assert.equal(direct.ok, false);
 
       const prod = await world({
         nodeEnv: "production",
@@ -376,7 +421,57 @@ describe("phase 1 identity foundation", () => {
         email: "prod@example.test",
         ip: "203.0.113.10",
       });
-      assert.equal(blocked.ok, false);
+      assert.equal(blocked.ok, true);
+      const [prodUser] = await prod.ctx.db
+        .select()
+        .from(users)
+        .where(eq(users.emailNormalized, "prod@example.test"));
+      assert.ok(prodUser?.mobileNormalized);
+      const prodDirect = await prod.ctx.otp.sendPhoneVerification({
+        userId: prodUser.id,
+        mobileNormalized: prodUser.mobileNormalized,
+        ip: "203.0.113.10",
+      });
+      assert.equal(prodDirect.ok, false);
+    });
+
+    it("does not reveal whether a mobile account exists through the public OTP API", async () => {
+      const w = await world();
+      const missing = await requestPhoneOtpForPendingUser(w.ctx, {
+        email: "nobody@example.test",
+        ip: "203.0.113.10",
+      });
+      assert.equal(missing.ok, true);
+      assert.match(missing.message, /If this account/i);
+    });
+
+    it("activates a patient only once under concurrent OTP verification", async () => {
+      const w = await world();
+      await registerAndVerifyEmail(w, "race@example.test", "9876543213");
+      await requestPhoneOtpForPendingUser(w.ctx, {
+        email: "race@example.test",
+        ip: "203.0.113.10",
+      });
+      const code = w.otpProvider.peekLastCode("+919876543213");
+      assert.ok(code);
+      const [first, second] = await Promise.all([
+        verifyPhoneOtpAndActivate(w.ctx, {
+          email: "race@example.test",
+          code,
+          ip: "203.0.113.10",
+        }),
+        verifyPhoneOtpAndActivate(w.ctx, {
+          email: "race@example.test",
+          code,
+          ip: "203.0.113.10",
+        }),
+      ]);
+      assert.equal([first.ok, second.ok].filter(Boolean).length, 1);
+      const [user] = await w.ctx.db
+        .select()
+        .from(users)
+        .where(eq(users.emailNormalized, "race@example.test"));
+      assert.equal(user?.status, "ACTIVE");
     });
   });
 
@@ -399,6 +494,21 @@ describe("phase 1 identity foundation", () => {
       assert.equal(unverified.ok, false);
       if (!unverified.ok) {
         assert.equal(unverified.code, "UNVERIFIED");
+      }
+
+      await registerAndVerifyEmail(w, "forced@example.test", "9876543212");
+      await w.ctx.db
+        .update(users)
+        .set({ status: "ACTIVE" })
+        .where(eq(users.emailNormalized, "forced@example.test"));
+      const forcedActive = await loginWithPassword(w.ctx, {
+        email: "forced@example.test",
+        password: STRONG_PASSWORD,
+        ip: "203.0.113.16",
+      });
+      assert.equal(forcedActive.ok, false);
+      if (!forcedActive.ok) {
+        assert.equal(forcedActive.code, "UNVERIFIED");
       }
 
       await activatePatient(w, "asha@example.test", "9876543210");
@@ -596,6 +706,42 @@ describe("phase 1 identity foundation", () => {
         passwordConfirm: "new-correct-horse-1",
       });
       assert.equal(expired.ok, false);
+    });
+
+    it("invalidates previous unused reset tokens and consumes a token once", async () => {
+      const w = await world();
+      await activatePatient(w, "asha@example.test", "9876543210");
+      await requestPasswordReset(w.ctx, {
+        email: "asha@example.test",
+        ip: "203.0.113.21",
+      });
+      const firstToken = extractTokenFromLastEmail(w.email, "reset");
+      assert.ok(firstToken);
+      await requestPasswordReset(w.ctx, {
+        email: "asha@example.test",
+        ip: "203.0.113.22",
+      });
+      const secondToken = extractTokenFromLastEmail(w.email, "reset");
+      assert.ok(secondToken);
+      const stale = await resetPasswordWithToken(w.ctx, {
+        token: firstToken,
+        password: "new-correct-horse-1",
+        passwordConfirm: "new-correct-horse-1",
+      });
+      assert.equal(stale.ok, false);
+      const [first, second] = await Promise.all([
+        resetPasswordWithToken(w.ctx, {
+          token: secondToken,
+          password: "new-correct-horse-2",
+          passwordConfirm: "new-correct-horse-2",
+        }),
+        resetPasswordWithToken(w.ctx, {
+          token: secondToken,
+          password: "new-correct-horse-3",
+          passwordConfirm: "new-correct-horse-3",
+        }),
+      ]);
+      assert.equal([first.ok, second.ok].filter(Boolean).length, 1);
     });
   });
 
@@ -874,14 +1020,36 @@ describe("phase 1 identity foundation", () => {
         timestamp,
       });
       assert.equal(invalidTotp.ok, false);
-      const validTotp = await verifyMfaChallenge(w.ctx, {
+      const loginTimestamp = timestamp + 30_000;
+      const loginTotp = generateTotpCodeForTests(
+        begin.secretBase32,
+        loginTimestamp,
+        "vandana@example.test",
+      );
+      const replayEnroll = await verifyMfaChallenge(w.ctx, {
         userId: provisioned.userId,
         sessionId: login.sessionId,
         code: totp,
         ip: "203.0.113.10",
         timestamp,
       });
+      assert.equal(replayEnroll.ok, false);
+      const validTotp = await verifyMfaChallenge(w.ctx, {
+        userId: provisioned.userId,
+        sessionId: login.sessionId,
+        code: loginTotp,
+        ip: "203.0.113.10",
+        timestamp: loginTimestamp,
+      });
       assert.equal(validTotp.ok, true);
+      const replayLogin = await verifyMfaChallenge(w.ctx, {
+        userId: provisioned.userId,
+        sessionId: login.sessionId,
+        code: loginTotp,
+        ip: "203.0.113.10",
+        timestamp: loginTimestamp,
+      });
+      assert.equal(replayLogin.ok, false);
       const completed = await readSession(w.ctx, login.token);
       assert.equal(completed?.mfaCompleted, true);
 
@@ -910,6 +1078,34 @@ describe("phase 1 identity foundation", () => {
         ip: "203.0.113.20",
       });
       assert.equal(reused.ok, false);
+
+      const login3 = await loginWithPassword(w.ctx, {
+        email: "vandana@example.test",
+        password: STRONG_PASSWORD,
+        ip: "203.0.113.21",
+        expectedRole: "PSYCHOLOGIST",
+      });
+      assert.equal(login3.ok, true);
+      if (!login3.ok) {
+        return;
+      }
+      const otherSession = login3.sessionId;
+      const secondCode = confirmed.recoveryCodes[1];
+      const [raceA, raceB] = await Promise.all([
+        consumeRecoveryCode(w.ctx, {
+          userId: provisioned.userId,
+          sessionId: otherSession,
+          code: secondCode,
+          ip: "203.0.113.21",
+        }),
+        consumeRecoveryCode(w.ctx, {
+          userId: provisioned.userId,
+          sessionId: otherSession,
+          code: secondCode,
+          ip: "203.0.113.21",
+        }),
+      ]);
+      assert.equal([raceA.ok, raceB.ok].filter(Boolean).length, 1);
     });
 
     it("refuses production privileged provisioning", async () => {

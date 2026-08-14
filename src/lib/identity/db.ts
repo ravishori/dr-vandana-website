@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
@@ -45,15 +45,20 @@ export function resetIdentityDbForTests(): void {
   globalForIdentity.drvIdentityDb = undefined;
 }
 
-export function readIdentityMigrationSql(): string {
-  return readFileSync(
-    join(process.cwd(), "drizzle/0001_identity_foundation.sql"),
-    "utf8",
-  );
+export function readIdentityMigrationFiles(): string[] {
+  const directory = join(process.cwd(), "drizzle");
+  return readdirSync(directory)
+    .filter(
+      (name) => /^\d+_.*\.sql$/.test(name) && !name.endsWith(".down.sql"),
+    )
+    .sort()
+    .map((name) => readFileSync(join(directory, name), "utf8"));
 }
 
 export async function applyIdentityMigrationSql(
   execSql: (sql: string) => Promise<unknown>,
 ): Promise<void> {
-  await execSql(readIdentityMigrationSql());
+  for (const sql of readIdentityMigrationFiles()) {
+    await execSql(sql);
+  }
 }

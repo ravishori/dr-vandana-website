@@ -55,16 +55,16 @@ export async function createSession(
   await ctx.db.insert(sessions).values({
     id: sessionId,
     userId: input.userId,
-    tokenHash: hashWithSecret(token, ctx.config.sessionSecret),
+    tokenHash: hashWithSecret("session", token, ctx.config.sessionSecret),
     createdAt: now,
     expiresAt,
     lastActivityAt: now,
     revokedAt: null,
     ipHash: input.ip
-      ? hashWithSecret(input.ip, ctx.config.sessionSecret)
+      ? hashWithSecret("ip", input.ip, ctx.config.sessionSecret)
       : null,
     userAgentHash: input.userAgent
-      ? hashWithSecret(input.userAgent, ctx.config.sessionSecret)
+      ? hashWithSecret("user-agent", input.userAgent, ctx.config.sessionSecret)
       : null,
     mfaCompletedAt: input.mfaCompleted ? now : null,
     absoluteExpiresAt,
@@ -86,7 +86,7 @@ export async function readSession(
   if (!token || !ctx.config.sessionSecret) {
     return null;
   }
-  const tokenHash = hashWithSecret(token, ctx.config.sessionSecret);
+  const tokenHash = hashWithSecret("session", token, ctx.config.sessionSecret);
   const [row] = await ctx.db
     .select()
     .from(sessions)
@@ -129,11 +129,20 @@ export async function readSession(
 export async function markSessionMfaCompleted(
   ctx: IdentityContext,
   sessionId: string,
-): Promise<void> {
-  await ctx.db
+  userId: string,
+): Promise<boolean> {
+  const updated = await ctx.db
     .update(sessions)
     .set({ mfaCompletedAt: ctx.now() })
-    .where(eq(sessions.id, sessionId));
+    .where(
+      and(
+        eq(sessions.id, sessionId),
+        eq(sessions.userId, userId),
+        isNull(sessions.revokedAt),
+      ),
+    )
+    .returning({ id: sessions.id });
+  return updated.length > 0;
 }
 
 export async function revokeSession(

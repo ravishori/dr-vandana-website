@@ -75,7 +75,7 @@ export async function loginWithPassword(
   if (!ipLimit.allowed || !accountLimit.allowed) {
     await recordSecurityEvent(ctx, {
       eventType: "LOGIN_FAILURE",
-      ipHash: hashWithSecret(input.ip, ctx.config.sessionSecret),
+      ipHash: hashWithSecret("ip", input.ip, ctx.config.sessionSecret),
       metadata: { reason: "rate_limited" },
     });
     return {
@@ -99,7 +99,7 @@ export async function loginWithPassword(
     await recordSecurityEvent(ctx, {
       userId: user?.id,
       eventType: "LOGIN_FAILURE",
-      ipHash: hashWithSecret(input.ip, ctx.config.sessionSecret),
+      ipHash: hashWithSecret("ip", input.ip, ctx.config.sessionSecret),
       metadata: { reason: "invalid_credentials" },
     });
     return {
@@ -136,6 +136,21 @@ export async function loginWithPassword(
   }
 
   const roleList = await loadUserRoles(ctx, user.id);
+  if (
+    roleList.includes("PATIENT") &&
+    (!user.emailVerifiedAt || !user.mobileVerifiedAt)
+  ) {
+    await recordSecurityEvent(ctx, {
+      userId: user.id,
+      eventType: "LOGIN_FAILURE",
+      metadata: { reason: "unverified" },
+    });
+    return {
+      ok: false,
+      code: "UNVERIFIED",
+      message: SAFE_MESSAGES.verificationIncomplete,
+    };
+  }
   if (input.expectedRole && !roleList.includes(input.expectedRole)) {
     await recordSecurityEvent(ctx, {
       userId: user.id,
@@ -168,7 +183,7 @@ export async function loginWithPassword(
   await recordSecurityEvent(ctx, {
     userId: user.id,
     eventType: "LOGIN_SUCCESS",
-    ipHash: hashWithSecret(input.ip, ctx.config.sessionSecret),
+    ipHash: hashWithSecret("ip", input.ip, ctx.config.sessionSecret),
     metadata: { mfaRequired },
   });
   await appendAuditLog(ctx, {
