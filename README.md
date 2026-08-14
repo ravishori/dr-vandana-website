@@ -20,6 +20,8 @@ This is a Next.js App Router site with:
 
 It does **not** yet include a complete patient & practice management system (patient accounts, OTP, appointment calendar, clinical records, or WhatsApp Business alerts). See `docs/EXISTING_FEATURE_AUDIT.md`.
 
+Phase 0 architecture (design only, not implemented): `docs/PATIENT_PRACTICE_MANAGEMENT_ARCHITECTURE.md`.
+
 ## Stack
 
 - Next.js 16 (App Router) + React 19 + TypeScript

@@ -563,6 +563,8 @@ See the checkpoint note below. Pull request: https://github.com/ravishori/dr-van
 
 Do **not** treat draft PR #9 as production. Re-evaluate that prototype against this verified baseline before implementation work continues.
 
+Phase 0 architecture blueprint (no implementation): `docs/PATIENT_PRACTICE_MANAGEMENT_ARCHITECTURE.md`.
+
 ---
 
 ## GIT CHECKPOINT NOTE
