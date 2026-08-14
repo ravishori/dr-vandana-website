@@ -30,6 +30,10 @@ import {
   formatIdentityProductionGates,
   OTP_VENDOR_ADAPTER_IMPLEMENTED,
 } from "@/lib/identity/production-readiness";
+import {
+  evaluateProductionReadinessGates,
+  formatProductionReadinessGates,
+} from "@/lib/identity/operator-production-gates";
 import { provisionPrivilegedUser } from "@/lib/identity/provision";
 import { registerPatient } from "@/lib/identity/registration";
 import { users } from "@/lib/identity/schema";
@@ -263,6 +267,8 @@ describe("phase 1c production gates", () => {
     assert.doesNotMatch(verify.text, /password/i);
     assert.match(verify.text, /verify-email\?token=opaque-verify-token/);
     assert.match(reset.text, /reset-password\?token=opaque-reset-token/);
+    assert.match(verify.html, /referrerpolicy="no-referrer"/);
+    assert.match(reset.html, /referrerpolicy="no-referrer"/);
     assert.match(reset.text, /password reset/i);
   });
 
@@ -297,5 +303,88 @@ describe("phase 1c production gates", () => {
     assert.match(example, /PATIENT_REGISTRATION_ENABLED=false/);
     assert.doesNotMatch(example, /PATIENT_REGISTRATION_ENABLED=true/);
     assert.match(example, /IDENTITY_PROVISION_ENABLED=false/);
+    assert.match(example, /TWILIO_WHATSAPP_ENABLED=false/);
+    assert.doesNotMatch(example, /TWILIO_WHATSAPP_ENABLED=true/);
+  });
+
+  it("reports production readiness as BLOCKED without printing secrets", () => {
+    const report = evaluateProductionReadinessGates(
+      loadIdentityConfig({
+        nodeEnv: "production",
+        sessionSecret: TEST_SESSION_SECRET,
+        mfaEncryptionKey: TEST_MFA_KEY,
+        databaseUrl: "postgres://user:super-secret-password@db.example/app",
+        otpProvider: "test",
+        otpApiKey: "otp-secret-should-not-appear",
+        registrationEnabled: false,
+      }),
+      { smtpConfigured: false },
+    );
+    assert.equal(report.overall, "BLOCKED");
+    const registration = report.gates.find((row) => row.gate === "PATIENT_REGISTRATION_ENABLED");
+    assert.equal(registration?.status, "PASS");
+    const database = report.gates.find((row) => row.gate === "DATABASE_URL");
+    assert.equal(database?.status, "BLOCKED");
+    const otp = report.gates.find((row) => row.gate === "OTP vendor");
+    assert.equal(otp?.status, "HUMAN DECISION");
+    const postgresVendor = report.gates.find((row) => row.gate === "PostgreSQL vendor");
+    assert.equal(postgresVendor?.status, "HUMAN DECISION");
+    const privacy = report.gates.find((row) => row.gate === "Privacy / Terms / consent");
+    assert.equal(privacy?.status, "LEGAL REVIEW");
+    const smtp = report.gates.find((row) => row.gate === "SMTP");
+    assert.equal(smtp?.status, "NOT CONFIGURED");
+    const twilio = report.gates.find((row) => row.gate === "Twilio WhatsApp");
+    assert.notEqual(twilio?.status, "PASS");
+    const clinical = report.gates.find(
+      (row) => row.gate === "clinical records / Super Admin boundary",
+    );
+    assert.equal(clinical?.status, "PASS");
+    const rendered = formatProductionReadinessGates(report);
+    assert.match(rendered, /^OVERALL BLOCKED/m);
+    assert.match(rendered, /HUMAN DECISION/);
+    assert.match(rendered, /LEGAL REVIEW/);
+    assert.match(rendered, /Env var presence never proves/);
+    assert.doesNotMatch(rendered, /super-secret-password/);
+    assert.doesNotMatch(rendered, /otp-secret-should-not-appear/);
+    assert.doesNotMatch(rendered, /postgres:\/\//);
+  });
+
+  it("does not treat SMTP or OTP environment variables as production-ready", () => {
+    const report = evaluateProductionReadinessGates(
+      loadIdentityConfig({
+        nodeEnv: "production",
+        sessionSecret: TEST_SESSION_SECRET,
+        mfaEncryptionKey: TEST_MFA_KEY,
+        databaseUrl: "postgres://user:another-secret@db.example/app",
+        otpProvider: "msg91",
+        otpApiKey: "otp-secret-should-not-appear",
+        registrationEnabled: false,
+      }),
+      { smtpConfigured: true },
+    );
+    assert.equal(report.overall, "BLOCKED");
+    const smtp = report.gates.find((row) => row.gate === "SMTP");
+    assert.equal(smtp?.status, "BLOCKED");
+    const otp = report.gates.find((row) => row.gate === "OTP vendor");
+    assert.equal(otp?.status, "HUMAN DECISION");
+    const rendered = formatProductionReadinessGates(report);
+    assert.doesNotMatch(rendered, /another-secret/);
+    assert.doesNotMatch(rendered, /otp-secret-should-not-appear/);
+    assert.doesNotMatch(rendered, /PASS SMTP/);
+    assert.doesNotMatch(rendered, /PASS OTP vendor/);
+    assert.doesNotMatch(rendered, /PASS Twilio WhatsApp/);
+  });
+
+  it("fails the registration gate when the flag is true", () => {
+    const report = evaluateProductionReadinessGates(
+      loadIdentityConfig({
+        nodeEnv: "test",
+        sessionSecret: TEST_SESSION_SECRET,
+        registrationEnabled: true,
+      }),
+    );
+    const registration = report.gates.find((row) => row.gate === "PATIENT_REGISTRATION_ENABLED");
+    assert.equal(registration?.status, "FAIL");
+    assert.equal(report.overall, "BLOCKED");
   });
 });

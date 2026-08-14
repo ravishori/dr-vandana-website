@@ -1,5 +1,6 @@
 import type { IdentityContext } from "@/lib/identity/context";
 import { generateUuid } from "@/lib/identity/crypto";
+import type { IdentityDb } from "@/lib/identity/db";
 import { auditLogs, securityEvents } from "@/lib/identity/schema";
 import type { SecurityEventType } from "@/lib/identity/constants";
 
@@ -46,9 +47,11 @@ export async function appendAuditLog(
     targetId?: string;
     result: AuditResult;
     metadata?: Record<string, unknown>;
+    db?: IdentityDb;
   },
 ): Promise<void> {
-  await ctx.db.insert(auditLogs).values({
+  const db = input.db ?? ctx.db;
+  await db.insert(auditLogs).values({
     id: generateUuid(),
     actorUserId: input.actorUserId ?? null,
     action: input.action,

@@ -88,11 +88,23 @@ export async function readSession(
   }
   const tokenHash = hashWithSecret("session", token, ctx.config.sessionSecret);
   const [row] = await ctx.db
-    .select()
+    .select({
+      id: sessions.id,
+      userId: sessions.userId,
+      revokedAt: sessions.revokedAt,
+      expiresAt: sessions.expiresAt,
+      absoluteExpiresAt: sessions.absoluteExpiresAt,
+      mfaCompletedAt: sessions.mfaCompletedAt,
+      userStatus: users.status,
+    })
     .from(sessions)
+    .innerJoin(users, eq(users.id, sessions.userId))
     .where(eq(sessions.tokenHash, tokenHash))
     .limit(1);
   if (!row || row.revokedAt) {
+    return null;
+  }
+  if (row.userStatus === "DISABLED" || row.userStatus === "SUSPENDED") {
     return null;
   }
   const now = ctx.now();
@@ -124,6 +136,18 @@ export async function readSession(
     mfaCompleted: Boolean(row.mfaCompletedAt),
     expiresAt: nextExpiry,
   };
+}
+
+export async function isSessionMfaCompleted(
+  ctx: IdentityContext,
+  sessionId: string,
+): Promise<boolean> {
+  const [row] = await ctx.db
+    .select({ mfaCompletedAt: sessions.mfaCompletedAt })
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .limit(1);
+  return Boolean(row?.mfaCompletedAt);
 }
 
 export async function markSessionMfaCompleted(

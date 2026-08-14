@@ -13,7 +13,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 /**
- * Phase 1 identity schema. No appointment or clinical tables.
+ * Phase 1 identity schema. Appointment tables live in
+ * `src/lib/appointments/schema.ts` and are composed in `db.ts`.
+ * No clinical-record tables.
  */
 export const users = pgTable(
   "users",
@@ -104,6 +106,11 @@ export const patientProfiles = pgTable(
     dateOfBirth: date("date_of_birth"),
     gender: text("gender"),
     emergencyContact: text("emergency_contact"),
+    whatsappNotificationsEnabled: boolean("whatsapp_notifications_enabled")
+      .notNull()
+      .default(false),
+    whatsappOptedInAt: timestamp("whatsapp_opted_in_at", { withTimezone: true }),
+    whatsappOptedOutAt: timestamp("whatsapp_opted_out_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },

@@ -15,7 +15,7 @@ import {
 import type { IdentityDb } from "@/lib/identity/db";
 import { IDENTITY_RATE_LIMITS } from "@/lib/identity/rate-limit";
 import { mfaCredentials, mfaRecoveryCodes, users } from "@/lib/identity/schema";
-import { markSessionMfaCompleted } from "@/lib/identity/sessions";
+import { markSessionMfaCompleted, isSessionMfaCompleted } from "@/lib/identity/sessions";
 import { userHasRole } from "@/lib/identity/principal";
 
 const ISSUER = "Dr. Vandana Practice";
@@ -249,6 +249,9 @@ export async function verifyMfaChallenge(
   if (!ipLimit.allowed) {
     return { ok: false, message: SAFE_MESSAGES.rateLimited, code: "RATE_LIMITED" };
   }
+  if (await isSessionMfaCompleted(ctx, input.sessionId)) {
+    return { ok: false, message: SAFE_MESSAGES.unauthorized };
+  }
 
   const [credential] = await ctx.db
     .select()
@@ -361,6 +364,9 @@ export async function consumeRecoveryCode(
   );
   if (!ipLimit.allowed) {
     return { ok: false, message: SAFE_MESSAGES.rateLimited };
+  }
+  if (await isSessionMfaCompleted(ctx, input.sessionId)) {
+    return { ok: false, message: SAFE_MESSAGES.unauthorized };
   }
   const presented = hashWithSecret(
     "mfa-recovery",

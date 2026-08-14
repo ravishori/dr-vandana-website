@@ -88,7 +88,7 @@ export function verificationEmailContent(params: {
     "",
     "If you did not request an account, you can ignore this message.",
   ].join("\n");
-  const html = `<p>Please verify your email to continue creating your account.</p><p><a href="${escapeHtml(verifyUrl)}">Verify email</a></p><p>If you did not request an account, you can ignore this message.</p>`;
+  const html = `<p>Please verify your email to continue creating your account.</p><p><a href="${escapeHtml(verifyUrl)}" rel="noreferrer" referrerpolicy="no-referrer">Verify email</a></p><p>If you did not request an account, you can ignore this message.</p>`;
   return {
     to: "",
     subject: "Verify your email",
@@ -109,7 +109,7 @@ export function passwordResetEmailContent(params: {
     "",
     "If you did not request this, you can ignore this message.",
   ].join("\n");
-  const html = `<p>A password reset was requested for this email.</p><p><a href="${escapeHtml(resetUrl)}">Reset password</a></p><p>If you did not request this, you can ignore this message.</p>`;
+  const html = `<p>A password reset was requested for this email.</p><p><a href="${escapeHtml(resetUrl)}" rel="noreferrer" referrerpolicy="no-referrer">Reset password</a></p><p>If you did not request this, you can ignore this message.</p>`;
   return {
     to: "",
     subject: "Password reset",

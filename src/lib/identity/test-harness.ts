@@ -4,12 +4,14 @@ import { drizzle } from "drizzle-orm/pglite";
 import { seedIdentityCatalog } from "@/lib/identity/catalog";
 import { loadIdentityConfig } from "@/lib/identity/config";
 import type { IdentityContext } from "@/lib/identity/context";
-import type { IdentityDb } from "@/lib/identity/db";
-import { applyIdentityMigrationSql } from "@/lib/identity/db";
+import {
+  applyIdentityMigrationSql,
+  practiceSchema,
+  type IdentityDb,
+} from "@/lib/identity/db";
 import { createMemoryEmailService } from "@/lib/identity/email-service";
 import { createOtpService, createTestOtpProvider, createUnconfiguredOtpProvider, type OtpDeliveryProvider } from "@/lib/identity/otp";
 import { createMemoryRateLimiter } from "@/lib/identity/rate-limit";
-import { identitySchema } from "@/lib/identity/schema";
 
 export const TEST_SESSION_SECRET = "identity-test-session-secret-32chars!!";
 export const TEST_MFA_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -30,7 +32,7 @@ export async function createIdentityTestWorld(options?: {
 }): Promise<IdentityTestWorld> {
   const client = new PGlite();
   await applyIdentityMigrationSql((sql) => client.exec(sql));
-  const db = drizzle(client, { schema: identitySchema }) as unknown as IdentityDb;
+  const db = drizzle(client, { schema: practiceSchema }) as unknown as IdentityDb;
   let nowMs = Date.UTC(2026, 7, 14, 9, 0, 0);
   const config = loadIdentityConfig({
     nodeEnv: options?.nodeEnv ?? "test",

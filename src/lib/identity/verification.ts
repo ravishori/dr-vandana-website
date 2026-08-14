@@ -182,6 +182,15 @@ export async function verifyPhoneOtpAndActivate(
   ctx: IdentityContext,
   input: { email: string; code: string; ip: string },
 ): Promise<{ ok: true } | { ok: false; message: string; code?: string }> {
+  const ipLimit = await ctx.rateLimit.consume(
+    `otp-verify-ip:${input.ip}`,
+    IDENTITY_RATE_LIMITS.otpVerifyIp.max,
+    IDENTITY_RATE_LIMITS.otpVerifyIp.windowMs,
+  );
+  if (!ipLimit.allowed) {
+    return { ok: false, message: SAFE_MESSAGES.rateLimited, code: "RATE_LIMITED" };
+  }
+
   const emailNormalized = input.email.trim().toLowerCase();
   const [user] = await ctx.db
     .select()
@@ -190,15 +199,6 @@ export async function verifyPhoneOtpAndActivate(
     .limit(1);
   if (!user || !user.emailVerifiedAt || user.status !== "PENDING_VERIFICATION") {
     return { ok: false, message: SAFE_MESSAGES.otpInvalid };
-  }
-
-  const ipLimit = await ctx.rateLimit.consume(
-    `otp-verify-ip:${input.ip}`,
-    IDENTITY_RATE_LIMITS.otpVerifyIp.max,
-    IDENTITY_RATE_LIMITS.otpVerifyIp.windowMs,
-  );
-  if (!ipLimit.allowed) {
-    return { ok: false, message: SAFE_MESSAGES.rateLimited, code: "RATE_LIMITED" };
   }
 
   const now = ctx.now();
@@ -246,28 +246,4 @@ export async function verifyPhoneOtpAndActivate(
     });
   }
   return outcome;
-}
-
-export async function completePhoneVerificationAndActivate(
-  ctx: IdentityContext,
-  userId: string,
-): Promise<boolean> {
-  const now = ctx.now();
-  const updated = await ctx.db
-    .update(users)
-    .set({
-      mobileVerifiedAt: now,
-      status: "ACTIVE",
-      updatedAt: now,
-    })
-    .where(and(eq(users.id, userId), eq(users.status, "PENDING_VERIFICATION")))
-    .returning({ id: users.id });
-  if (updated.length === 0) {
-    return false;
-  }
-  await recordSecurityEvent(ctx, {
-    userId,
-    eventType: "PHONE_VERIFIED",
-  });
-  return true;
 }

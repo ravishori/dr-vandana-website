@@ -217,7 +217,7 @@ Cancellation **policy** (windows, approval): **OPEN**. Architecture must be conf
 | Pattern | Transactional outbox in the **same database transaction** as the appointment change | **APPROVED** |
 | Appointment commit vs SMTP/WhatsApp failure | Appointment must still commit | **APPROVED** |
 | Email | Wrap existing Nodemailer SMTP behind `EmailService` | **APPROVED** |
-| WhatsApp | WhatsApp Business API / approved BSP — **not** `wa.me`, **not** Bitly | **APPROVED** (channel); vendor **OPEN** |
+| WhatsApp | WhatsApp Business API via **Twilio** adapter — **not** `wa.me`, **not** Bitly | **APPROVED** (channel + Twilio direction); production activation **OPEN** |
 | Copy | No diagnosis, notes, condition, assessment, or sensitive document detail in email or WhatsApp (including subject/preview) | **APPROVED** |
 | Production mocks | `OTP_PROVIDER=mock` or mocked WhatsApp `ok: true` forbidden in production | **APPROVED** |
 
@@ -315,7 +315,7 @@ Hard-coded public contact/hours/DIGIPIN in `src/data` migrate **during a future 
 | O2 | PostgreSQL region | India preference; not selected |
 | O3 | ORM / database client | See §5 recommendation; not locked |
 | O4 | OTP / SMS vendor | India delivery, OTP, rate limits, receipts; provider-agnostic architecture |
-| O5 | WhatsApp BSP / provider | Business API; templates need approval |
+| O5 | WhatsApp BSP / provider | **Twilio** is the approved adapter direction. Production account, sender, templates, and activation remain **OPEN** |
 | O6 | Object storage vendor | Extension point only; **do not implement** while documents are deferred |
 | O7 | Practice working hours | Configurable later; do not invent hours now |
 | O8 | Consultation duration | Configurable types; do not assume 30/45/60 |
@@ -327,7 +327,7 @@ Hard-coded public contact/hours/DIGIPIN in `src/data` migrate **during a future 
 | O14 | Cookie `SameSite` | Strict vs Lax |
 | O15 | Notification worker | Vercel cron vs always-on worker |
 | O16 | CI provider / setup | GitHub Actions likely; not implemented in 0.5 |
-| O17 | IDOR response | 403 vs 404 for other-patient resources |
+| O17 | IDOR response | 403 vs 404 for **patient** other-resource responses. Psychologist **reads** now match psychologist **mutations**: missing and other-owner both `NOT_FOUND` (Phase 2H). Patient-facing 403 vs 404 remains OPEN. |
 | O18 | Hosting vs data residency | If Postgres is in India and the app is on Vercel, processor map still needs review |
 | O19 | Exact Super Admin provisioning process | Break-glass, who holds backup codes, first-account bootstrap |
 | O20 | Final permission matrix | Including whether any clinical permission can ever attach to Super Admin |
@@ -507,11 +507,176 @@ Do not start Phase 2 from the Phase 1C register.
 
 ---
 
+## 13. Phase 2B availability notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md`. **Production launch remains BLOCKED.**
+
+This milestone did **not** approve open scheduling policy. Test fixtures are labelled **TEST FIXTURE ONLY**.
+
+| Topic | Status |
+|---|---|
+| Practice hours / breaks | Configurable; values **OPEN** |
+| Consultation duration | Read from appointment type; value **OPEN** |
+| Buffers | Read from appointment type; values **OPEN** |
+| Slot granularity | Configurable; value **OPEN** |
+| Minimum notice / maximum advance | Configurable nullable fields; values **OPEN** |
+| Cancellation window | Schema field present; **not implemented** (Phase 2C) |
+| Blocking statuses | Unchanged: `PENDING`, `CONFIRMED`, `RESCHEDULE_REQUESTED` |
+| Timezone | **Asia/Kolkata** (already **APPROVED**) |
+| Availability vs booking | Availability is **advisory**; exclusion constraint + booking transaction remain authoritative |
+
+Do not start Phase 2C from this note until that milestone is explicitly approved.
+
+---
+
+## 14. Phase 2C booking notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md` (Secure Booking Workflow). **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**.
+
+This milestone did **not** approve open scheduling policy, notification providers, or cancellation windows.
+
+| Topic | Status |
+|---|---|
+| Authenticated patient booking | Implemented; session-derived identity |
+| Initial durable status | `PENDING` (history records `REQUESTED`) |
+| Availability vs booking | Availability is **advisory**; transaction + exclusion constraint are authoritative |
+| Idempotency | User + `appointment.request` + hashed key |
+| Notifications | Phase 2F dispatcher implemented; production email/WhatsApp activation **OPEN** |
+| One-appointment-per-day | **Not implemented** (not approved) |
+| Multi-psychologist coexistence | Not a Phase 2 product feature; occupancy is per `psychologist_user_id` |
+| Cancellation / reschedule / complete / no-show | **Implemented in Phase 2D** (policies remain **OPEN**) |
+
+---
+
+## 15. Phase 2D lifecycle notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md` (Psychologist Appointment Management). **Production launch remains BLOCKED.**
+
+This milestone did **not** approve cancellation windows, reschedule notice, or notification providers.
+
+| Topic | Status |
+|---|---|
+| Psychologist dashboard / detail | `/psychologist/practice/appointments` |
+| Confirm / reject / cancel / complete / no-show / reschedule | Implemented; server-side state machine |
+| Cancellation window | Schema field used when set; production value **OPEN**; psychologist window **OPEN** (not applied) |
+| Reschedule | Immediate `CONFIRMED`; history `RESCHEDULED`; window **OPEN** |
+| Super Admin appointment access | **Not granted** |
+| Patient appointment history UI | **Implemented in Phase 2E** |
+| Notifications | Phase 2F dispatcher implemented; production email/WhatsApp activation **OPEN** |
+
+---
+
+## 16. Phase 2E patient portal notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md` (Patient Appointment Portal). **Production launch remains BLOCKED.**
+
+This milestone did **not** approve cancellation windows, reschedule notice, or notification providers.
+
+| Topic | Status |
+|---|---|
+| Patient dashboard / history / detail | `/patient/appointments`, `/history`, `/[publicId]` |
+| Patient cancellation UI | Calls Phase 2D `cancelAppointment`; policy **OPEN** |
+| Patient reschedule | `REQUEST_RESCHEDULE` (proposed slot); not immediate `CONFIRMED`; window **OPEN** |
+| Super Admin appointment access | **Not granted** |
+| Notifications | Phase 2F dispatcher implemented; production email/WhatsApp activation **OPEN** |
+
+---
+
+## 17. Phase 2F notification notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md` (Phase 2F — Notification Architecture). **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**. `TWILIO_WHATSAPP_ENABLED` remains **false**.
+
+This milestone implemented transactional outbox dispatch, SMTP email, and a Twilio WhatsApp adapter. It did **not** activate production providers, approve legal copy, or close data-residency/retention decisions.
+
+| Topic | Status |
+|---|---|
+| Outbox + dispatcher | Implemented; appointment transactions do not call providers |
+| Email | `EmailService` / Nodemailer SMTP; production SMTP config **OPEN** |
+| WhatsApp | `WhatsAppService` → `TwilioWhatsAppProvider`; production disabled |
+| WhatsApp opt-in | Schema + patient account checkbox; default off; legal wording **OPEN** |
+| Completion / no-show mail | Events exist; delivery flags default **false** (policy **OPEN**) |
+| Worker hosting | Dispatcher + `npm run notifications:process` (dev/test); O15 **OPEN** |
+| Retention | Notification log retention **OPEN** (O10) |
+| Data residency / Twilio-Meta transfers | **OPEN** (O18) |
+| Twilio/Meta pricing | Operational concern only; not encoded. Recheck current Twilio WhatsApp pricing before activation (noted 14 August 2026; no price figures recorded) |
+
+---
+
+## 18. Phase 2G security and reliability audit notes (14 August 2026)
+
+Implementation audit: `docs/PHASE_2G_SECURITY_RELIABILITY_AUDIT.md`. **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**.
+
+This milestone inspected identity, appointments, notifications, migrations, CI, legal copy, and production gates. Genuine in-code defects were fixed (registration enumeration, disabled sessions, OTP verify oracle, MFA-complete recovery, advisory-lock fail-closed, occupancy lock order, dispatcher SENT CAS). It did **not** close O1–O19, rewrite legal pages, switch scrypt to Argon2id, invent MFA email bypass, enable Twilio, or start Phase 3.
+
+| Topic | Status |
+|---|---|
+| In-code critical findings | None remaining after 2G fixes |
+| O12 MFA recovery | **OPEN** — backup codes only; no email bypass |
+| O13 hashing | **OPEN** — scrypt remains |
+| O14 SameSite | **OPEN** — Lax remains |
+| O17 IDOR 403 vs 404 | **OPEN** for patient resources. Psychologist reads now match mutations (`NOT_FOUND`) as of Phase 2H |
+| O15 worker hosting | **OPEN** |
+| Legal / privacy copy | **REQUIRES LEGAL REVIEW** |
+| Production | **BLOCKED** |
+
+---
+
+## 19. Phase 2H production readiness notes (14 August 2026)
+
+Implementation: `docs/PHASE_2H_PRODUCTION_READINESS_REPORT.md`. **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**.
+
+This milestone aligned psychologist appointment reads with the established safe-ID mutation behaviour, added fail-closed schema verification after migrate, and added operator runbooks. It did **not** select vendors, rewrite legal copy, enable registration, or deploy.
+
+| Topic | Status |
+|---|---|
+| Psychologist read IDOR | Missing and other-owner both `NOT_FOUND` (matches mutations) |
+| Patient 403 vs 404 (O17) | **OPEN** |
+| btree_gist / exclusion | Historical 0003 unchanged; `db:migrate` + `db:verify-production` fail closed if missing |
+| O1–O16, O18–O19 | **OPEN** as before |
+| Production | **BLOCKED** |
+
+---
+
+## 20. Phase 2I production decision-pack notes (14 August 2026)
+
+Authoritative pack: `docs/PHASE_2I_PRODUCTION_DECISION_REGISTER.md`. Closure report: `docs/PHASE_2I_PRODUCTION_GATE_CLOSURE_REPORT.md`. **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**.
+
+This milestone did **not** select vendors, rewrite legal copy, enable registration, deploy, or start Phase 3. OPEN items stay OPEN.
+
+| Topic | Status |
+|---|---|
+| PostgreSQL vendor / region (O1, O2) | **OPEN** — comparison only |
+| OTP vendor (O4) | **OPEN** — fail-closed |
+| SMTP vendor | **OPEN** — Nodemailer remains |
+| Twilio activation (O5) | **OPEN** — checklist only |
+| MFA recovery (O12) | **OPEN** — email bypass forbidden |
+| RPO / RTO / retention / residency | **OPEN** — frameworks only |
+| Staging / go-live checklists | Prepared; **NOT EXECUTED** |
+| Production | **BLOCKED** |
+
+---
+
+## 21. Phase 2J Option C / PR #9 forensic audit notes (14 August 2026)
+
+Report: `docs/PHASE_2J_OPTION_C_FORENSIC_AUDIT_REPORT.md`. Inventory: `docs/PHASE_2J_PR9_FORENSIC_INVENTORY.md`.
+
+This milestone inspected draft PR #9 as a **functional reference only**. It did **not** merge PR #9, copy its store/auth/providers, implement Option C, enable registration, or deploy.
+
+| Topic | Status |
+|---|---|
+| PR #9 merge | **FORBIDDEN** — must not merge |
+| Option C clinical implementation | **DEFERRED / BLOCKED** |
+| Reusable requirements / UX | Extracted into Phase 2J docs |
+| Target stack | Current Phase 1–2 PostgreSQL architecture remains authoritative |
+| Production | **BLOCKED** |
+
+---
+
 ## Document control
 
 | Field | Value |
 |---|---|
 | Baseline | `docs/EXISTING_FEATURE_AUDIT.md` (PR #10 checkpoint) |
 | Architecture | `docs/PATIENT_PRACTICE_MANAGEMENT_ARCHITECTURE.md` (PR #11) |
-| This register | Phase 0.5 |
-| Next | Separate prompt for Phase 1 — infrastructure + database + identity foundation |
+| This register | Phase 0.5 lock; current checkpoint Phase 2J (`docs/PHASE_2J_OPTION_C_FORENSIC_AUDIT_REPORT.md`) |
+| Next | Human Option B production decisions (Phase 2I); Option C only after explicit C0 legal approval — do not merge PR #9 |

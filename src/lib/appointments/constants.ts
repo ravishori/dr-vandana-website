@@ -1,0 +1,239 @@
+export const PRACTICE_TIMEZONE = "Asia/Kolkata" as const;
+
+export const APPOINTMENT_STATUSES = [
+  "REQUESTED",
+  "PENDING",
+  "CONFIRMED",
+  "RESCHEDULE_REQUESTED",
+  "CANCELLED",
+  "COMPLETED",
+  "NO_SHOW",
+  "REJECTED",
+] as const;
+
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
+
+export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  REQUESTED: "Requested",
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  RESCHEDULE_REQUESTED: "Reschedule requested",
+  CANCELLED: "Cancelled",
+  COMPLETED: "Completed",
+  NO_SHOW: "No-show",
+  REJECTED: "Rejected",
+};
+
+/** Patient-facing status copy. Do not show raw database identifiers in the portal. */
+export const PATIENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  REQUESTED: "Appointment request pending",
+  PENDING: "Appointment request pending",
+  CONFIRMED: "Appointment confirmed",
+  RESCHEDULE_REQUESTED: "Reschedule requested",
+  CANCELLED: "Cancelled",
+  COMPLETED: "Appointment completed",
+  NO_SHOW: "Appointment marked as no-show",
+  REJECTED: "Request not accepted",
+};
+
+export const PATIENT_HISTORY_LABELS: Record<string, string> = {
+  CREATED: "Appointment requested",
+  REQUESTED: "Appointment requested",
+  CONFIRMED: "Appointment confirmed",
+  REJECTED: "Request not accepted",
+  RESCHEDULE_REQUESTED: "Reschedule requested",
+  RESCHEDULED: "Appointment rescheduled",
+  CANCELLED: "Appointment cancelled",
+  COMPLETED: "Appointment completed",
+  NO_SHOW: "Appointment marked as no-show",
+};
+
+/**
+ * Statuses that occupy the psychologist calendar.
+ * REQUESTED is not durable after successful validation (becomes PENDING).
+ * CANCELLED and REJECTED do not block. COMPLETED and NO_SHOW do not block.
+ */
+export const BLOCKING_STATUSES = [
+  "PENDING",
+  "CONFIRMED",
+  "RESCHEDULE_REQUESTED",
+] as const;
+
+export type BlockingStatus = (typeof BLOCKING_STATUSES)[number];
+
+export const TERMINAL_STATUSES = [
+  "CANCELLED",
+  "COMPLETED",
+  "NO_SHOW",
+  "REJECTED",
+] as const;
+
+export type TerminalStatus = (typeof TERMINAL_STATUSES)[number];
+
+export const HISTORY_EVENT_TYPES = [
+  "CREATED",
+  "REQUESTED",
+  "CONFIRMED",
+  "REJECTED",
+  "RESCHEDULE_REQUESTED",
+  "RESCHEDULED",
+  "CANCELLED",
+  "COMPLETED",
+  "NO_SHOW",
+] as const;
+
+export type HistoryEventType = (typeof HISTORY_EVENT_TYPES)[number];
+
+export const AVAILABILITY_EXCEPTION_KINDS = [
+  "FULL_DAY_CLOSURE",
+  "CUSTOM_AVAILABILITY",
+  "UNAVAILABLE_PERIOD",
+] as const;
+
+export type AvailabilityExceptionKind =
+  (typeof AVAILABILITY_EXCEPTION_KINDS)[number];
+
+export const APPOINTMENT_AUDIT_ACTIONS = [
+  "APPOINTMENT_REQUESTED",
+  "APPOINTMENT_CONFIRMED",
+  "APPOINTMENT_REJECTED",
+  "APPOINTMENT_CANCELLED",
+  "APPOINTMENT_RESCHEDULED",
+  "APPOINTMENT_RESCHEDULE_REQUESTED",
+  "APPOINTMENT_COMPLETED",
+  "APPOINTMENT_NO_SHOW",
+] as const;
+
+export type AppointmentAuditAction = (typeof APPOINTMENT_AUDIT_ACTIONS)[number];
+
+export const OUTBOX_EVENT_KEYS = [
+  "AppointmentRequested",
+  "AppointmentConfirmed",
+  "AppointmentRejected",
+  "AppointmentCancelled",
+  "AppointmentRescheduled",
+  "AppointmentRescheduleRequested",
+  "AppointmentCompleted",
+  "AppointmentNoShow",
+] as const;
+
+export type OutboxEventKey = (typeof OUTBOX_EVENT_KEYS)[number];
+
+export const APPOINTMENT_SAFE_MESSAGES = {
+  slotUnavailable:
+    "This time is no longer available. Please choose another time.",
+  notFound: "That appointment could not be found.",
+  forbidden: "You do not have access to that.",
+  stale: "This appointment was updated. Please refresh and try again.",
+  invalidTransition: "That action is not available for this appointment.",
+  notConfigured: "Appointment availability is not configured yet.",
+  inThePast: "That time is in the past. Please choose another time.",
+  outsideAvailability:
+    "That time is outside practice availability. Please choose another time.",
+  rateLimited: "Please wait a little while before trying again.",
+  cancellationNotAllowed:
+    "This appointment cannot be cancelled with the current policy settings.",
+  unauthenticated: "Please sign in to continue.",
+} as const;
+
+export const BOOKING_SAFE_MESSAGES = {
+  unauthenticated: "Please sign in to request an appointment.",
+  forbidden: "You do not have access to that.",
+  typeUnavailable: "This appointment type is currently unavailable.",
+  slotUnavailable:
+    "Sorry, this time is no longer available. Please choose another time.",
+  outsideAvailability: "This time is not available.",
+  inThePast: "This time is not available.",
+  invalidRequest: "This time is not available.",
+  idempotencyConflict:
+    "This request does not match the original appointment request.",
+  recorded: "Your appointment request has been recorded.",
+  rateLimited: APPOINTMENT_SAFE_MESSAGES.rateLimited,
+} as const;
+
+export const BOOKING_OPERATION = "appointment.request" as const;
+export const BOOKING_IDEMPOTENCY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const BOOKING_IDEMPOTENCY_KEY_PATTERN = /^[\w.:-]{8,128}$/;
+
+export const LIFECYCLE_SAFE_MESSAGES = {
+  unauthenticated: "Please sign in to continue.",
+  forbidden: "You do not have access to that.",
+  notFound: "That appointment could not be found.",
+  alreadyConfirmed: "This appointment has already been confirmed.",
+  noLongerAvailable: "This appointment is no longer available.",
+  invalidTransition:
+    "This appointment cannot be changed to the requested status.",
+  stale: "This appointment was updated. Please refresh and try again.",
+  slotUnavailable:
+    "This time is no longer available. Please choose another time.",
+  rateLimited: APPOINTMENT_SAFE_MESSAGES.rateLimited,
+  cancellationNotAllowed: APPOINTMENT_SAFE_MESSAGES.cancellationNotAllowed,
+  confirmed: "The appointment is confirmed.",
+  rejected: "The appointment request was declined.",
+  cancelled: "The appointment was cancelled.",
+  cancelledByPatient: "Your appointment has been cancelled.",
+  completed: "The appointment was marked as completed.",
+  noShow: "The appointment was marked as a no-show.",
+  rescheduled: "The appointment was rescheduled.",
+  rescheduleRequested:
+    "Your reschedule request has been submitted and is awaiting confirmation.",
+  rescheduleDeclined: "The current appointment time was kept.",
+  inaccessible: "This appointment cannot be accessed.",
+  sessionExpired: "Please sign in again.",
+  pendingExplanation:
+    "Your appointment request has been submitted and is awaiting confirmation.",
+} as const;
+
+export const OPERATIONAL_CANCEL_REASON_CODES = [
+  "SCHEDULING_CONFLICT",
+  "PATIENT_UNAVAILABLE",
+  "OTHER",
+] as const;
+
+export type OperationalCancelReasonCode =
+  (typeof OPERATIONAL_CANCEL_REASON_CODES)[number];
+
+export const DASHBOARD_FILTERS = [
+  "today",
+  "upcoming",
+  "pending",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "no_show",
+  "rejected",
+  "range",
+] as const;
+
+export type DashboardFilter = (typeof DASHBOARD_FILTERS)[number];
+
+export const DASHBOARD_SORTS = ["starts_at_asc", "starts_at_desc"] as const;
+export type DashboardSort = (typeof DASHBOARD_SORTS)[number];
+
+export const PATIENT_FILTERS = [
+  "upcoming",
+  "pending",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "rejected",
+  "no_show",
+  "history",
+  "range",
+] as const;
+
+export type PatientFilter = (typeof PATIENT_FILTERS)[number];
+
+export const LIFECYCLE_PAGE_SIZE_DEFAULT = 20;
+export const LIFECYCLE_PAGE_SIZE_MAX = 50;
+
+export const PUBLIC_APPOINTMENT_ID_PATTERN = /^APT-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/;
+export const PUBLIC_APPOINTMENT_TYPE_ID_PATTERN =
+  /^ATY-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/;
+
+export const APPOINTMENT_RATE_LIMITS = {
+  request: { max: 10, windowMs: 15 * 60 * 1000 },
+  mutate: { max: 20, windowMs: 15 * 60 * 1000 },
+  lifecycle: { max: 60, windowMs: 15 * 60 * 1000 },
+  portal: { max: 60, windowMs: 15 * 60 * 1000 },
+} as const;

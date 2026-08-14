@@ -13,7 +13,9 @@ export function generateUuid(): string {
   return crypto.randomUUID();
 }
 
-export function generatePublicId(prefix: "PAT" | "PSY" | "ADM" | "STF"): string {
+export function generatePublicId(
+  prefix: "PAT" | "PSY" | "ADM" | "STF" | "APT" | "ATY",
+): string {
   const bytes = randomBytes(8);
   let body = "";
   for (const byte of bytes) {
@@ -33,7 +35,8 @@ export type HashPurpose =
   | "password-reset"
   | "mfa-recovery"
   | "ip"
-  | "user-agent";
+  | "user-agent"
+  | "booking-idempotency";
 
 export function hashWithSecret(
   purpose: HashPurpose,

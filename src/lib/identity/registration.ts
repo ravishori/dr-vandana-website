@@ -136,11 +136,7 @@ export async function registerPatient(
     .where(eq(users.mobileNormalized, mobileNormalized))
     .limit(1);
   if (emailExists || mobileExists) {
-    return {
-      ok: false,
-      code: "FAILED",
-      message: SAFE_MESSAGES.registrationFailure,
-    };
+    return { ok: true };
   }
 
   const roleId = await getRoleIdByName(ctx.db, "PATIENT");
@@ -181,6 +177,9 @@ export async function registerPatient(
         dateOfBirth: null,
         gender: null,
         emergencyContact: null,
+        whatsappNotificationsEnabled: false,
+        whatsappOptedInAt: null,
+        whatsappOptedOutAt: null,
         createdAt: now,
         updatedAt: now,
       });
