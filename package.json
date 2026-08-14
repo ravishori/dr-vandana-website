@@ -12,6 +12,8 @@
     "db:migrate": "tsx scripts/migrate-identity.ts",
     "db:provision": "tsx scripts/provision-identity-user.ts",
     "identity:gates": "tsx scripts/check-identity-production-gates.ts",
+    "production:gates": "tsx scripts/check-production-gates.ts",
+    "db:verify-production": "tsx scripts/verify-production-schema.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -1,9 +1,13 @@
 import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 
 import { seedIdentityCatalog } from "../src/lib/identity/catalog";
 import { isPostgresUrl } from "../src/lib/identity/config";
 import { applyIdentityMigrationSql, practiceSchema } from "../src/lib/identity/db";
-import { drizzle } from "drizzle-orm/postgres-js";
+import {
+  formatSchemaVerification,
+  verifyPracticeSchema,
+} from "../src/lib/identity/schema-verification";
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -23,7 +27,19 @@ async function main() {
     await applyIdentityMigrationSql((statement) => sql.unsafe(statement));
     const db = drizzle(sql, { schema: practiceSchema });
     await seedIdentityCatalog(db, new Date());
+    const verification = await verifyPracticeSchema(async (text) => {
+      const rows = await sql.unsafe(text);
+      return rows as unknown as Record<string, unknown>[];
+    });
+    if (verification.status !== "PASS") {
+      console.error(formatSchemaVerification(verification));
+      console.error(
+        "Migration applied but required production constraints are missing. btree_gist and appointments_blocking_occupied_excl are mandatory.",
+      );
+      process.exit(1);
+    }
     console.info("Identity migration applied.");
+    console.info("SCHEMA PASS");
   } finally {
     await sql.end({ timeout: 5 });
   }
