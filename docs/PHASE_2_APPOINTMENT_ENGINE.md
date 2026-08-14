@@ -1,6 +1,6 @@
 # Phase 2 Appointment Engine
 
-**Status:** Phase 2I decision pack in docs; **not** a production launch  
+**Status:** Phase 2J Option C audit (docs only); **not** a production launch; **not** Option C implementation  
 **Date:** 14 August 2026  
 **Product:** Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice  
 **Tagline:** Your Mental Well-being Matters.
@@ -24,6 +24,7 @@ This document describes the appointment domain through **Phase 2F (Notification 
 | Phase 2G — security, reliability, and production-gate audit | `docs/PHASE_2G_SECURITY_RELIABILITY_AUDIT.md` — **PRODUCTION BLOCKED** |
 | Phase 2H — production readiness remediation and gate preparation | `docs/PHASE_2H_PRODUCTION_READINESS_REPORT.md` — **PRODUCTION BLOCKED** |
 | Phase 2I — production gate closure preparation (decision pack) | `docs/PHASE_2I_PRODUCTION_GATE_CLOSURE_REPORT.md` — **PRODUCTION BLOCKED** |
+| Phase 2J — Option C / PR #9 forensic audit & migration blueprint | `docs/PHASE_2J_OPTION_C_FORENSIC_AUDIT_REPORT.md` — **docs only; do not merge PR #9** |
 | Production notification activation | **Not done** — SMTP/Twilio secrets, templates, opt-in legal review, worker hosting |
 
 ---

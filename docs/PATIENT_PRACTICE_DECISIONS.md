@@ -656,11 +656,27 @@ This milestone did **not** select vendors, rewrite legal copy, enable registrati
 
 ---
 
+## 21. Phase 2J Option C / PR #9 forensic audit notes (14 August 2026)
+
+Report: `docs/PHASE_2J_OPTION_C_FORENSIC_AUDIT_REPORT.md`. Inventory: `docs/PHASE_2J_PR9_FORENSIC_INVENTORY.md`.
+
+This milestone inspected draft PR #9 as a **functional reference only**. It did **not** merge PR #9, copy its store/auth/providers, implement Option C, enable registration, or deploy.
+
+| Topic | Status |
+|---|---|
+| PR #9 merge | **FORBIDDEN** — must not merge |
+| Option C clinical implementation | **DEFERRED / BLOCKED** |
+| Reusable requirements / UX | Extracted into Phase 2J docs |
+| Target stack | Current Phase 1–2 PostgreSQL architecture remains authoritative |
+| Production | **BLOCKED** |
+
+---
+
 ## Document control
 
 | Field | Value |
 |---|---|
 | Baseline | `docs/EXISTING_FEATURE_AUDIT.md` (PR #10 checkpoint) |
 | Architecture | `docs/PATIENT_PRACTICE_MANAGEMENT_ARCHITECTURE.md` (PR #11) |
-| This register | Phase 0.5 lock; current checkpoint Phase 2I (`docs/PHASE_2I_PRODUCTION_DECISION_REGISTER.md`) |
-| Next | Human production decisions; do not start Phase 3 or enable registration from this checkpoint |
+| This register | Phase 0.5 lock; current checkpoint Phase 2J (`docs/PHASE_2J_OPTION_C_FORENSIC_AUDIT_REPORT.md`) |
+| Next | Human Option B production decisions (Phase 2I); Option C only after explicit C0 legal approval — do not merge PR #9 |
