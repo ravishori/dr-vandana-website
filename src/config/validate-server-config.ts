@@ -115,6 +115,35 @@ export function validateServerConfigAtStartup(): void {
         operation: "validateServerConfigAtStartup",
       });
     }
+
+    if (
+      process.env.NODE_ENV === "production" &&
+      process.env.PATIENT_REGISTRATION_ENABLED === "true"
+    ) {
+      logStructured("ERROR", {
+        code: "IDENTITY_PRODUCTION_GATE",
+        source: "CONFIGURATION",
+        message:
+          "PATIENT_REGISTRATION_ENABLED is set in production. Patient registration is not production-ready until PostgreSQL, OTP, email, privacy/terms, and security gates are approved.",
+        operation: "validateServerConfigAtStartup",
+      });
+    }
+
+    if (
+      process.env.NODE_ENV === "production" &&
+      process.env.OTP_PROVIDER &&
+      ["test", "mock", "dev"].includes(
+        process.env.OTP_PROVIDER.trim().toLowerCase(),
+      )
+    ) {
+      logStructured("ERROR", {
+        code: "OTP_PRODUCTION_FORBIDDEN",
+        source: "CONFIGURATION",
+        message:
+          "OTP_PROVIDER test/mock/dev is forbidden in production. Identity OTP will fail closed.",
+        operation: "validateServerConfigAtStartup",
+      });
+    }
   } catch {
     logStructured("ERROR", {
       code: "APP_UNEXPECTED_ERROR",

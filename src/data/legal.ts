@@ -53,6 +53,13 @@ export const privacyPolicyContent: LegalPageContent = {
       ],
     },
     {
+      heading: "Patient accounts — not currently offered for production use",
+      paragraphs: [
+        "This public website does not currently offer a production patient portal. Account registration, if present in a development environment, is not an active public service.",
+        "Before any patient account feature is enabled for the public, this Privacy Policy, the Terms of Use, and related consent wording must be reviewed and updated. REQUIRES REVIEW. This is not a claim of legal compliance.",
+      ],
+    },
+    {
       heading: "Third-party services",
       paragraphs: [
         "Website hosting and email-delivery infrastructure may process enquiry messages as needed to operate the site and deliver messages to the practice.",
@@ -158,6 +165,13 @@ export const termsContent: LegalPageContent = {
       heading: "Limitation of website functionality",
       paragraphs: [
         "Website features may be limited, incomplete or temporarily unavailable. Appointment enquiry, contact channels and related public tools may change over time.",
+      ],
+    },
+    {
+      heading: "Future patient accounts — REQUIRES REVIEW",
+      paragraphs: [
+        "These Terms currently describe a public informational website and enquiry tools. They do not yet describe production patient accounts, account suspension, or authenticated appointment services.",
+        "If patient accounts are enabled later, these Terms and related consent wording must be reviewed before that launch. This note is not legal advice and is not a claim of compliance.",
       ],
     },
     {

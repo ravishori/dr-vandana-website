@@ -7,7 +7,15 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/psychologist"],
+      disallow: [
+        "/api/",
+        "/psychologist",
+        "/psychologist/",
+        "/patient",
+        "/patient/",
+        "/super-admin",
+        "/super-admin/",
+      ],
     },
     sitemap: `${siteConfig.url}/sitemap.xml`,
     host: siteConfig.url,
