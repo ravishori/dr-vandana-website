@@ -92,4 +92,14 @@ describe("practice schema verification", () => {
     ]);
     assert.equal(report.status, "PASS");
   });
+
+  it("does not require clinical record tables in Option B schema verification", () => {
+    const required = REQUIRED_TABLES as readonly string[];
+    assert.equal(required.includes("consultations"), false);
+    assert.equal(required.includes("consultation_notes"), false);
+    assert.equal(required.includes("patient_documents"), false);
+    assert.ok(required.includes("appointments"));
+    assert.ok(REQUIRED_EXTENSIONS.includes("btree_gist"));
+    assert.ok(REQUIRED_CONSTRAINTS.includes("appointments_blocking_occupied_excl"));
+  });
 });
