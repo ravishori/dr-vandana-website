@@ -327,7 +327,7 @@ Hard-coded public contact/hours/DIGIPIN in `src/data` migrate **during a future 
 | O14 | Cookie `SameSite` | Strict vs Lax |
 | O15 | Notification worker | Vercel cron vs always-on worker |
 | O16 | CI provider / setup | GitHub Actions likely; not implemented in 0.5 |
-| O17 | IDOR response | 403 vs 404 for other-patient resources |
+| O17 | IDOR response | 403 vs 404 for **patient** other-resource responses. Psychologist **reads** now match psychologist **mutations**: missing and other-owner both `NOT_FOUND` (Phase 2H). Patient-facing 403 vs 404 remains OPEN. |
 | O18 | Hosting vs data residency | If Postgres is in India and the app is on Vercel, processor map still needs review |
 | O19 | Exact Super Admin provisioning process | Break-glass, who holds backup codes, first-account bootstrap |
 | O20 | Final permission matrix | Including whether any clinical permission can ever attach to Super Admin |
@@ -614,9 +614,25 @@ This milestone inspected identity, appointments, notifications, migrations, CI, 
 | O12 MFA recovery | **OPEN** — backup codes only; no email bypass |
 | O13 hashing | **OPEN** — scrypt remains |
 | O14 SameSite | **OPEN** — Lax remains |
-| O17 IDOR 403 vs 404 | **OPEN** — psychologist read existence oracle documented, not silently closed |
+| O17 IDOR 403 vs 404 | **OPEN** for patient resources. Psychologist reads now match mutations (`NOT_FOUND`) as of Phase 2H |
 | O15 worker hosting | **OPEN** |
 | Legal / privacy copy | **REQUIRES LEGAL REVIEW** |
+| Production | **BLOCKED** |
+
+---
+
+## 19. Phase 2H production readiness notes (14 August 2026)
+
+Implementation: `docs/PHASE_2H_PRODUCTION_READINESS_REPORT.md`. **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**.
+
+This milestone aligned psychologist appointment reads with the established safe-ID mutation behaviour, added fail-closed schema verification after migrate, and added operator runbooks. It did **not** select vendors, rewrite legal copy, enable registration, or deploy.
+
+| Topic | Status |
+|---|---|
+| Psychologist read IDOR | Missing and other-owner both `NOT_FOUND` (matches mutations) |
+| Patient 403 vs 404 (O17) | **OPEN** |
+| btree_gist / exclusion | Historical 0003 unchanged; `db:migrate` + `db:verify-production` fail closed if missing |
+| O1–O16, O18–O19 | **OPEN** as before |
 | Production | **BLOCKED** |
 
 ---
