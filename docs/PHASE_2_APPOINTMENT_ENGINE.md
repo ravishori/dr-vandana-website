@@ -1,11 +1,11 @@
 # Phase 2 Appointment Engine
 
-**Status:** Phase 2F implemented in code; **not** a production launch  
+**Status:** Phase 2F implemented in code; Phase 2G audit complete; **not** a production launch  
 **Date:** 14 August 2026  
 **Product:** Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice  
 **Tagline:** Your Mental Well-being Matters.
 
-This document describes the appointment domain through **Phase 2F (Notification Architecture)**. It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
+This document describes the appointment domain through **Phase 2F (Notification Architecture)**. Phase 2G is the end-to-end security and reliability audit (`docs/PHASE_2G_SECURITY_RELIABILITY_AUDIT.md`). It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
 
 **PRODUCTION remains BLOCKED.** Patient registration stays disabled. This phase does not deploy, choose a PostgreSQL vendor, enable OTP, or activate production SMTP/Twilio WhatsApp.
 
@@ -20,7 +20,8 @@ This document describes the appointment domain through **Phase 2F (Notification 
 | Phase 2C — secure appointment booking workflow | Present in `src/lib/appointments/booking.ts` |
 | Phase 2D — psychologist appointment management and lifecycle | Present in `src/lib/appointments/lifecycle.ts` |
 | Phase 2E — patient appointment portal and history | Present in `src/lib/appointments/patient-portal.ts` |
-| Phase 2F — notification outbox, email, Twilio WhatsApp | **This document** |
+| Phase 2F — notification outbox, email, Twilio WhatsApp | Present |
+| Phase 2G — security, reliability, and production-gate audit | `docs/PHASE_2G_SECURITY_RELIABILITY_AUDIT.md` — **PRODUCTION BLOCKED** |
 | Production notification activation | **Not done** — SMTP/Twilio secrets, templates, opt-in legal review, worker hosting |
 
 ---
@@ -669,6 +670,8 @@ Appointment accounts and booking will require updates to Privacy Policy, Terms, 
 Phase 1C gates remain: PostgreSQL provider/region, OTP provider, SMTP, privacy/terms/consent, MFA recovery, production secrets, backups, monitoring, deployment verification, security review, `PATIENT_REGISTRATION_ENABLED=false`.
 
 Phase 2F adds: Twilio production account/sender/template approval, WhatsApp opt-in legal wording, notification retention, worker hosting, and data-residency review for Twilio/Meta. Notification infrastructure is implemented; production provider activation is **not** complete.
+
+Phase 2G did **not** close those gates. See `docs/PHASE_2G_SECURITY_RELIABILITY_AUDIT.md`.
 
 ---
 

@@ -602,6 +602,25 @@ This milestone implemented transactional outbox dispatch, SMTP email, and a Twil
 
 ---
 
+## 18. Phase 2G security and reliability audit notes (14 August 2026)
+
+Implementation audit: `docs/PHASE_2G_SECURITY_RELIABILITY_AUDIT.md`. **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**.
+
+This milestone inspected identity, appointments, notifications, migrations, CI, legal copy, and production gates. Genuine in-code defects were fixed (registration enumeration, disabled sessions, OTP verify oracle, MFA-complete recovery, advisory-lock fail-closed, occupancy lock order, dispatcher SENT CAS). It did **not** close O1–O19, rewrite legal pages, switch scrypt to Argon2id, invent MFA email bypass, enable Twilio, or start Phase 3.
+
+| Topic | Status |
+|---|---|
+| In-code critical findings | None remaining after 2G fixes |
+| O12 MFA recovery | **OPEN** — backup codes only; no email bypass |
+| O13 hashing | **OPEN** — scrypt remains |
+| O14 SameSite | **OPEN** — Lax remains |
+| O17 IDOR 403 vs 404 | **OPEN** — psychologist read existence oracle documented, not silently closed |
+| O15 worker hosting | **OPEN** |
+| Legal / privacy copy | **REQUIRES LEGAL REVIEW** |
+| Production | **BLOCKED** |
+
+---
+
 ## Document control
 
 | Field | Value |
