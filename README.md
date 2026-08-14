@@ -20,6 +20,8 @@ This is a Next.js App Router site with:
 
 It does **not** yet include a complete patient & practice management system (patient accounts, OTP, appointment calendar, clinical records, or WhatsApp Business alerts). See `docs/EXISTING_FEATURE_AUDIT.md`.
 
+Phase 1 identity foundation (not a production launch): `docs/PHASE_1_IMPLEMENTATION.md`.
+
 Phase 0 architecture (design only, not implemented): `docs/PATIENT_PRACTICE_MANAGEMENT_ARCHITECTURE.md`.
 
 Authoritative PMS decisions (Option B locked; clinical records deferred; Super Admin is configuration-only architecture): `docs/PATIENT_PRACTICE_DECISIONS.md`.
@@ -55,6 +57,7 @@ Required production configuration is documented in `.env.example` (SMTP, psychol
 | `npm test` | Unit tests (`tsx --test`) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
+| `npm run db:migrate` | Apply identity SQL migration (requires `APPLY_IDENTITY_MIGRATION=true`) |
 
 ## Professional content
 
