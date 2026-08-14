@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test \"src/lib/**/*.test.ts\"",
+    "notifications:process": "tsx scripts/process-notifications.ts",
     "db:migrate": "tsx scripts/migrate-identity.ts",
     "db:provision": "tsx scripts/provision-identity-user.ts",
     "identity:gates": "tsx scripts/check-identity-production-gates.ts",

@@ -205,11 +205,82 @@ export const appointmentNotificationOutbox = pgTable(
     status: text("status").notNull(),
     attemptCount: integer("attempt_count").notNull(),
     nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    failedAt: timestamp("failed_at", { withTimezone: true }),
+    lastErrorCode: text("last_error_code"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
   },
   (table) => [
     uniqueIndex("appointment_outbox_event_id_uidx").on(table.eventId),
     index("appointment_outbox_status_idx").on(table.status, table.createdAt),
+    index("appointment_outbox_dispatch_idx").on(
+      table.status,
+      table.nextAttemptAt,
+      table.createdAt,
+    ),
+    index("appointment_outbox_event_key_idx").on(table.eventKey),
+  ],
+);
+
+export const appointmentNotificationDeliveries = pgTable(
+  "appointment_notification_deliveries",
+  {
+    id: uuid("id").primaryKey(),
+    outboxId: uuid("outbox_id")
+      .notNull()
+      .references(() => appointmentNotificationOutbox.id, { onDelete: "restrict" }),
+    channel: text("channel").notNull(),
+    recipientRole: text("recipient_role").notNull(),
+    templateKey: text("template_key").notNull(),
+    status: text("status").notNull(),
+    attemptCount: integer("attempt_count").notNull(),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    failedAt: timestamp("failed_at", { withTimezone: true }),
+    providerMessageId: text("provider_message_id"),
+    lastErrorCode: text("last_error_code"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("appointment_delivery_outbox_channel_role_uidx").on(
+      table.outboxId,
+      table.channel,
+      table.recipientRole,
+    ),
+    index("appointment_delivery_dispatch_idx").on(
+      table.status,
+      table.nextAttemptAt,
+      table.createdAt,
+    ),
+    index("appointment_delivery_channel_status_idx").on(table.channel, table.status),
+  ],
+);
+
+export const appointmentNotificationAttempts = pgTable(
+  "appointment_notification_attempts",
+  {
+    id: uuid("id").primaryKey(),
+    deliveryId: uuid("delivery_id")
+      .notNull()
+      .references(() => appointmentNotificationDeliveries.id, {
+        onDelete: "restrict",
+      }),
+    attemptNumber: integer("attempt_number").notNull(),
+    attemptedAt: timestamp("attempted_at", { withTimezone: true }).notNull(),
+    result: text("result").notNull(),
+    errorCode: text("error_code"),
+    providerMessageId: text("provider_message_id"),
+    durationMs: integer("duration_ms"),
+  },
+  (table) => [
+    index("appointment_attempts_delivery_idx").on(
+      table.deliveryId,
+      table.attemptedAt,
+    ),
   ],
 );
 
@@ -248,5 +319,7 @@ export const appointmentSchema = {
   appointments,
   appointmentHistory,
   appointmentNotificationOutbox,
+  appointmentNotificationDeliveries,
+  appointmentNotificationAttempts,
   bookingIdempotency,
 };

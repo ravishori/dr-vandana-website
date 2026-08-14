@@ -181,6 +181,9 @@ export async function registerPatient(
         dateOfBirth: null,
         gender: null,
         emergencyContact: null,
+        whatsappNotificationsEnabled: false,
+        whatsappOptedInAt: null,
+        whatsappOptedOutAt: null,
         createdAt: now,
         updatedAt: now,
       });

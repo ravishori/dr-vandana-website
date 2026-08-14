@@ -106,6 +106,11 @@ export const patientProfiles = pgTable(
     dateOfBirth: date("date_of_birth"),
     gender: text("gender"),
     emergencyContact: text("emergency_contact"),
+    whatsappNotificationsEnabled: boolean("whatsapp_notifications_enabled")
+      .notNull()
+      .default(false),
+    whatsappOptedInAt: timestamp("whatsapp_opted_in_at", { withTimezone: true }),
+    whatsappOptedOutAt: timestamp("whatsapp_opted_out_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
