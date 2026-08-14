@@ -100,6 +100,25 @@ export const APPOINTMENT_SAFE_MESSAGES = {
   unauthenticated: "Please sign in to continue.",
 } as const;
 
+export const BOOKING_SAFE_MESSAGES = {
+  unauthenticated: "Please sign in to request an appointment.",
+  forbidden: "You do not have access to that.",
+  typeUnavailable: "This appointment type is currently unavailable.",
+  slotUnavailable:
+    "Sorry, this time is no longer available. Please choose another time.",
+  outsideAvailability: "This time is not available.",
+  inThePast: "This time is not available.",
+  invalidRequest: "This time is not available.",
+  idempotencyConflict:
+    "This request does not match the original appointment request.",
+  recorded: "Your appointment request has been recorded.",
+  rateLimited: APPOINTMENT_SAFE_MESSAGES.rateLimited,
+} as const;
+
+export const BOOKING_OPERATION = "appointment.request" as const;
+export const BOOKING_IDEMPOTENCY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const BOOKING_IDEMPOTENCY_KEY_PATTERN = /^[\w.:-]{8,128}$/;
+
 export const PUBLIC_APPOINTMENT_ID_PATTERN = /^APT-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/;
 export const PUBLIC_APPOINTMENT_TYPE_ID_PATTERN =
   /^ATY-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/;

@@ -213,6 +213,32 @@ export const appointmentNotificationOutbox = pgTable(
   ],
 );
 
+export const bookingIdempotency = pgTable(
+  "booking_idempotency",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    operation: text("operation").notNull(),
+    keyHash: text("key_hash").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    status: text("status").notNull(),
+    responsePublicId: text("response_public_id"),
+    responsePayload: jsonb("response_payload").$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("booking_idempotency_user_op_key_uidx").on(
+      table.userId,
+      table.operation,
+      table.keyHash,
+    ),
+    index("booking_idempotency_expires_at_idx").on(table.expiresAt),
+  ],
+);
+
 export const appointmentSchema = {
   appointmentTypes,
   practiceAppointmentSettings,
@@ -222,4 +248,5 @@ export const appointmentSchema = {
   appointments,
   appointmentHistory,
   appointmentNotificationOutbox,
+  bookingIdempotency,
 };

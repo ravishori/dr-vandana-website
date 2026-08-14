@@ -9,14 +9,24 @@ import {
 } from "@/lib/appointments/schema";
 import { seedTestPracticeConfiguration } from "@/lib/appointments/seed";
 import { addMinutes } from "@/lib/appointments/timezone";
-import { generatePublicId, generateUuid } from "@/lib/identity/crypto";
+import type { AuthorizationPrincipal } from "@/lib/identity/authorization";
 import type { IdentityContext } from "@/lib/identity/context";
+import { generatePublicId, generateUuid } from "@/lib/identity/crypto";
+import { loadPrincipal } from "@/lib/identity/principal";
 import { provisionPrivilegedUser } from "@/lib/identity/provision";
+import { registerPatient } from "@/lib/identity/registration";
 import { users } from "@/lib/identity/schema";
+import { createSession, readSession } from "@/lib/identity/sessions";
 import {
   createIdentityTestWorld,
+  extractTokenFromLastEmail,
   type IdentityTestWorld,
 } from "@/lib/identity/test-harness";
+import {
+  requestPhoneOtpForPendingUser,
+  verifyEmailToken,
+  verifyPhoneOtpAndActivate,
+} from "@/lib/identity/verification";
 
 const STRONG_PASSWORD = "correct-horse-battery";
 
@@ -156,4 +166,146 @@ export async function updateTestBookingWindow(
       updatedAt: ctx.now(),
     })
     .where(eq(practiceAppointmentSettings.psychologistUserId, psychologistUserId));
+}
+
+export type TestPatientActor = {
+  userId: string;
+  principal: AuthorizationPrincipal;
+  email: string;
+};
+
+export type BookingTestWorld = IdentityTestWorld & {
+  psychologistUserId: string;
+  psychologistPrincipal: AuthorizationPrincipal;
+  appointmentTypePublicId: string;
+  appointmentTypeId: string;
+  patientA: TestPatientActor;
+  patientB: TestPatientActor;
+};
+
+async function sessionPrincipal(
+  ctx: IdentityContext,
+  userId: string,
+  roles: AuthorizationPrincipal["roles"],
+): Promise<AuthorizationPrincipal> {
+  const created = await createSession(ctx, {
+    userId,
+    roles,
+    ip: "203.0.113.10",
+    mfaCompleted: true,
+  });
+  const session = await readSession(ctx, created.token);
+  if (!session) {
+    throw new Error("test_session_missing");
+  }
+  return loadPrincipal(ctx, session);
+}
+
+export async function registerUnverifiedPatient(
+  world: IdentityTestWorld,
+  email: string,
+  mobile: string,
+): Promise<TestPatientActor> {
+  const registered = await registerPatient(world.ctx, {
+    displayName: email.split("@")[0] ?? "Patient",
+    email,
+    mobile,
+    password: STRONG_PASSWORD,
+    passwordConfirm: STRONG_PASSWORD,
+    acceptedTerms: true,
+    ip: "203.0.113.10",
+  });
+  if (!registered.ok) {
+    throw new Error("test_register_failed");
+  }
+  const [user] = await world.ctx.db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.emailNormalized, email.toLowerCase()))
+    .limit(1);
+  if (!user) {
+    throw new Error("test_user_missing");
+  }
+  const principal = await sessionPrincipal(world.ctx, user.id, ["PATIENT"]);
+  return { userId: user.id, principal, email };
+}
+
+export async function activateTestPatient(
+  world: IdentityTestWorld,
+  email: string,
+  mobile: string,
+): Promise<TestPatientActor> {
+  const pending = await registerUnverifiedPatient(world, email, mobile);
+  const token = extractTokenFromLastEmail(world.email, "verify");
+  if (!token) {
+    throw new Error("test_verify_token_missing");
+  }
+  const verified = await verifyEmailToken(world.ctx, token);
+  if (!verified.ok) {
+    throw new Error("test_email_verify_failed");
+  }
+  const sent = await requestPhoneOtpForPendingUser(world.ctx, {
+    email,
+    ip: "203.0.113.10",
+  });
+  if (!sent.ok) {
+    throw new Error("test_otp_send_failed");
+  }
+  const normalized = `+91${mobile.replace(/\D/g, "").slice(-10)}`;
+  const otp = world.otpProvider.peekLastCode(normalized);
+  if (!otp) {
+    throw new Error("test_otp_missing");
+  }
+  const activated = await verifyPhoneOtpAndActivate(world.ctx, {
+    email,
+    code: otp,
+    ip: "203.0.113.10",
+  });
+  if (!activated.ok) {
+    throw new Error("test_phone_verify_failed");
+  }
+  const principal = await sessionPrincipal(world.ctx, pending.userId, ["PATIENT"]);
+  return { ...pending, principal };
+}
+
+export async function createBookingTestWorld(): Promise<BookingTestWorld> {
+  const world = await createIdentityTestWorld();
+  const psychologist = await provisionPrivilegedUser(world.ctx, {
+    role: "PSYCHOLOGIST",
+    email: "vandana@example.test",
+    password: STRONG_PASSWORD,
+    displayName: "Dr. Vandana Rajiv Chaudhary",
+  });
+  if (!psychologist.ok) {
+    throw new Error("psychologist_provision_failed");
+  }
+  const seeded = await seedTestPracticeConfiguration(
+    world.ctx.db,
+    psychologist.userId,
+    world.ctx.now(),
+  );
+  const psychologistPrincipal = await sessionPrincipal(
+    world.ctx,
+    psychologist.userId,
+    ["PSYCHOLOGIST"],
+  );
+  const patientA = await activateTestPatient(
+    world,
+    "patient-a@example.test",
+    "9876543210",
+  );
+  const patientB = await activateTestPatient(
+    world,
+    "patient-b@example.test",
+    "9876543211",
+  );
+  return {
+    ...world,
+    psychologistUserId: psychologist.userId,
+    psychologistPrincipal,
+    appointmentTypePublicId: seeded.appointmentTypePublicId,
+    appointmentTypeId: seeded.appointmentTypeId,
+    patientA,
+    patientB,
+  };
 }

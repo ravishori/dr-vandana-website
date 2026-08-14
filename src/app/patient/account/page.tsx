@@ -6,6 +6,7 @@ import { loadPrincipal } from "@/lib/identity/principal";
 import { readSession } from "@/lib/identity/sessions";
 import { patientProfiles, users } from "@/lib/identity/schema";
 import { eq } from "drizzle-orm";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function PatientAccountPage() {
@@ -42,8 +43,12 @@ export default async function PatientAccountPage() {
       <p>Hello {profile?.displayName ?? "there"}.</p>
       <p>Your public reference is {user?.publicId}.</p>
       <p>
-        Appointment booking is not available in this phase. The public enquiry
-        form at /book-appointment remains the current request channel.
+        You can request an appointment at{" "}
+        <Link className="underline" href="/patient/appointments/new">
+          /patient/appointments/new
+        </Link>
+        . The public enquiry form at /book-appointment remains available and is
+        not converted into an appointment.
       </p>
       <form action={patientLogoutAction}>
         <button type="submit" className={identityButtonClassName}>

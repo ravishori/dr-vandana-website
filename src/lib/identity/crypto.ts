@@ -35,7 +35,8 @@ export type HashPurpose =
   | "password-reset"
   | "mfa-recovery"
   | "ip"
-  | "user-agent";
+  | "user-agent"
+  | "booking-idempotency";
 
 export function hashWithSecret(
   purpose: HashPurpose,

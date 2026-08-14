@@ -525,7 +525,26 @@ This milestone did **not** approve open scheduling policy. Test fixtures are lab
 | Timezone | **Asia/Kolkata** (already **APPROVED**) |
 | Availability vs booking | Availability is **advisory**; exclusion constraint + booking transaction remain authoritative |
 
-Do not start Phase 2C from this note until that milestone is explicitly approved.
+Do not start Phase 2D from this note until that milestone is explicitly approved.
+
+---
+
+## 14. Phase 2C booking notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md` (Secure Booking Workflow). **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**.
+
+This milestone did **not** approve open scheduling policy, notification providers, or cancellation windows.
+
+| Topic | Status |
+|---|---|
+| Authenticated patient booking | Implemented; session-derived identity |
+| Initial durable status | `PENDING` (history records `REQUESTED`) |
+| Availability vs booking | Availability is **advisory**; transaction + exclusion constraint are authoritative |
+| Idempotency | User + `appointment.request` + hashed key |
+| Notifications | Outbox row only; **email / WhatsApp / SMS NOT IMPLEMENTED** |
+| One-appointment-per-day | **Not implemented** (not approved) |
+| Multi-psychologist coexistence | Not a Phase 2 product feature; occupancy is per `psychologist_user_id` |
+| Cancellation / reschedule / complete / no-show | **Not started** (Phase 2D) |
 
 ---
 

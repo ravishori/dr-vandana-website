@@ -28,6 +28,7 @@ import {
   startOfNextLocalDay,
   zonedCivilToUtc,
 } from "@/lib/appointments/timezone";
+import type { AppointmentQueryDb } from "@/lib/appointments/db-types";
 import type { IdentityContext } from "@/lib/identity/context";
 import { eq, inArray } from "drizzle-orm";
 import { logStructured } from "@/lib/observability/logger";
@@ -359,7 +360,7 @@ export class AvailabilityService {
     input: { appointmentTypePublicId: string; dateLocal: string },
   ): Promise<PracticeAvailabilityResult> {
     try {
-      const loaded = await this.loadFromDatabase(ctx, input);
+      const loaded = await this.loadSlotContext(ctx.db, ctx.now(), input);
       const windows = this.generateWindows(loaded.slotsInput);
       return {
         ok: true,
@@ -381,7 +382,7 @@ export class AvailabilityService {
     input: { appointmentTypePublicId: string; dateLocal: string },
   ): Promise<AvailableSlotsResult> {
     try {
-      const loaded = await this.loadFromDatabase(ctx, input);
+      const loaded = await this.loadSlotContext(ctx.db, ctx.now(), input);
       const slots = this.generateSlots(loaded.slotsInput);
       return {
         ok: true,
@@ -419,7 +420,7 @@ export class AvailabilityService {
         );
       }
       const dateLocal = formatLocalDate(input.startsAt, PRACTICE_TIMEZONE);
-      const loaded = await this.loadFromDatabase(ctx, {
+      const loaded = await this.loadSlotContext(ctx.db, ctx.now(), {
         appointmentTypePublicId: input.appointmentTypePublicId,
         dateLocal,
       });
@@ -463,8 +464,14 @@ export class AvailabilityService {
     }
   }
 
-  private async loadFromDatabase(
-    ctx: IdentityContext,
+  /**
+   * Loads current type/hours/exceptions/occupancy for a local date.
+   * Booking must call this on the transaction client after taking the
+   * psychologist lock. Availability HTTP callers use the ambient db.
+   */
+  async loadSlotContext(
+    db: AppointmentQueryDb,
+    now: Date,
     input: { appointmentTypePublicId: string; dateLocal: string },
   ) {
     if (!PUBLIC_APPOINTMENT_TYPE_ID_PATTERN.test(input.appointmentTypePublicId)) {
@@ -479,7 +486,7 @@ export class AvailabilityService {
         APPOINTMENT_SAFE_MESSAGES.outsideAvailability,
       );
     }
-    const [appointmentType] = await ctx.db
+    const [appointmentType] = await db
       .select({
         id: appointmentTypes.id,
         publicId: appointmentTypes.publicId,
@@ -511,7 +518,7 @@ export class AvailabilityService {
     const dayStart = startOfLocalDay(date, timeZone);
     const dayEnd = startOfNextLocalDay(date, timeZone);
 
-    const [settings] = await ctx.db
+    const [settings] = await db
       .select()
       .from(practiceAppointmentSettings)
       .where(
@@ -522,7 +529,7 @@ export class AvailabilityService {
       )
       .limit(1);
 
-    const hourRows = await ctx.db
+    const hourRows = await db
       .select()
       .from(practiceHours)
       .where(eq(practiceHours.psychologistUserId, appointmentType.psychologistUserId));
@@ -530,12 +537,12 @@ export class AvailabilityService {
     const breakRows =
       hourIds.length === 0
         ? []
-        : await ctx.db
+        : await db
             .select()
             .from(practiceHourBreaks)
             .where(inArray(practiceHourBreaks.practiceHourId, hourIds));
 
-    const exceptionRows = await ctx.db
+    const exceptionRows = await db
       .select({
         kind: availabilityExceptions.kind,
         localDate: availabilityExceptions.localDate,
@@ -553,7 +560,7 @@ export class AvailabilityService {
       );
 
     const blockingOccupied = await loadBlockingOccupiedRanges(
-      ctx.db,
+      db,
       appointmentType.psychologistUserId,
       dayStart,
       dayEnd,
@@ -586,7 +593,7 @@ export class AvailabilityService {
       slotsInput: {
         dateLocal: input.dateLocal,
         timeZone: settings?.timezone ?? PRACTICE_TIMEZONE,
-        now: ctx.now(),
+        now,
         durationMinutes: appointmentType.durationMinutes,
         bufferBeforeMinutes: appointmentType.bufferBeforeMinutes,
         bufferAfterMinutes: appointmentType.bufferAfterMinutes,

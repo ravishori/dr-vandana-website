@@ -1,8 +1,8 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { BLOCKING_STATUSES } from "@/lib/appointments/constants";
+import type { AppointmentQueryDb } from "@/lib/appointments/db-types";
 import { appointments } from "@/lib/appointments/schema";
-import type { IdentityDb } from "@/lib/identity/db";
 
 /**
  * Occupied intervals use PostgreSQL tstzrange with half-open bounds `[start, end)`.
@@ -16,7 +16,7 @@ export function occupiedRangesOverlapSql(
 }
 
 export async function loadBlockingOccupiedRanges(
-  db: IdentityDb,
+  db: AppointmentQueryDb,
   psychologistUserId: string,
   rangeStart: Date,
   rangeEnd: Date,
@@ -41,7 +41,7 @@ export async function loadBlockingOccupiedRanges(
 }
 
 export async function hasBlockingOccupiedOverlap(
-  db: IdentityDb,
+  db: AppointmentQueryDb,
   psychologistUserId: string,
   occupiedStart: Date,
   occupiedEnd: Date,

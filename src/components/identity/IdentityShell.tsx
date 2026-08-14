@@ -7,14 +7,16 @@ export function IdentityShell({
   kicker,
   title,
   children,
+  wide = false,
 }: {
   kicker: string;
   title: string;
   children: ReactNode;
+  wide?: boolean;
 }) {
   return (
     <Section className="pt-12 md:pt-16">
-      <Container className="max-w-md">
+      <Container className={wide ? "max-w-lg" : "max-w-md"}>
         <p className="text-text-muted text-sm font-medium tracking-[0.18em] uppercase">
           {kicker}
         </p>
