@@ -5,8 +5,19 @@ alwaysApply: true
 
 # Dr. Vandana Website — Project Rules
 
-Source of truth: project BRD (branding, privacy boundaries, page structure, acceptance criteria).
+Source of truth: project BRD (branding, privacy boundaries, page structure, acceptance criteria), then the PMS decision register when practice-management work is in scope.
+
 Domain: https://drvandana.trinetra.net
+
+Before any Patient & Practice Management implementation, read:
+
+1. `docs/PATIENT_PRACTICE_DECISIONS.md`
+2. `docs/PATIENT_PRACTICE_MANAGEMENT_ARCHITECTURE.md`
+3. `docs/EXISTING_FEATURE_AUDIT.md`
+
+Option B (accounts + appointments) is the approved future direction. Option C (clinical notes, consultation charts, clinical documents) is deferred and must not be implemented without explicit new approval.
+
+`SUPER_ADMIN` is an approved **architectural** role for practice configuration. It is **not** implemented yet and must **not** receive automatic clinical-data access. Do not build `/super-admin/*` unless the active milestone explicitly says to.
 
 ## Architecture
 
@@ -44,7 +55,8 @@ Domain: https://drvandana.trinetra.net
 - Never imply website content replaces professional assessment
 - Never request detailed medical history via public forms
 - Never collect therapy notes, diagnostic records, or session transcripts
-- Never create an EHR/EMR database or patient portal unless explicitly scoped later
+- Never create an EHR/EMR or clinical document vault; Option C is deferred (see `docs/PATIENT_PRACTICE_DECISIONS.md`)
+- A non-clinical patient appointment portal (Option B) is approved as *future* scope only — do not implement it unless the active milestone is an explicit PMS implementation phase
 - Public forms: minimum necessary enquiry information only
 - Any general enquiry note must tell users not to provide clinical or sensitive medical information
 - Do not expose sensitive information through analytics, URLs, browser storage, or client-side logs

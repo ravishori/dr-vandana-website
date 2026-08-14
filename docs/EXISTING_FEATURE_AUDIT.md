@@ -539,29 +539,20 @@ See the checkpoint note below. Pull request: https://github.com/ravishori/dr-van
 
 ## NEXT RECOMMENDED DEVELOPMENT PHASE
 
-**Patient & Practice Management System**, including:
+After the decision register is reviewed, the next *implementation* prompt is:
 
-- Patient registration
-- Email verification
-- Mobile OTP
-- Patient login
-- Psychologist login/MFA
-- Appointment management
-- Calendar
-- Rescheduling
-- Cancellation
-- Email notifications
-- WhatsApp notifications
-- Patient portal
-- Consultation history
-- Patient records
-- Private clinical notes
-- Document management
-- RBAC
-- Audit logs
-- Security hardening
+**Phase 1 — Infrastructure + database + identity foundation**
 
-Do **not** treat draft PR #9 as production. Re-evaluate that prototype against this verified baseline before implementation work continues.
+Product direction is **Option B** (patient accounts and appointment management). See `docs/PATIENT_PRACTICE_DECISIONS.md`.
+
+Option B includes: patient registration, email verification, mobile OTP, patient login, psychologist TOTP MFA, appointment management, calendar, rescheduling, cancellation, email/WhatsApp notifications, patient portal (non-clinical), RBAC, audit logs, security hardening.
+
+**DEFERRED — NOT APPROVED:** consultation history as clinical records, private clinical notes, patient records as an EHR, document management.
+
+Do **not** treat draft PR #9 as production.
+
+Phase 0 architecture blueprint: `docs/PATIENT_PRACTICE_MANAGEMENT_ARCHITECTURE.md`.  
+Decision register: `docs/PATIENT_PRACTICE_DECISIONS.md`.
 
 ---
 
