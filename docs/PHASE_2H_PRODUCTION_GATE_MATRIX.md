@@ -37,4 +37,6 @@ A gate is **not** PASS because code, documentation, a mock, a test provider, or 
 | Security review | BLOCKED | SECURITY REVIEW | 2G/2H are code audits | HUMAN DECISION | Review deployed env |
 | PATIENT_REGISTRATION_ENABLED | PASS (code default false) | CODE | Only exact `"true"` enables; must stay false | HUMAN DECISION | Keep false until every gate is genuinely green |
 
-`npm run production:gates` prints the same honesty rules and **OVERALL BLOCKED**. It must not be treated as a production go-live certificate.
+`npm run production:gates` prints PASS / BLOCKED / NOT CONFIGURED / HUMAN DECISION / LEGAL REVIEW (and FAIL when the registration flag is true). It must not be treated as a production go-live certificate. Phase 2I updates status labels so human and legal rows are not disguised as infrastructure BLOCKED-only. Env var presence still never proves SMTP, OTP, Twilio, or backup delivery.
+
+Authoritative remaining decisions: `docs/PHASE_2I_PRODUCTION_DECISION_REGISTER.md`.

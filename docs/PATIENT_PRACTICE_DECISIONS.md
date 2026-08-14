@@ -637,11 +637,30 @@ This milestone aligned psychologist appointment reads with the established safe-
 
 ---
 
+## 20. Phase 2I production decision-pack notes (14 August 2026)
+
+Authoritative pack: `docs/PHASE_2I_PRODUCTION_DECISION_REGISTER.md`. Closure report: `docs/PHASE_2I_PRODUCTION_GATE_CLOSURE_REPORT.md`. **Production launch remains BLOCKED.** `PATIENT_REGISTRATION_ENABLED` remains **false**.
+
+This milestone did **not** select vendors, rewrite legal copy, enable registration, deploy, or start Phase 3. OPEN items stay OPEN.
+
+| Topic | Status |
+|---|---|
+| PostgreSQL vendor / region (O1, O2) | **OPEN** — comparison only |
+| OTP vendor (O4) | **OPEN** — fail-closed |
+| SMTP vendor | **OPEN** — Nodemailer remains |
+| Twilio activation (O5) | **OPEN** — checklist only |
+| MFA recovery (O12) | **OPEN** — email bypass forbidden |
+| RPO / RTO / retention / residency | **OPEN** — frameworks only |
+| Staging / go-live checklists | Prepared; **NOT EXECUTED** |
+| Production | **BLOCKED** |
+
+---
+
 ## Document control
 
 | Field | Value |
 |---|---|
 | Baseline | `docs/EXISTING_FEATURE_AUDIT.md` (PR #10 checkpoint) |
 | Architecture | `docs/PATIENT_PRACTICE_MANAGEMENT_ARCHITECTURE.md` (PR #11) |
-| This register | Phase 0.5 |
-| Next | Separate prompt for Phase 1 — infrastructure + database + identity foundation |
+| This register | Phase 0.5 lock; current checkpoint Phase 2I (`docs/PHASE_2I_PRODUCTION_DECISION_REGISTER.md`) |
+| Next | Human production decisions; do not start Phase 3 or enable registration from this checkpoint |

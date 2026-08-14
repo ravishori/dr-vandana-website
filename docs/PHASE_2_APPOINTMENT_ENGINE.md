@@ -1,11 +1,11 @@
 # Phase 2 Appointment Engine
 
-**Status:** Phase 2H gate preparation in code/docs; **not** a production launch  
+**Status:** Phase 2I decision pack in docs; **not** a production launch  
 **Date:** 14 August 2026  
 **Product:** Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice  
 **Tagline:** Your Mental Well-being Matters.
 
-This document describes the appointment domain through **Phase 2F (Notification Architecture)**. Phase 2G is the end-to-end security and reliability audit (`docs/PHASE_2G_SECURITY_RELIABILITY_AUDIT.md`). It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
+This document describes the appointment domain through **Phase 2F (Notification Architecture)**. Phase 2G is the end-to-end security and reliability audit (`docs/PHASE_2G_SECURITY_RELIABILITY_AUDIT.md`). Phase 2H is production-readiness remediation. Phase 2I prepares the remaining human/legal/provider decisions (`docs/PHASE_2I_PRODUCTION_DECISION_REGISTER.md`). It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
 
 **PRODUCTION remains BLOCKED.** Patient registration stays disabled. This phase does not deploy, choose a PostgreSQL vendor, enable OTP, or activate production SMTP/Twilio WhatsApp.
 
@@ -23,6 +23,7 @@ This document describes the appointment domain through **Phase 2F (Notification 
 | Phase 2F — notification outbox, email, Twilio WhatsApp | Present |
 | Phase 2G — security, reliability, and production-gate audit | `docs/PHASE_2G_SECURITY_RELIABILITY_AUDIT.md` — **PRODUCTION BLOCKED** |
 | Phase 2H — production readiness remediation and gate preparation | `docs/PHASE_2H_PRODUCTION_READINESS_REPORT.md` — **PRODUCTION BLOCKED** |
+| Phase 2I — production gate closure preparation (decision pack) | `docs/PHASE_2I_PRODUCTION_GATE_CLOSURE_REPORT.md` — **PRODUCTION BLOCKED** |
 | Production notification activation | **Not done** — SMTP/Twilio secrets, templates, opt-in legal review, worker hosting |
 
 ---

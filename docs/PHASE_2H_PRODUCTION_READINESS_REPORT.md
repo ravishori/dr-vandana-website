@@ -4,7 +4,7 @@
 **Product:** Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice  
 **Tagline:** Your Mental Well-being Matters.  
 **Branch:** `cursor/patient-practice-phase2-appointments-d73b`  
-**Checkpoint:** Phase 2G complete; this milestone prepares gates. It is **not** a deployment.
+**Checkpoint:** Phase 2G complete; this milestone prepares gates. It is **not** a deployment. Successor decision pack: `docs/PHASE_2I_PRODUCTION_GATE_CLOSURE_REPORT.md`.
 
 This document is **not** legal advice and does **not** claim DPDP, HIPAA, EHR, or medical compliance.
 
