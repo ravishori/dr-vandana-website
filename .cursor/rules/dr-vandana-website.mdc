@@ -17,6 +17,8 @@ Before any Patient & Practice Management implementation, read:
 
 Option B (accounts + appointments) is the approved future direction. Option C (clinical notes, consultation charts, clinical documents) is deferred and must not be implemented without explicit new approval.
 
+`SUPER_ADMIN` is an approved **architectural** role for practice configuration. It is **not** implemented yet and must **not** receive automatic clinical-data access. Do not build `/super-admin/*` unless the active milestone explicitly says to.
+
 ## Architecture
 
 - Next.js App Router under `src/app/`

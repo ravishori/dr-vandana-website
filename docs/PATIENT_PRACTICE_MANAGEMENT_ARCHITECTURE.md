@@ -5,7 +5,8 @@
 **Product scope lock:** see `docs/PATIENT_PRACTICE_DECISIONS.md` (Phase 0.5). That register **outranks** this blueprint.
 
 **Option B** (patient accounts + appointments + notifications) is **APPROVED** as the first production direction.  
-**Option C** (clinical notes, consultation charts, clinical documents) is **DEFERRED — NOT APPROVED FOR IMPLEMENTATION**.
+**Option C** (clinical notes, consultation charts, clinical documents) is **DEFERRED — NOT APPROVED FOR IMPLEMENTATION**.  
+**`SUPER_ADMIN`** exists architecturally for practice configuration and is **not** automatic clinical access. Dashboard implementation is **DEFERRED**.
 
 Do not implement deferred entities in this file merely because they appear in the ERD.  
 **Repository:** https://github.com/ravishori/dr-vandana-website  
@@ -301,10 +302,13 @@ Sensitive: password_hash, email, mobile.
 Retention: account-category; no auto-delete until policy approved.
 
 **`roles`**  
-PK UUID. `code` unique (`PATIENT`, `PSYCHOLOGIST`, `STAFF`). Seeded, not free-form in UI.
+PK UUID. `code` unique (`PATIENT`, `PSYCHOLOGIST`, `STAFF`, `SUPER_ADMIN`). Seeded, not free-form in UI.
 
 **`user_roles`**  
 PK UUID. FK `user_id`, `role_id`. Unique (`user_id`, `role_id`).
+
+**`permissions`** / **`role_permissions`**  
+Permission codes are independent of roles. Super Admin role grants administrative permissions only. Clinical permission codes exist in the model but are **not** attached to Super Admin and are not implemented until Option C is approved.
 
 **`psychologist_profiles`**  
 1:1 with a `users` row that has `PSYCHOLOGIST`. Practice display name, timezone default `Asia/Kolkata`, booking buffer minutes, default duration minutes. **No clinical notes here.**
@@ -398,9 +402,15 @@ Appointment commit **must not** wait on provider I/O.
 Append-only. `actor_user_id` nullable, `actor_role`, `action`, `resource_type`, `resource_id`, `patient_id` nullable (for scoping), `ip_hash`, `at`, `metadata` JSON **without** note/document contents.  
 No UPDATE/DELETE grants for `PATIENT` / `PSYCHOLOGIST` app roles. Retention: legal review; default retain.
 
-### 6.6 Tables not created in v1
+### 6.6 Tables not created in the first implementation slice
 
-Separate `permissions` table, `refresh_sessions` distinct from `sessions` (use session rotation instead), multi-clinic, payments, invoices. Reserve `STAFF` role without building a permission matrix UI.
+Do not confuse “architecturally specified” with “migrate now”:
+
+- Configuration aggregates (`practice_settings`, hours, appointment settings, …) — **DEFERRED** until a Super Admin implementation milestone
+- Option C clinical tables — **DEFERRED** / **BLOCKED**
+- `refresh_sessions` distinct from `sessions` (use session rotation instead)
+- Multi-clinic, payments, invoices
+- Permission-matrix **UI** (the permission **model** is approved; the admin screens are **DEFERRED**)
 
 ---
 
@@ -427,13 +437,14 @@ Separate layers:
 | Layer | Table | Contains |
 |---|---|---|
 | Identity | `users` | Email, mobile, password, status |
-| Role | `user_roles` | PATIENT / PSYCHOLOGIST / STAFF |
+| Role | `user_roles` | PATIENT / PSYCHOLOGIST / STAFF / SUPER_ADMIN |
+| Permission | `permissions`, `role_permissions` | Independent of role; clinical perms not auto-granted to Super Admin |
 | Patient profile | `patient_profiles` | Public id, preferred name, optional DOB |
 | Psychologist profile | `psychologist_profiles` | Schedule defaults, timezone |
 
 Registration **must not** collect diagnosis, medication, history, or “reason for counselling” beyond a later optional short appointment note.
 
-A person is one `users` row. Roles are additive so a future staff account is not a second password store. v1: Dr. Vandana is the only `PSYCHOLOGIST`.
+A person is one `users` row. Roles are additive (`user_roles`). Permissions are **independent** of roles (`permissions`, `role_permissions`). v1: Dr. Vandana is the only `PSYCHOLOGIST`. Super Admin is a separate provisioned identity and must not automatically receive clinical permissions.
 
 ---
 
@@ -441,10 +452,12 @@ A person is one `users` row. Roles are additive so a future staff account is not
 
 | Role | Who | Access |
 |---|---|---|
-| `PATIENT` | Registered patient (or guardian in a later phase) | Own profile, own appointments, own patient-visible notes/docs, own notification prefs. **Never** other patients, **never** `PRIVATE_CLINICAL` notes, **never** audit logs, **never** availability admin. |
-| `PSYCHOLOGIST` | Dr. Vandana | All patients in this practice, calendar, confirm/reject/reschedule/cancel, consultations, both note visibilities, documents, follow-ups, audit **read**, MFA, availability. Not a generic superuser for deleting audit rows. |
-| `STAFF` | Reserved | **Not implemented in v1.** Schema allows the role. When built: calendar + contact + appointments; **no** private clinical notes unless a later policy says otherwise. |
-| `SUPER_ADMIN` | **Not created** | A single-practice site does not need it. Break-glass is operational (DB access), not an app role. |
+| `SUPER_ADMIN` | Provisioned platform administrator (no public signup) | Practice/platform configuration, user/role administration, notification and public-site settings, audit administration. **Not** automatic access to private clinical notes, assessments, or clinical documents. Mandatory TOTP MFA. |
+| `PSYCHOLOGIST` | Dr. Vandana | Patients, appointments, calendar, availability, patient communication; clinical records **only when Option C is approved**. Audit **read** of operational/appointment events. |
+| `STAFF` | Reserved | **Not implemented in v1.** When built: limited operational access (calendar/contact/appointments); **no** private clinical notes unless a later policy says otherwise. |
+| `PATIENT` | Registered adult patient | Own profile, own appointments, own notification prefs. **Never** other patients, **never** private clinical notes, **never** Super Admin or psychologist admin surfaces. |
+
+`SUPER_ADMIN` **must not** mean unrestricted database access, SQL console, secret viewer, or filesystem access.
 
 ---
 
@@ -456,21 +469,23 @@ Object-level rule: compare `resource.patient_id` to `session.patient_id` for pat
 
 ### Authorization matrix
 
-| Resource | Patient | Psychologist | Future staff |
-|---|---|---|---|
-| Own profile | YES | YES (own staff profile) | LIMITED |
-| Other patient profile | **NO** | YES | LIMITED (non-clinical fields only) |
-| Own appointments | YES | YES | LIMITED |
-| Other patient appointments | **NO** | YES | LIMITED |
-| Availability rules | Read generated slots only | YES | LIMITED |
-| Confirm/reject appointment | **NO** | YES | LIMITED |
-| `PRIVATE_CLINICAL` notes | **NO** (even own consultation) | YES | **NO** |
-| `PATIENT_VISIBLE` notes | Own only | YES | LIMITED |
-| Private documents | Own if visibility allows | YES | LIMITED |
-| Patient-visible documents | Own only | YES | LIMITED |
-| Audit logs | **NO** | YES (read) | LIMITED / NO |
-| Role changes | **NO** | NO in v1 (seeded) | NO |
-| Question portal / crisis CMS | **NO** | YES (existing portal) | TBD |
+| Resource | Patient | Psychologist | Staff (future) | Super Admin |
+|---|---|---|---|---|
+| Own profile | YES | YES | LIMITED | YES (own) |
+| Other patient profile (non-clinical) | **NO** | YES | LIMITED | **OPEN** (directory vs clinical) |
+| Own appointments | YES | YES | LIMITED | **NO** (not a clinical operator by default) |
+| Other patient appointments | **NO** | YES | LIMITED | **NO** unless an explicit operational permission is later approved |
+| Availability **rules** (configure) | **NO** | YES | LIMITED | YES (`MANAGE_APPOINTMENT_SETTINGS`) |
+| Generated public slots | Read | YES | LIMITED | YES |
+| Confirm/reject appointment | **NO** | YES | LIMITED | **NO** |
+| `PRIVATE_CLINICAL` notes | **NO** | YES (when Option C approved) | **NO** | **NO** |
+| Patient-visible notes | Own only | YES (when Option C approved) | LIMITED | **NO** |
+| Clinical documents | Own if visibility | YES (when Option C approved) | LIMITED | **NO** |
+| Practice configuration | **NO** | LIMITED (own hours if delegated) | **NO** | YES |
+| Infrastructure secrets | **NO** | **NO** | **NO** | **NO** (env/secrets manager only) |
+| Audit logs | **NO** | YES (read operational) | LIMITED / NO | YES (`VIEW_AUDIT_LOGS`) |
+| Role changes | **NO** | **NO** | **NO** | YES (audited; no self-escalation) |
+| Question portal / crisis CMS | **NO** | YES (existing portal) | TBD | TBD / not automatic |
 
 Examples:
 
@@ -1385,6 +1400,153 @@ erDiagram
 No database was modified. No migrations, patient login, OTP, WhatsApp, booking engine, portals, clinical records, or document storage were implemented. PR #9 was not merged. Production deployment was not changed.
 
 The only intended follow-up is human approval of open decisions, then Phase 1 infrastructure.
+
+---
+
+## SUPER ADMIN & PRACTICE CONFIGURATION
+
+Architecture only. **Do not implement** the dashboard, APIs, or migrations in this phase.
+
+### Role
+
+`SUPER_ADMIN` is a provisioned platform administrator. There is **no** public `/super-admin/register` page.
+
+Responsibilities:
+
+- Practice identity (name, display name, designation, tagline, description, branding assets where designed)
+- Contact (public email, appointment destination email, phone, WhatsApp, alternate number)
+- Location (address, city, state, PIN, DIGIPIN, coordinates, maps URL)
+- Practice hours (days, open/close, breaks, holidays, closures, exceptions) — feeds the appointment engine
+- Appointment settings (types, duration, buffer, windows, cancellation/reschedule **policies as stored config**; actual policy values remain human-approved)
+- Communication settings (enable channels, reminder schedules, templates, sender display name)
+- Selected public website configuration (contact, social, timings, CTA, footer, optional announcement/banner, **selected** FAQ only if later approved)
+- User administration (search, activate/deactivate, assign **approved** roles, revoke sessions)
+- Audit administration (view logs; not delete)
+
+Not responsible by default:
+
+- Private clinical notes, assessments, clinical documents, sensitive consultation content
+- Confirming/rejecting individual appointments (psychologist)
+- Raw database, secrets, or filesystem administration
+
+### Permissions (independent of roles)
+
+Administrative (default Super Admin grant):
+
+```text
+MANAGE_PRACTICE_SETTINGS
+MANAGE_CONTACT_SETTINGS
+MANAGE_LOCATION_SETTINGS
+MANAGE_APPOINTMENT_SETTINGS
+MANAGE_NOTIFICATION_SETTINGS
+MANAGE_PUBLIC_SITE_SETTINGS
+MANAGE_USERS
+MANAGE_ROLES
+VIEW_AUDIT_LOGS
+MANAGE_SYSTEM_SETTINGS
+```
+
+Clinical (default **not** granted to Super Admin; Option C **DEFERRED**):
+
+```text
+VIEW_CLINICAL_RECORDS
+VIEW_PRIVATE_CLINICAL_NOTES
+MANAGE_CLINICAL_NOTES
+VIEW_CLINICAL_DOCUMENTS
+MANAGE_CLINICAL_DOCUMENTS
+```
+
+`assertCan` checks **permission**, not “role == SUPER_ADMIN implies *”. Super Admin must not casually escalate their own permission set; role/permission changes are audited.
+
+### Security
+
+| Control | Requirement |
+|---|---|
+| Authentication | Provisioned account + password |
+| MFA | Mandatory TOTP (authenticator app); backup codes; session revocation |
+| Not primary MFA | Email OTP or SMS OTP alone |
+| Sessions | Stricter than patient: short idle, absolute lifetime, device list, revoke |
+| Step-up | Re-auth for role changes, security/MFA, account deactivation, major appointment policy, notification-provider flags |
+| Authorization | Server-side on every Super Admin Server Action; middleware is not enough |
+| Indexing | `/super-admin/*` noindex, robots disallow, omit from sitemap |
+| Forbidden UI | SQL console, raw DB browser, env/secret viewer, arbitrary filesystem |
+
+### Configuration model
+
+Do not put dozens of fields on `users`. Future aggregates:
+
+| Group | Examples |
+|---|---|
+| `PracticeSettings` | practice_name, display_name, tagline, professional_title |
+| `ContactSettings` | primary_email, appointment_email, phones, WhatsApp |
+| `LocationSettings` | address, city, state, postal_code, digipin, lat/lng, maps URL |
+| `PracticeHours` | weekday rules, breaks, holidays, exceptions (Asia/Kolkata) |
+| `AppointmentSettings` | types, duration, buffer, booking windows, cancel/reschedule flags |
+| `NotificationSettings` | channel enablement, reminder offsets, sender display |
+| `BrandSettings` | logo/asset references (not secrets) |
+| `PublicSiteSettings` | social links, CTA, announcement/banner |
+
+History table (or event rows): old value, new value, actor, timestamp — **no secrets**.
+
+### `PracticeConfigService` (future)
+
+Load, validate, cache, invalidate on write. Expose a **public DTO** (name, phone, address, hours, WhatsApp) to the website. Never send SMTP passwords, API keys, or session secrets to the browser.
+
+```text
+Database configuration
+        ↓
+PracticeConfigService
+        ↓
+Public website / patient portal / psychologist portal / super-admin UI
+```
+
+### Public vs private vs secrets
+
+| Class | Examples | Where it lives | Super Admin |
+|---|---|---|---|
+| Public | Name, public phone/email, address, hours, social | Config tables | Editable |
+| Operational private | Internal appointment-notification routing flags, template versions | Config tables | Editable; not in public DTO |
+| Infrastructure secrets | `DATABASE_URL`, SMTP password, OTP/WhatsApp tokens, session/encryption keys | Environment / secrets manager | **Not** editable in the ordinary settings UI |
+
+### Notification templates (future)
+
+`event`, `channel`, `subject`, `body`, `active`, `version`. Placeholders such as `{{patient_first_name}}`, `{{appointment_date}}`, `{{appointment_time}}`, `{{practice_name}}`. **No** diagnosis or note placeholders. Security events (password change, MFA change, suspicious login) cannot be turned off in the Super Admin UI.
+
+### Audit
+
+Every config mutation emits an append-only event, for example `PRACTICE_EMAIL_CHANGED`, `PHONE_NUMBER_CHANGED`, `ADDRESS_CHANGED`, `PRACTICE_HOURS_CHANGED`, `APPOINTMENT_DURATION_CHANGED`, `CANCELLATION_POLICY_CHANGED`, `NOTIFICATION_SETTING_CHANGED`, `USER_ROLE_CHANGED`.
+
+Must answer: who, what, when, previous value, new value — where safe. Never passwords or API secrets.
+
+### Backup / recovery
+
+Postgres backups (already required) plus configuration history so a bad settings change can be reconstructed. Rollback UX is **OPEN**.
+
+### Future dashboard and APIs
+
+Routes (not built now):
+
+```text
+/super-admin/login
+/super-admin/dashboard
+/super-admin/practice
+/super-admin/contact
+/super-admin/location
+/super-admin/hours
+/super-admin/appointments
+/super-admin/notifications
+/super-admin/website
+/super-admin/users
+/super-admin/roles
+/super-admin/audit
+/super-admin/security
+```
+
+Separate from `/patient/*` and `/psychologist/*`.
+
+Future APIs: Server Actions behind `requireSession` + `SUPER_ADMIN` + permission + MFA-verified session. No REST “admin dump”. Configuration APIs and migrations are **DEFERRED**.
+
+During a later implementation, migrate hard-coded public facts in `src/data/contact.ts`, `src/config/site.ts`, and related files into this service. **Not in this documentation task.**
 
 ---
 

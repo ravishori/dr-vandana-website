@@ -179,10 +179,10 @@ Unifying authentication is **not** part of Phase 0.5.
 
 | Role | Access | Status |
 |---|---|---|
+| `SUPER_ADMIN` | Platform and practice **configuration** (not automatic clinical access) | **APPROVED** (architecture; implementation **DEFERRED**) |
+| `PSYCHOLOGIST` | Clinical/practice operation appropriate to the psychologist role | **APPROVED** |
+| `STAFF` | Limited operational access; reserved, not implemented in V1 | **APPROVED** (reserved) |
 | `PATIENT` | Own data only | **APPROVED** |
-| `PSYCHOLOGIST` | Practice management appropriate to role (Option B) | **APPROVED** |
-| `STAFF` | Reserved; not implemented in V1 | **APPROVED** (reserved) |
-| `SUPER_ADMIN` | Not created | **APPROVED** (absent) |
 
 Every sensitive request must enforce:
 
@@ -240,6 +240,71 @@ Cancellation **policy** (windows, approval): **OPEN**. Architecture must be conf
 | Question portal + crisis directory | Keep | **APPROVED** |
 | CI | Minimum CI (install, lint, typecheck, tests, build) should exist before major production PMS functionality | **APPROVED** (plan); provider **OPEN** |
 
+### 2.10 Super Admin and practice configuration
+
+| Item | Decision | Status |
+|---|---|---|
+| `SUPER_ADMIN` role exists architecturally | Platform/practice administration; **not** unrestricted data access | **APPROVED** |
+| Super Admin ≠ clinical authority | Clinical permissions are separate and **not** auto-granted | **APPROVED** |
+| Super Admin MFA | Mandatory authenticator **TOTP**; not email/SMS as primary MFA | **APPROVED** |
+| Super Admin provisioning | No public registration page; provisioned, audited, recoverable | **APPROVED** |
+| Practice configuration | Database-backed via `PracticeConfigService`; not scattered hard-codes | **APPROVED** |
+| Public vs secrets | Public/operational settings ≠ infrastructure secrets | **APPROVED** |
+| Secrets storage | API keys, DB/SMTP/OTP/WhatsApp passwords stay in env/secrets manager | **APPROVED** |
+| Configuration changes | Audited (actor, action, target, time, safe before/after) | **APPROVED** |
+| Practice / appointment / notification settings | Configurable by Super Admin (values themselves remain **OPEN**) | **APPROVED** |
+| User/role administration | Allowed for Super Admin; self-escalation forbidden; audited | **APPROVED** |
+| Security notifications | Password/MFA/suspicious-login events must not be freely disabled | **APPROVED** |
+| Super Admin dashboard `/super-admin/*` | Separate from patient and psychologist trees | **APPROVED** (route design); **DEFERRED** (build) |
+| SQL console / env viewer / secret viewer / filesystem in UI | Forbidden | **APPROVED** (forbidden) |
+| Entire website as CMS | Forbidden; only designed configuration models | **APPROVED** (forbidden) |
+
+Permissions are independent of roles. Super Admin default grants (architecture):
+
+```text
+MANAGE_PRACTICE_SETTINGS
+MANAGE_CONTACT_SETTINGS
+MANAGE_LOCATION_SETTINGS
+MANAGE_APPOINTMENT_SETTINGS
+MANAGE_NOTIFICATION_SETTINGS
+MANAGE_USERS
+MANAGE_ROLES
+VIEW_AUDIT_LOGS
+MANAGE_SYSTEM_SETTINGS
+MANAGE_PUBLIC_SITE_SETTINGS
+```
+
+Clinical permissions are **not** on Super Admin by default:
+
+```text
+VIEW_CLINICAL_RECORDS
+VIEW_PRIVATE_CLINICAL_NOTES
+MANAGE_CLINICAL_NOTES
+VIEW_CLINICAL_DOCUMENTS
+MANAGE_CLINICAL_DOCUMENTS
+```
+
+Those clinical permissions remain **DEFERRED** with Option C.
+
+Super Admin sessions: stricter than patient (short idle, absolute lifetime, revocation, device list, security logging). High-risk actions (role changes, MFA/security, account deactivation, major appointment policy) require **recent re-authentication**. Documented as a Phase 1/2 security requirement; **not implemented now**.
+
+Configuration groups (future tables/aggregates, not a dump on `users`):
+
+```text
+PracticeSettings
+ContactSettings
+LocationSettings
+PracticeHours
+AppointmentSettings
+NotificationSettings
+BrandSettings
+PublicSiteSettings
+```
+
+Flow: Database configuration → `PracticeConfigService` (load, validate, cache, invalidate, public vs private views) → application surfaces.
+
+Hard-coded public contact/hours/DIGIPIN in `src/data` migrate **during a future implementation phase**, not now.
+
 ---
 
 ## 3. Open decisions — HUMAN APPROVAL REQUIRED
@@ -264,6 +329,12 @@ Cancellation **policy** (windows, approval): **OPEN**. Architecture must be conf
 | O16 | CI provider / setup | GitHub Actions likely; not implemented in 0.5 |
 | O17 | IDOR response | 403 vs 404 for other-patient resources |
 | O18 | Hosting vs data residency | If Postgres is in India and the app is on Vercel, processor map still needs review |
+| O19 | Exact Super Admin provisioning process | Break-glass, who holds backup codes, first-account bootstrap |
+| O20 | Final permission matrix | Including whether any clinical permission can ever attach to Super Admin |
+| O21 | Whether Super Admin can manage psychologist accounts | Assign/revoke `PSYCHOLOGIST`, deactivate |
+| O22 | Whether Super Admin can manage public FAQ content | Selected FAQ vs read-only educational pages |
+| O23 | Configuration caching strategy | TTL, Redis vs in-process, invalidation |
+| O24 | Configuration rollback UX | History vs one-click revert |
 
 Do not invent values for O7–O11 in code.
 
@@ -280,6 +351,11 @@ Do not invent values for O7–O11 in code.
 | Psychological assessments | **DEFERRED** |
 | Child/adolescent independent accounts and verifiable parental consent | **DEFERRED** |
 | `STAFF` role implementation | **DEFERRED** |
+| Super Admin dashboard implementation (`/super-admin/*`) | **DEFERRED** |
+| Configuration APIs / `PracticeConfigService` code | **DEFERRED** |
+| Configuration database migrations | **DEFERRED** |
+| Public website CMS / selected content editing | **DEFERRED** |
+| User administration UI | **DEFERRED** |
 | Payments, invoices, teleconsult, calendar sync, extra psychologists | **DEFERRED** |
 | Merging or reusing PR #9 stores/UI as production | **DEFERRED** |
 
@@ -334,7 +410,7 @@ Infrastructure work in a non-production environment may proceed in a later Phase
 - Secure cookies (httpOnly; Secure in production)
 - Server-side authorization on every sensitive operation
 - Password hashing (existing scrypt reusable)
-- Mandatory TOTP MFA for psychologist
+- Mandatory TOTP MFA for psychologist and Super Admin
 - Rate limiting (existing Upstash pattern may be reused)
 - Append-only audit logging (no secrets/OTP/notes)
 - Input validation (Zod, matching current app)
@@ -372,8 +448,10 @@ Phase 1 schema must **not** create:
 - `consultations`
 - `consultation_notes`
 - `patient_documents`
+- Super Admin dashboard routes
+- Configuration CMS tables unless that milestone explicitly includes identity **and** a reviewed config slice
 
-even though they appear in the Phase 0 ERD.
+even though some of those appear in the Phase 0 ERD.
 
 ---
 
@@ -385,6 +463,7 @@ even though they appear in the Phase 0 ERD.
 | Privacy policy vs Option B | Legal copy denies patient database/portal | Option B **APPROVED** as product direction | Production launch **BLOCKED** until copy is updated |
 | HMAC psychologist auth | Live code | Keep until unified session | Do not delete now |
 | PR #9 | Prototype with mocks + JSON blob | Not production | Do not merge |
+| Super Admin | Earlier 0.5 lock said role absent | Role **APPROVED** architecturally; UI **DEFERRED** | This update supersedes “no SUPER_ADMIN” |
 
 No other code/decision conflicts require a silent code change.
 
