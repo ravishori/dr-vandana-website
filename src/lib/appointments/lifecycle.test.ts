@@ -467,7 +467,7 @@ describe("phase 2D appointment lifecycle", () => {
       });
       assert.equal(stolen.ok, false);
       if (!stolen.ok) {
-        assert.equal(stolen.code, "FORBIDDEN");
+        assert.equal(stolen.code, "NOT_FOUND");
       }
       const admin = await provisionPrivilegedUser(w.ctx, {
         role: "SUPER_ADMIN",

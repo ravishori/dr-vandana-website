@@ -32,6 +32,19 @@ describe("appointment state machine", () => {
     assert.equal(direct.historyEvent, "RESCHEDULED");
   });
 
+  it("allows patient to request a reschedule but not to reschedule immediately", () => {
+    const requested = appointmentStateMachine.resolve(
+      "CONFIRMED",
+      "REQUEST_RESCHEDULE",
+      "PATIENT",
+    );
+    assert.equal(requested.to, "RESCHEDULE_REQUESTED");
+    assert.throws(
+      () => appointmentStateMachine.resolve("CONFIRMED", "RESCHEDULE", "PATIENT"),
+      AppointmentDomainError,
+    );
+  });
+
   it("does not allow patient confirm, complete, or no-show", () => {
     for (const action of ["CONFIRM", "COMPLETE", "NO_SHOW", "REJECT"] as const) {
       assert.throws(
