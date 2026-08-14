@@ -2,8 +2,12 @@
 
 **Status:** DESIGN ONLY — HARD STOP before implementation  
 **Date:** 14 August 2026  
-**Project:** Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice  
-**Tagline:** Your Mental Well-being Matters.  
+**Product scope lock:** see `docs/PATIENT_PRACTICE_DECISIONS.md` (Phase 0.5). That register **outranks** this blueprint.
+
+**Option B** (patient accounts + appointments + notifications) is **APPROVED** as the first production direction.  
+**Option C** (clinical notes, consultation charts, clinical documents) is **DEFERRED — NOT APPROVED FOR IMPLEMENTATION**.
+
+Do not implement deferred entities in this file merely because they appear in the ERD.  
 **Repository:** https://github.com/ravishori/dr-vandana-website  
 **Code baseline inspected:** `cursor/existing-feature-audit-d73b` (PR #10, commit `2081716`)  
 **This document does not implement software.** No migrations, portals, OTP, WhatsApp Business API, or booking engine were added.

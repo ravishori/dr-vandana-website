@@ -22,6 +22,8 @@ It does **not** yet include a complete patient & practice management system (pat
 
 Phase 0 architecture (design only, not implemented): `docs/PATIENT_PRACTICE_MANAGEMENT_ARCHITECTURE.md`.
 
+Authoritative PMS decisions (Option B locked; clinical records deferred): `docs/PATIENT_PRACTICE_DECISIONS.md`.
+
 ## Stack
 
 - Next.js 16 (App Router) + React 19 + TypeScript
