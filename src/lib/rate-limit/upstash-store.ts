@@ -219,6 +219,40 @@ export async function enforceUpstashQuestionLoginLimit(
     return { ok: false, reason: "store_error" };
   }
 }
+const identityLimiters = new Map<string, Ratelimit>();
+
+export async function enforceUpstashIdentityLimit(
+  key: string,
+  maxAttempts: number,
+  windowMs: number,
+): Promise<UpstashLimitResult> {
+  try {
+    const windowSeconds = Math.max(1, Math.floor(windowMs / 1000));
+    const cacheKey = `${maxAttempts}:${windowSeconds}`;
+    let limiter = identityLimiters.get(cacheKey);
+    if (!limiter) {
+      limiter = new Ratelimit({
+        redis: getRedis(),
+        limiter: Ratelimit.slidingWindow(maxAttempts, `${windowSeconds} s`),
+        prefix: "drvandana:rl:identity",
+        analytics: false,
+      });
+      identityLimiters.set(cacheKey, limiter);
+    }
+    const result = await limiter.limit(key);
+    if (!result.success) {
+      return {
+        ok: true,
+        allowed: false,
+        retryAfterSeconds: retryAfterSeconds(result.reset),
+      };
+    }
+    return { ok: true, allowed: true };
+  } catch {
+    return { ok: false, reason: "store_error" };
+  }
+}
+
 export function resetUpstashClientsForTests(): void {
   redisClient = null;
   appointmentBurst = null;
@@ -227,4 +261,5 @@ export function resetUpstashClientsForTests(): void {
   aiAskLimit = null;
   questionSubmitLimit = null;
   questionLoginLimit = null;
+  identityLimiters.clear();
 }

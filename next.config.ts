@@ -34,7 +34,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["node:sqlite"],
+  serverExternalPackages: ["node:sqlite", "postgres", "@electric-sql/pglite"],
   async headers() {
     return [
       {
