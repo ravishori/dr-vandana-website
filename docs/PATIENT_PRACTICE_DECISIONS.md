@@ -507,6 +507,28 @@ Do not start Phase 2 from the Phase 1C register.
 
 ---
 
+## 13. Phase 2B availability notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md`. **Production launch remains BLOCKED.**
+
+This milestone did **not** approve open scheduling policy. Test fixtures are labelled **TEST FIXTURE ONLY**.
+
+| Topic | Status |
+|---|---|
+| Practice hours / breaks | Configurable; values **OPEN** |
+| Consultation duration | Read from appointment type; value **OPEN** |
+| Buffers | Read from appointment type; values **OPEN** |
+| Slot granularity | Configurable; value **OPEN** |
+| Minimum notice / maximum advance | Configurable nullable fields; values **OPEN** |
+| Cancellation window | Schema field present; **not implemented** (Phase 2C) |
+| Blocking statuses | Unchanged: `PENDING`, `CONFIRMED`, `RESCHEDULE_REQUESTED` |
+| Timezone | **Asia/Kolkata** (already **APPROVED**) |
+| Availability vs booking | Availability is **advisory**; exclusion constraint + booking transaction remain authoritative |
+
+Do not start Phase 2C from this note until that milestone is explicitly approved.
+
+---
+
 ## Document control
 
 | Field | Value |

@@ -8,7 +8,7 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 
 import { isPostgresUrl, loadIdentityConfig } from "../src/lib/identity/config";
-import { identitySchema } from "../src/lib/identity/schema";
+import { practiceSchema } from "../src/lib/identity/db";
 import { createMemoryEmailService } from "../src/lib/identity/email-service";
 import { createOtpService, createUnconfiguredOtpProvider } from "../src/lib/identity/otp";
 import { createMemoryRateLimiter } from "../src/lib/identity/rate-limit";
@@ -47,7 +47,7 @@ async function main() {
 
   const sql = postgres(url, { max: 1, prepare: false });
   try {
-    const db = drizzle(sql, { schema: identitySchema });
+    const db = drizzle(sql, { schema: practiceSchema });
     const config = loadIdentityConfig({
       nodeEnv: "development",
       identityProvisionEnabled: true,

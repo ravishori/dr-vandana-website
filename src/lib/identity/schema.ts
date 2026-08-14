@@ -13,7 +13,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 /**
- * Phase 1 identity schema. No appointment or clinical tables.
+ * Phase 1 identity schema. Appointment tables live in
+ * `src/lib/appointments/schema.ts` and are composed in `db.ts`.
+ * No clinical-record tables.
  */
 export const users = pgTable(
   "users",

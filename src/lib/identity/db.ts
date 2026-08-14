@@ -4,13 +4,19 @@ import { join } from "node:path";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { appointmentSchema } from "@/lib/appointments/schema";
 import {
   isPostgresUrl,
   type IdentityRuntimeConfig,
 } from "@/lib/identity/config";
 import { identitySchema } from "@/lib/identity/schema";
 
-export type IdentityDb = PostgresJsDatabase<typeof identitySchema>;
+export const practiceSchema = {
+  ...identitySchema,
+  ...appointmentSchema,
+};
+
+export type IdentityDb = PostgresJsDatabase<typeof practiceSchema>;
 
 const globalForIdentity = globalThis as unknown as {
   drvIdentitySql?: ReturnType<typeof postgres>;
@@ -34,7 +40,7 @@ export function getIdentityDb(config: IdentityRuntimeConfig): IdentityDb {
     return globalForIdentity.drvIdentityDb;
   }
   const sql = createPostgresClient(config.databaseUrl as string);
-  const db = drizzle(sql, { schema: identitySchema });
+  const db = drizzle(sql, { schema: practiceSchema });
   globalForIdentity.drvIdentitySql = sql;
   globalForIdentity.drvIdentityDb = db;
   return db;

@@ -2,8 +2,7 @@ import postgres from "postgres";
 
 import { seedIdentityCatalog } from "../src/lib/identity/catalog";
 import { isPostgresUrl } from "../src/lib/identity/config";
-import { applyIdentityMigrationSql } from "../src/lib/identity/db";
-import { identitySchema } from "../src/lib/identity/schema";
+import { applyIdentityMigrationSql, practiceSchema } from "../src/lib/identity/db";
 import { drizzle } from "drizzle-orm/postgres-js";
 
 async function main() {
@@ -22,7 +21,7 @@ async function main() {
   const sql = postgres(databaseUrl, { max: 1, prepare: false });
   try {
     await applyIdentityMigrationSql((statement) => sql.unsafe(statement));
-    const db = drizzle(sql, { schema: identitySchema });
+    const db = drizzle(sql, { schema: practiceSchema });
     await seedIdentityCatalog(db, new Date());
     console.info("Identity migration applied.");
   } finally {
