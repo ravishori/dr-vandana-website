@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
+import type { ReactNode } from "react";
 
 import { SkipToContent } from "@/components/a11y/SkipToContent";
 import { SiteShell } from "@/components/layout/SiteShell";
@@ -72,7 +73,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en-IN"

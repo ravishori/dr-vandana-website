@@ -476,8 +476,64 @@ Mobile: portal uses the public site chrome plus portal nav; usable but not a ded
 7. Public question form `aria-invalid` / `aria-describedby` on error fields.
 8. `.env.example` documents SMTP and error-reporting variable names (empty values only).
 9. Deduplicated `.gitignore`.
+10. Root layout uses an explicit `{ children: ReactNode }` prop instead of generated `LayoutProps<"/">`, so `npm run typecheck` works before `next build` has written `.next/types`.
 
 No Patient & Practice Management features were added.
+
+---
+
+## TEST RESULTS
+
+| Check | Result |
+|---|---|
+| `npm test` | **Pass** — 58 tests, 6 suites, 0 failures |
+| `npm run lint` | **Pass** |
+| `npm run typecheck` | **Pass** after layout typing fix. On a clean tree *before* `next build`, `LayoutProps` was undefined because `next-env.d.ts` / `.next/types` are generated and gitignored. That was a pre-existing Next 16 typing dependency, not a product regression. |
+| `npm run build` | **Pass** — Next.js 16.3.0 production build |
+| `npm audit` | **0 vulnerabilities** (375 packages) |
+| GitHub Actions / CI | Not configured |
+
+Build notes (pre-existing, not fixed): Next.js warns that the `middleware` file convention is deprecated in favour of `proxy`. Migrating that is an architecture change and was out of scope. Node logs `ExperimentalWarning` for `node:sqlite`.
+
+Production `next start` without env logs expected configuration errors: SMTP incomplete, appointment rate-limit store misconfigured for production, psychologist portal not configured, question store misconfigured, AI educational fallback. That matches **CONFIGURATION REQUIRED** for email/alerts.
+
+---
+
+## BROWSER / APPLICATION VERIFICATION
+
+Performed against `next start` at `http://127.0.0.1:3000` (this environment, 14 August 2026).
+
+HTTP status 200: `/`, `/about`, `/understanding-counselling`, `/contact`, `/book-appointment`, `/mental-health-support`, `/psychology/ask-dr-vandana-ai`, `/ask-a-question`, `/psychologist/login`, `/privacy-policy`, `/disclaimer`, `/terms`, `/areas-of-support`, `/child-adolescent-psychology`, `/stress-anxiety-wellness`, `/psychology/case-studies`, `/psychology/counselling`, `/robots.txt`, `/sitemap.xml`, `/og-image.png`.
+
+`/psychologist` returned **307** to `/psychologist/login?from=%2Fpsychologist`.
+
+`robots.txt` disallows `/api/` and `/psychologist`. Sitemap uses `https://drvandana.trinetra.net` and does **not** include psychologist routes.
+
+Visual browser pass: home (tagline + Book CTA), about, FAQ (search + accordion), contact (DIGIPIN), appointment enquiry form, crisis directory, psychologist login after redirect. Unique `<title>` tags per page. Bitly booking links are `https://bit.ly/4c2u9te`. About HTML contains Ph.D. in Naturopathy, M.A. Psychology, and Over 6 years.
+
+Narrow-viewport screenshot of the bottom quick bar was not captured in the visual tool (desktop chrome); `lg:hidden` mobile bar markup is present in the home HTML.
+
+---
+
+## FILES CHANGED
+
+| File | Change |
+|---|---|
+| `docs/EXISTING_FEATURE_AUDIT.md` | Full audit report (new) |
+| `README.md` | Replaced create-next-app boilerplate with project README |
+| `.env.example` | Document SMTP and error-reporting variable names |
+| `.gitignore` | Remove duplicate env/vercel entries |
+| `src/app/layout.tsx` | `lang="en-IN"`; explicit children typing |
+| `src/app/understanding-counselling/page.tsx` | FAQ JSON-LD no longer truncated |
+| `src/components/counselling-faq/FAQExplorer.tsx` | Search/filter accessibility |
+| `src/components/question-portal/PublicQuestionForm.tsx` | Field error ARIA |
+| `src/data/contact.ts` | Bitly booking URL HTTPS |
+
+---
+
+## GIT
+
+See the checkpoint note below. Pull request: https://github.com/ravishori/dr-vandana-website/pull/10
 
 ---
 
@@ -511,4 +567,14 @@ Do **not** treat draft PR #9 as production. Re-evaluate that prototype against t
 
 ## GIT CHECKPOINT NOTE
 
+| Item | Value |
+|---|---|
+| Branch | `cursor/existing-feature-audit-d73b` |
+| Base of existing product | `cursor/counselling-faq-a302` (`b6211fe`) |
+| Remote | `origin` → `https://github.com/ravishori/dr-vandana-website` |
+| Pull request | https://github.com/ravishori/dr-vandana-website/pull/10 (into `main`) |
+| Commit message | `chore: audit and checkpoint existing psychology practice features` |
+
 This branch is based on `cursor/counselling-faq-a302` rather than empty `main`, so the GitHub checkpoint contains the actual website. Merging this PR into `main` is the recommended way to establish production `main` before the PMS phase.
+
+Draft PR #9 (Patient & Practice Management) was **not** included.
