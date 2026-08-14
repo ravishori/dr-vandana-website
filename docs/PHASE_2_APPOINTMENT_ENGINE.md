@@ -1,11 +1,11 @@
 # Phase 2 Appointment Engine
 
-**Status:** Phase 2D implemented in code; **not** a production launch  
+**Status:** Phase 2E implemented in code; **not** a production launch  
 **Date:** 14 August 2026  
 **Product:** Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice  
 **Tagline:** Your Mental Well-being Matters.
 
-This document describes the appointment domain through **Phase 2D (Psychologist Appointment Management)**. It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
+This document describes the appointment domain through **Phase 2E (Patient Appointment Portal)**. It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
 
 **PRODUCTION remains BLOCKED.** Patient registration stays disabled. This phase does not deploy, choose a PostgreSQL vendor, enable OTP, or send appointment notifications.
 
@@ -18,8 +18,8 @@ This document describes the appointment domain through **Phase 2D (Psychologist 
 | Phase 2A — appointment schema, types, hours, exceptions, history, state model | Present in `drizzle/0003_appointment_engine.sql` and `src/lib/appointments/` |
 | Phase 2B — server-side availability and slot engine | Present in `src/lib/appointments/availability.ts` |
 | Phase 2C — secure appointment booking workflow | Present in `src/lib/appointments/booking.ts` |
-| Phase 2D — psychologist appointment management and lifecycle | **This document** |
-| Phase 2E — patient appointment portal and history | **Not started** |
+| Phase 2D — psychologist appointment management and lifecycle | Present in `src/lib/appointments/lifecycle.ts` |
+| Phase 2E — patient appointment portal and history | **This document** |
 | Notifications (email / WhatsApp / reminders) | **Not implemented** |
 
 ---
@@ -471,14 +471,99 @@ Cancellation window production value, whether psychologist cancel is always allo
 
 ---
 
+## Phase 2E — Patient Appointment Portal
+
+Phase 2E exposes the existing appointment domain to the authenticated patient. It does not add clinical records, Super Admin views, or notification delivery.
+
+### Authorization
+
+Every patient portal read and mutation requires:
+
+- Phase 1 practice session (`drv_practice_session`)
+- Role `PATIENT`
+- Account `ACTIVE`
+- Email verified
+- Mobile verified
+
+Identity is taken from the session only. Client-supplied patient IDs, roles, status, psychologist IDs, duration, end time, and occupied range are ignored.
+
+### Ownership
+
+List and detail queries always include:
+
+`appointments.patient_user_id = authenticated_session.user_id`
+
+Detail and mutations also require the public appointment ID. Missing and unauthorized IDs return the same message: “This appointment cannot be accessed.” Existence of another patient’s appointment is not leaked.
+
+`SUPER_ADMIN` and `STAFF` do not receive patient portal access. Psychologists cannot use `/patient/appointments`.
+
+### Patient UI
+
+- `/patient/appointments` — home (pending requests + upcoming confirmed) and filtered lists
+- `/patient/appointments/history` — completed, cancelled, rejected, no-show
+- `/patient/appointments/[publicId]` — operational detail, patient-visible history, actions
+- `/patient/appointments/new` — existing booking page; success links to “View my appointments”
+
+Filters (whitelist): upcoming, pending, confirmed, completed, cancelled, rejected, no-show, history, date range. Server-side pagination (default 20, max 50). Upcoming nearest-first; history newest-first.
+
+Times are formatted in **Asia/Kolkata (IST)** using server timezone utilities, not the browser timezone.
+
+### Patient-facing status
+
+| Internal | Patient copy |
+|---|---|
+| PENDING | Appointment request pending |
+| CONFIRMED | Appointment confirmed |
+| RESCHEDULE_REQUESTED | Reschedule requested |
+| CANCELLED | Cancelled |
+| REJECTED | Request not accepted |
+| COMPLETED | Appointment completed |
+| NO_SHOW | Appointment marked as no-show |
+
+PENDING is never described as confirmed. Copy: “Your appointment request has been submitted and is awaiting confirmation.”
+
+Patient history uses labels such as “Appointment requested” and actors **You** / **Psychologist**. No audit logs, UUIDs, or security metadata.
+
+### Cancellation
+
+The portal calls Phase 2D `cancelAppointment`. UI hiding is not authorization. Confirmation dialog: “Are you sure you want to cancel this appointment?” Success: “Your appointment has been cancelled.” No notification promise.
+
+`cancellation_minimum_notice_minutes` remains nullable and **OPEN**. `null` means no extra window. When set, the server enforces it for patients. Tests use **TEST FIXTURE ONLY** values.
+
+### Rescheduling
+
+Patients cannot call psychologist `RESCHEDULE` (immediate move). They may `REQUEST_RESCHEDULE` from `CONFIRMED`:
+
+- Patient selects a proposed start (availability is advisory)
+- Server recalculates duration/buffers, verifies occupancy, and stores `proposed_starts_at` / `proposed_ends_at`
+- Current `starts_at` / occupied range stay in place (`RESCHEDULE_REQUESTED` remains blocking)
+- History: `RESCHEDULE_REQUESTED`; current status is not `RESCHEDULED`
+- Copy: “Your reschedule request has been submitted and is awaiting confirmation.”
+
+If the proposed slot is unavailable: “This time is no longer available. Please choose another time.” Original appointment unchanged.
+
+The psychologist may **accept** (move to the proposed slot, history `RESCHEDULED`, status `CONFIRMED`) or **decline** (clear proposal, remain `CONFIRMED`). Accept uses the same occupancy + exclusion protection as booking. Reschedule window remains **OPEN**.
+
+### Data minimization
+
+Portal responses include appointment public ID, type name, times, status, version, and allowed actions. They do not include email, mobile, psychologist internal IDs, audit rows, or other patients.
+
+### Concurrency
+
+Patient cancel vs psychologist cancel: one winner. Patient reschedule request vs psychologist cancel: one winner. Patient proposed slot vs another booking: at most one occupant of the target range. PostgreSQL remains authoritative.
+
+### Unresolved policy (still OPEN)
+
+Same as Phase 2D: cancellation window production value, reschedule notice, practice hours, duration, buffers, notification provider.
+
+---
+
 ## What later phases still do not implement
 
-Phase 2D added psychologist lifecycle UI. Still not implemented:
+Phase 2E added the patient appointment portal. Still not implemented:
 
-- Patient appointment history list (`/patient/appointments`)
-- Patient cancellation / reschedule UI
+- Email / WhatsApp / SMS / reminders / push
 - Super Admin appointment console
-- Email / WhatsApp / SMS / reminders
 - Clinical records, documents, payments, teleconsultation, calendar sync
 
 The public `/book-appointment` enquiry form is unchanged and is **not** this engine.
@@ -503,7 +588,8 @@ Phase 1C gates remain: PostgreSQL provider/region, OTP provider, SMTP, privacy/t
 - PGlite tests reading hours, exceptions, and `tstzrange` occupancy
 - Booking authz, validation, idempotency, IDOR, rate-limit, and rollback tests
 - Lifecycle transitions, dashboard filters, IDOR, history immutability, rollback
-- PGlite concurrent booking and lifecycle tests
+- Patient portal ownership, filters, pagination, cancellation, reschedule request, and IDOR
+- PGlite concurrent booking, lifecycle, and patient-portal tests
 - Optional PostgreSQL 16 concurrent tests when `APPOINTMENT_PG_URL` is set (CI job `appointment-pg-concurrency`)
 - Identity tests remain in the suite
 

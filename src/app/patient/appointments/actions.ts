@@ -8,7 +8,21 @@ import {
   listBookableAppointmentTypes,
   requestAppointment,
 } from "@/lib/appointments/booking";
-import { APPOINTMENT_RATE_LIMITS, BOOKING_SAFE_MESSAGES } from "@/lib/appointments/constants";
+import {
+  APPOINTMENT_RATE_LIMITS,
+  BOOKING_SAFE_MESSAGES,
+  LIFECYCLE_SAFE_MESSAGES,
+} from "@/lib/appointments/constants";
+import {
+  cancelAppointment,
+  requestRescheduleAppointment,
+} from "@/lib/appointments/lifecycle";
+import {
+  authorizePortalPatient,
+  getPatientAppointmentDetail,
+  listPatientAppointments,
+  listPatientRescheduleSlots,
+} from "@/lib/appointments/patient-portal";
 import { getClientIpFromHeaders } from "@/lib/appointment-abuse";
 import { createAppIdentityContext } from "@/lib/identity/runtime";
 import { readPracticeSessionCookie } from "@/lib/identity/cookies";
@@ -131,4 +145,126 @@ export async function requirePatientBookingSession() {
       day: "2-digit",
     }).format(loaded.ctx.now()),
   };
+}
+
+export type PatientPortalActionResult =
+  | { ok: true; message: string; status?: string; version?: number }
+  | { ok: false; message: string };
+
+async function loadPortalSession() {
+  const loaded = await loadBookableSession();
+  if (!loaded.ok) {
+    return {
+      ok: false as const,
+      code: "UNAUTHENTICATED" as const,
+      message: LIFECYCLE_SAFE_MESSAGES.sessionExpired,
+    };
+  }
+  const authorized = await authorizePortalPatient(loaded.ctx, loaded.principal);
+  if (!authorized.ok) {
+    return authorized;
+  }
+  return {
+    ok: true as const,
+    ctx: loaded.ctx,
+    principal: authorized.principal,
+  };
+}
+
+export async function requirePatientPortalSession() {
+  const loaded = await loadPortalSession();
+  if (!loaded.ok) {
+    if (loaded.code === "UNAUTHENTICATED") {
+      redirect("/patient/login");
+    }
+    return loaded;
+  }
+  return loaded;
+}
+
+export async function loadPatientAppointmentsPage(input: {
+  filter?: string;
+  fromLocal?: string;
+  toLocal?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const session = await requirePatientPortalSession();
+  if (!session.ok) {
+    return session;
+  }
+  return listPatientAppointments(session.ctx, session.principal, {
+    ...input,
+    ipAddress: getClientIpFromHeaders(await headers()),
+  });
+}
+
+export async function loadPatientAppointmentPage(publicId: string) {
+  const session = await requirePatientPortalSession();
+  if (!session.ok) {
+    return session;
+  }
+  return getPatientAppointmentDetail(
+    session.ctx,
+    session.principal,
+    publicId,
+    getClientIpFromHeaders(await headers()),
+  );
+}
+
+export async function cancelPatientAppointmentAction(input: {
+  publicId: string;
+  expectedVersion: number;
+}): Promise<PatientPortalActionResult> {
+  const session = await loadPortalSession();
+  if (!session.ok) {
+    return { ok: false, message: session.message };
+  }
+  const result = await cancelAppointment(session.ctx, {
+    principal: session.principal,
+    ipAddress: getClientIpFromHeaders(await headers()),
+    publicId: input.publicId,
+    expectedVersion: input.expectedVersion,
+  });
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+  return { ok: true, message: result.message, status: result.status, version: result.version };
+}
+
+export async function requestPatientRescheduleAction(input: {
+  publicId: string;
+  expectedVersion: number;
+  requestedStart: string;
+}): Promise<PatientPortalActionResult> {
+  const session = await loadPortalSession();
+  if (!session.ok) {
+    return { ok: false, message: session.message };
+  }
+  const result = await requestRescheduleAppointment(session.ctx, {
+    principal: session.principal,
+    ipAddress: getClientIpFromHeaders(await headers()),
+    publicId: input.publicId,
+    expectedVersion: input.expectedVersion,
+    requestedStart: input.requestedStart,
+  });
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+  return { ok: true, message: result.message, status: result.status, version: result.version };
+}
+
+export async function loadPatientRescheduleSlotsAction(input: {
+  publicId: string;
+  dateLocal: string;
+}) {
+  const session = await loadPortalSession();
+  if (!session.ok) {
+    return session;
+  }
+  return listPatientRescheduleSlots(session.ctx, session.principal, {
+    publicId: input.publicId,
+    dateLocal: input.dateLocal,
+    ipAddress: getClientIpFromHeaders(await headers()),
+  });
 }

@@ -7,9 +7,11 @@ import { getClientIpFromHeaders } from "@/lib/appointment-abuse";
 import type { IdentityContext } from "@/lib/identity/context";
 import type { AuthorizationPrincipal } from "@/lib/identity/authorization";
 import {
+  acceptRescheduleAppointment,
   cancelAppointment,
   completeAppointment,
   confirmAppointment,
+  declineRescheduleAppointment,
   markAppointmentNoShow,
   rejectAppointment,
   rescheduleAppointment,
@@ -223,4 +225,47 @@ export async function loadRescheduleSlotsAction(input: {
     return loaded;
   }
   return listRescheduleSlots(loaded.ctx, loaded.principal, input);
+}
+
+export async function acceptRescheduleAppointmentAction(input: {
+  publicId: string;
+  expectedVersion: number;
+}): Promise<PracticeActionResult> {
+  return mutate(async (ctx, principal, ip) => {
+    const result = await acceptRescheduleAppointment(ctx, {
+      principal,
+      ipAddress: ip,
+      publicId: input.publicId,
+      expectedVersion: input.expectedVersion,
+    });
+    if (!result.ok) {
+      return { ok: false, message: result.message };
+    }
+    return {
+      ok: true,
+      message: result.message,
+      status: result.status,
+      version: result.version,
+      start: result.start,
+      end: result.end,
+    };
+  });
+}
+
+export async function declineRescheduleAppointmentAction(input: {
+  publicId: string;
+  expectedVersion: number;
+}): Promise<PracticeActionResult> {
+  return mutate(async (ctx, principal, ip) => {
+    const result = await declineRescheduleAppointment(ctx, {
+      principal,
+      ipAddress: ip,
+      publicId: input.publicId,
+      expectedVersion: input.expectedVersion,
+    });
+    if (!result.ok) {
+      return { ok: false, message: result.message };
+    }
+    return { ok: true, message: result.message, status: result.status, version: result.version };
+  });
 }

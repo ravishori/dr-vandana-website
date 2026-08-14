@@ -4,9 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import {
+  acceptRescheduleAppointmentAction,
   cancelAppointmentAction,
   completeAppointmentAction,
   confirmAppointmentAction,
+  declineRescheduleAppointmentAction,
   loadRescheduleSlotsAction,
   markNoShowAction,
   rejectAppointmentAction,
@@ -33,11 +35,15 @@ export function PracticeAppointmentActions({
   version,
   actions,
   timezone,
+  proposedStart,
+  proposedEnd,
 }: {
   publicId: string;
   version: number;
   actions: AppointmentAction[];
   timezone: string;
+  proposedStart?: string | null;
+  proposedEnd?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -60,6 +66,12 @@ export function PracticeAppointmentActions({
       {message ? (
         <p className="text-sm" role="status">
           {message}
+        </p>
+      ) : null}
+      {proposedStart ? (
+        <p className="text-sm">
+          Requested new time: {formatSlot(proposedStart, timezone)}
+          {proposedEnd ? ` – ${formatSlot(proposedEnd, timezone)}` : ""}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-3">
@@ -121,6 +133,40 @@ export function PracticeAppointmentActions({
             }
           >
             Mark no-show
+          </button>
+        ) : null}
+        {can("ACCEPT_RESCHEDULE") ? (
+          <button
+            type="button"
+            disabled={pending}
+            className={identityButtonClassName}
+            onClick={() =>
+              run(() =>
+                acceptRescheduleAppointmentAction({
+                  publicId,
+                  expectedVersion: version,
+                }),
+              )
+            }
+          >
+            Accept requested time
+          </button>
+        ) : null}
+        {can("DECLINE_RESCHEDULE") ? (
+          <button
+            type="button"
+            disabled={pending}
+            className={identityButtonClassName}
+            onClick={() =>
+              run(() =>
+                declineRescheduleAppointmentAction({
+                  publicId,
+                  expectedVersion: version,
+                }),
+              )
+            }
+          >
+            Keep current time
           </button>
         ) : null}
       </div>

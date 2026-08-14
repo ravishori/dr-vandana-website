@@ -49,6 +49,8 @@ export type PracticeAppointmentListItem = {
 
 export type PracticeAppointmentDetail = PracticeAppointmentListItem & {
   patientEmail: string | null;
+  proposedStart: string | null;
+  proposedEnd: string | null;
   history: {
     eventType: string;
     fromStatus: string | null;
@@ -227,6 +229,8 @@ export async function getPracticeAppointmentDetail(
       timezone: appointments.timezone,
       createdAt: appointments.createdAt,
       version: appointments.version,
+      proposedStartsAt: appointments.proposedStartsAt,
+      proposedEndsAt: appointments.proposedEndsAt,
       typePublicId: appointmentTypes.publicId,
       typeName: appointmentTypes.name,
       patientPublicId: users.publicId,
@@ -271,6 +275,8 @@ export async function getPracticeAppointmentDetail(
       appointmentType: { publicId: row.typePublicId, name: row.typeName },
       patient: { publicId: row.patientPublicId, displayName: row.patientDisplayName },
       patientEmail: row.patientEmail,
+      proposedStart: row.proposedStartsAt?.toISOString() ?? null,
+      proposedEnd: row.proposedEndsAt?.toISOString() ?? null,
       actions: psychologistActionsFor(row.status as AppointmentStatus),
       history: historyRows.map((item) => ({
         eventType: item.eventType,

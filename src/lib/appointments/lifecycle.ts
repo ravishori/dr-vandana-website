@@ -113,11 +113,38 @@ async function assertActiveUser(
   userId: string,
 ): Promise<void> {
   const [user] = await db
-    .select({ status: users.status })
+    .select({
+      status: users.status,
+      emailVerifiedAt: users.emailVerifiedAt,
+      mobileVerifiedAt: users.mobileVerifiedAt,
+    })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
   if (!user || user.status !== "ACTIVE") {
+    throw new LifecycleDomainError("FORBIDDEN", LIFECYCLE_SAFE_MESSAGES.forbidden);
+  }
+}
+
+async function assertVerifiedPatient(
+  db: AppointmentQueryDb,
+  userId: string,
+): Promise<void> {
+  const [user] = await db
+    .select({
+      status: users.status,
+      emailVerifiedAt: users.emailVerifiedAt,
+      mobileVerifiedAt: users.mobileVerifiedAt,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (
+    !user ||
+    user.status !== "ACTIVE" ||
+    !user.emailVerifiedAt ||
+    !user.mobileVerifiedAt
+  ) {
     throw new LifecycleDomainError("FORBIDDEN", LIFECYCLE_SAFE_MESSAGES.forbidden);
   }
 }
@@ -191,7 +218,49 @@ function parsePublicId(publicId: string): string {
 async function loadAppointmentForUpdate(
   db: AppointmentQueryDb,
   publicId: string,
+  owner?: { patientUserId: string } | { psychologistUserId: string },
 ): Promise<LoadedAppointment> {
+  if (owner && "patientUserId" in owner) {
+    await db.execute(
+      sql`select id from appointments where public_id = ${publicId} and patient_user_id = ${owner.patientUserId} for update`,
+    );
+    const [row] = await db
+      .select()
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.publicId, publicId),
+          eq(appointments.patientUserId, owner.patientUserId),
+        ),
+      )
+      .limit(1);
+    if (!row) {
+      throw new LifecycleDomainError(
+        "NOT_FOUND",
+        LIFECYCLE_SAFE_MESSAGES.inaccessible,
+      );
+    }
+    return row;
+  }
+  if (owner && "psychologistUserId" in owner) {
+    await db.execute(
+      sql`select id from appointments where public_id = ${publicId} and psychologist_user_id = ${owner.psychologistUserId} for update`,
+    );
+    const [row] = await db
+      .select()
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.publicId, publicId),
+          eq(appointments.psychologistUserId, owner.psychologistUserId),
+        ),
+      )
+      .limit(1);
+    if (!row) {
+      throw new LifecycleDomainError("NOT_FOUND", LIFECYCLE_SAFE_MESSAGES.notFound);
+    }
+    return row;
+  }
   await db.execute(
     sql`select id from appointments where public_id = ${publicId} for update`,
   );
@@ -305,6 +374,9 @@ async function insertLifecycleSideEffects(
       startsAt: input.appointment.startsAt.toISOString(),
       endsAt: input.appointment.endsAt.toISOString(),
       timezone: PRACTICE_TIMEZONE,
+      ...(input.appointment.proposedStartsAt
+        ? { proposedStartsAt: input.appointment.proposedStartsAt.toISOString() }
+        : {}),
     },
     status: "PENDING",
     attemptCount: 0,
@@ -369,11 +441,15 @@ async function authorizeMutationActor(
   if (!actor) {
     throw new LifecycleDomainError("FORBIDDEN", LIFECYCLE_SAFE_MESSAGES.forbidden);
   }
-  if (action === "CANCEL" && actor === "PATIENT") {
+  const patientAction =
+    actor === "PATIENT" &&
+    (action === "CANCEL" || action === "REQUEST_RESCHEDULE");
+  if (patientAction) {
     const access = authorizationService.canAccess(principal, { roles: ["PATIENT"] });
     if (!access.allowed) {
       throw new LifecycleDomainError("FORBIDDEN", LIFECYCLE_SAFE_MESSAGES.forbidden);
     }
+    await assertVerifiedPatient(ctx.db, principal.userId);
   } else {
     const access = authorizationService.canAccess(principal, {
       roles: ["PSYCHOLOGIST"],
@@ -469,7 +545,13 @@ async function applyStatusTransition(
     metadata?: Record<string, unknown>;
   },
 ): Promise<LifecycleSuccess> {
-  const appointment = await loadAppointmentForUpdate(db, input.publicId);
+  const appointment = await loadAppointmentForUpdate(
+    db,
+    input.publicId,
+    actor === "PATIENT"
+      ? { patientUserId: principal.userId }
+      : { psychologistUserId: principal.userId },
+  );
   assertOwnership(appointment, principal, actor);
   assertExpectedVersion(appointment, input.expectedVersion);
   let rule;
@@ -581,7 +663,9 @@ export async function confirmAppointment(
   input: LifecycleMutationInput,
 ): Promise<LifecycleResult> {
   return runMutation(ctx, input, "CONFIRM", async (db, actor, principal) => {
-    const appointment = await loadAppointmentForUpdate(db, input.publicId);
+    const appointment = await loadAppointmentForUpdate(db, input.publicId, {
+      psychologistUserId: principal.userId,
+    });
     assertOwnership(appointment, principal, actor);
     assertExpectedVersion(appointment, input.expectedVersion);
     await assertSlotStillValid(ctx, db, appointment);
@@ -664,7 +748,13 @@ export async function cancelAppointment(
   input: LifecycleMutationInput,
 ): Promise<LifecycleResult> {
   return runMutation(ctx, input, "CANCEL", async (db, actor, principal) => {
-    const appointment = await loadAppointmentForUpdate(db, input.publicId);
+    const appointment = await loadAppointmentForUpdate(
+      db,
+      input.publicId,
+      actor === "PATIENT"
+        ? { patientUserId: principal.userId }
+        : { psychologistUserId: principal.userId },
+    );
     assertOwnership(appointment, principal, actor);
     assertExpectedVersion(appointment, input.expectedVersion);
     await assertCancellationPolicy(db, appointment, actor, ctx.now());
@@ -677,7 +767,9 @@ export async function cancelAppointment(
       actor,
       principal,
       "CANCEL",
-      LIFECYCLE_SAFE_MESSAGES.cancelled,
+      actor === "PATIENT"
+        ? LIFECYCLE_SAFE_MESSAGES.cancelledByPatient
+        : LIFECYCLE_SAFE_MESSAGES.cancelled,
       "APPOINTMENT_CANCELLED",
       "AppointmentCancelled",
       {
@@ -731,12 +823,80 @@ export async function markAppointmentNoShow(
   );
 }
 
+async function validateRequestedSlot(
+  ctx: IdentityContext,
+  db: AppointmentQueryDb,
+  appointment: LoadedAppointment,
+  requestedStart: string,
+) {
+  const startsAt = new Date(requestedStart);
+  if (Number.isNaN(startsAt.getTime())) {
+    throw new LifecycleDomainError(
+      "VALIDATION",
+      LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
+    );
+  }
+  const [appointmentType] = await db
+    .select()
+    .from(appointmentTypes)
+    .where(eq(appointmentTypes.id, appointment.appointmentTypeId))
+    .limit(1);
+  if (
+    !appointmentType ||
+    !appointmentType.active ||
+    appointmentType.durationMinutes <= 0
+  ) {
+    throw new LifecycleDomainError(
+      "SLOT_UNAVAILABLE",
+      LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
+    );
+  }
+  const dateLocal = formatLocalDate(startsAt, PRACTICE_TIMEZONE);
+  const loaded = await availabilityService.loadSlotContext(db, ctx.now(), {
+    appointmentTypePublicId: appointmentType.publicId,
+    dateLocal,
+    excludeAppointmentId: appointment.id,
+  });
+  const structural = availabilityService.isExactSlot(
+    { ...loaded.slotsInput, blockingOccupied: [] },
+    startsAt,
+  );
+  if (!structural) {
+    throw new LifecycleDomainError(
+      "SLOT_UNAVAILABLE",
+      LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
+    );
+  }
+  const occupiedByLoaded = loaded.slotsInput.blockingOccupied.some((range) =>
+    intervalsOverlap(
+      { start: structural.occupiedStartsAt, end: structural.occupiedEndsAt },
+      range,
+    ),
+  );
+  const occupiedByQuery = await hasBlockingOccupiedOverlap(
+    db,
+    appointment.psychologistUserId,
+    structural.occupiedStartsAt,
+    structural.occupiedEndsAt,
+    appointment.id,
+  );
+  if (occupiedByLoaded || occupiedByQuery) {
+    throw new LifecycleDomainError(
+      "SLOT_UNAVAILABLE",
+      LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
+    );
+  }
+  return structural;
+}
+
 export async function rescheduleAppointment(
   ctx: IdentityContext,
   input: LifecycleMutationInput & { requestedStart: string },
 ): Promise<LifecycleResult> {
   return runMutation(ctx, input, "RESCHEDULE", async (db, actor, principal) => {
-    const appointment = await loadAppointmentForUpdate(db, input.publicId);
+    const appointment = await loadAppointmentForUpdate(db, input.publicId, {
+      psychologistUserId: principal.userId,
+    });
     assertOwnership(appointment, principal, actor);
     assertExpectedVersion(appointment, input.expectedVersion);
     let rule;
@@ -751,66 +911,12 @@ export async function rescheduleAppointment(
     }
 
     await lockPsychologistCalendar(db, appointment.psychologistUserId);
-
-    const startsAt = new Date(input.requestedStart);
-    if (Number.isNaN(startsAt.getTime())) {
-      throw new LifecycleDomainError(
-        "VALIDATION",
-        LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
-      );
-    }
-
-    const [appointmentType] = await db
-      .select()
-      .from(appointmentTypes)
-      .where(eq(appointmentTypes.id, appointment.appointmentTypeId))
-      .limit(1);
-    if (
-      !appointmentType ||
-      !appointmentType.active ||
-      appointmentType.durationMinutes <= 0
-    ) {
-      throw new LifecycleDomainError(
-        "SLOT_UNAVAILABLE",
-        LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
-      );
-    }
-
-    const dateLocal = formatLocalDate(startsAt, PRACTICE_TIMEZONE);
-    const loaded = await availabilityService.loadSlotContext(db, ctx.now(), {
-      appointmentTypePublicId: appointmentType.publicId,
-      dateLocal,
-      excludeAppointmentId: appointment.id,
-    });
-    const structural = availabilityService.isExactSlot(
-      { ...loaded.slotsInput, blockingOccupied: [] },
-      startsAt,
-    );
-    if (!structural) {
-      throw new LifecycleDomainError(
-        "SLOT_UNAVAILABLE",
-        LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
-      );
-    }
-    const occupiedByLoaded = loaded.slotsInput.blockingOccupied.some((range) =>
-      intervalsOverlap(
-        { start: structural.occupiedStartsAt, end: structural.occupiedEndsAt },
-        range,
-      ),
-    );
-    const occupiedByQuery = await hasBlockingOccupiedOverlap(
+    const structural = await validateRequestedSlot(
+      ctx,
       db,
-      appointment.psychologistUserId,
-      structural.occupiedStartsAt,
-      structural.occupiedEndsAt,
-      appointment.id,
+      appointment,
+      input.requestedStart,
     );
-    if (occupiedByLoaded || occupiedByQuery) {
-      throw new LifecycleDomainError(
-        "SLOT_UNAVAILABLE",
-        LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
-      );
-    }
 
     const now = ctx.now();
     const nextVersion = appointment.version + 1;
@@ -879,4 +985,256 @@ export function psychologistActionsFor(
   status: AppointmentStatus,
 ): AppointmentAction[] {
   return appointmentStateMachine.availableActions(status, "PSYCHOLOGIST");
+}
+
+export function patientActionsFor(status: AppointmentStatus): AppointmentAction[] {
+  return appointmentStateMachine
+    .availableActions(status, "PATIENT")
+    .filter((action) => action === "CANCEL" || action === "REQUEST_RESCHEDULE");
+}
+
+export async function requestRescheduleAppointment(
+  ctx: IdentityContext,
+  input: LifecycleMutationInput & { requestedStart: string },
+): Promise<LifecycleResult> {
+  return runMutation(ctx, input, "REQUEST_RESCHEDULE", async (db, actor, principal) => {
+    const appointment = await loadAppointmentForUpdate(db, input.publicId, {
+      patientUserId: principal.userId,
+    });
+    assertOwnership(appointment, principal, actor);
+    assertExpectedVersion(appointment, input.expectedVersion);
+    let rule;
+    try {
+      rule = appointmentStateMachine.resolve(
+        appointment.status as AppointmentStatus,
+        "REQUEST_RESCHEDULE",
+        actor,
+      );
+    } catch {
+      throw transitionFailure(
+        appointment.status as AppointmentStatus,
+        "REQUEST_RESCHEDULE",
+      );
+    }
+
+    await lockPsychologistCalendar(db, appointment.psychologistUserId);
+    const structural = await validateRequestedSlot(
+      ctx,
+      db,
+      appointment,
+      input.requestedStart,
+    );
+    const now = ctx.now();
+    const nextVersion = appointment.version + 1;
+    await casUpdateAppointment(db, appointment, {
+      status: rule.to,
+      version: nextVersion,
+      proposedStartsAt: structural.startsAt,
+      proposedEndsAt: structural.endsAt,
+      updatedAt: now,
+    });
+    await input.hooks?.afterAppointmentUpdate?.();
+    const updated = {
+      ...appointment,
+      status: rule.to,
+      version: nextVersion,
+      proposedStartsAt: structural.startsAt,
+      proposedEndsAt: structural.endsAt,
+    };
+    await insertLifecycleSideEffects(ctx, db, {
+      appointment: updated,
+      actorUserId: principal.userId,
+      actorRole: actor,
+      action: "REQUEST_RESCHEDULE",
+      fromStatus: appointment.status as AppointmentStatus,
+      toStatus: rule.to,
+      historyEvent: rule.historyEvent,
+      auditAction: "APPOINTMENT_RESCHEDULE_REQUESTED",
+      outboxKey: "AppointmentRescheduleRequested",
+      metadata: {
+        appointmentPublicId: appointment.publicId,
+        currentStart: appointment.startsAt.toISOString(),
+        proposedStart: structural.startsAt.toISOString(),
+      },
+      hooks: input.hooks,
+    });
+    return {
+      ok: true,
+      publicId: appointment.publicId,
+      status: rule.to,
+      version: nextVersion,
+      message: LIFECYCLE_SAFE_MESSAGES.rescheduleRequested,
+      start: appointment.startsAt.toISOString(),
+      end: appointment.endsAt.toISOString(),
+    };
+  });
+}
+
+export async function acceptRescheduleAppointment(
+  ctx: IdentityContext,
+  input: LifecycleMutationInput,
+): Promise<LifecycleResult> {
+  return runMutation(ctx, input, "ACCEPT_RESCHEDULE", async (db, actor, principal) => {
+    const appointment = await loadAppointmentForUpdate(db, input.publicId, {
+      psychologistUserId: principal.userId,
+    });
+    assertOwnership(appointment, principal, actor);
+    assertExpectedVersion(appointment, input.expectedVersion);
+    let rule;
+    try {
+      rule = appointmentStateMachine.resolve(
+        appointment.status as AppointmentStatus,
+        "ACCEPT_RESCHEDULE",
+        actor,
+      );
+    } catch {
+      throw transitionFailure(
+        appointment.status as AppointmentStatus,
+        "ACCEPT_RESCHEDULE",
+      );
+    }
+    if (!appointment.proposedStartsAt) {
+      throw new LifecycleDomainError(
+        "NOT_FOUND",
+        LIFECYCLE_SAFE_MESSAGES.noLongerAvailable,
+      );
+    }
+    await lockPsychologistCalendar(db, appointment.psychologistUserId);
+    const structural = await validateRequestedSlot(
+      ctx,
+      db,
+      appointment,
+      appointment.proposedStartsAt.toISOString(),
+    );
+    const now = ctx.now();
+    const nextVersion = appointment.version + 1;
+    const oldStart = appointment.startsAt.toISOString();
+    try {
+      await casUpdateAppointment(db, appointment, {
+        status: rule.to,
+        version: nextVersion,
+        startsAt: structural.startsAt,
+        endsAt: structural.endsAt,
+        occupiedStartsAt: structural.occupiedStartsAt,
+        occupiedEndsAt: structural.occupiedEndsAt,
+        proposedStartsAt: null,
+        proposedEndsAt: null,
+        updatedAt: now,
+      });
+    } catch (error) {
+      if (isExclusionViolation(error)) {
+        throw new LifecycleDomainError(
+          "SLOT_UNAVAILABLE",
+          LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
+        );
+      }
+      throw error;
+    }
+    await input.hooks?.afterAppointmentUpdate?.();
+    const updated = {
+      ...appointment,
+      status: rule.to,
+      version: nextVersion,
+      startsAt: structural.startsAt,
+      endsAt: structural.endsAt,
+      occupiedStartsAt: structural.occupiedStartsAt,
+      occupiedEndsAt: structural.occupiedEndsAt,
+      proposedStartsAt: null,
+      proposedEndsAt: null,
+    };
+    await insertLifecycleSideEffects(ctx, db, {
+      appointment: updated,
+      actorUserId: principal.userId,
+      actorRole: actor,
+      action: "ACCEPT_RESCHEDULE",
+      fromStatus: appointment.status as AppointmentStatus,
+      toStatus: rule.to,
+      historyEvent: rule.historyEvent,
+      auditAction: "APPOINTMENT_RESCHEDULED",
+      outboxKey: "AppointmentRescheduled",
+      metadata: {
+        appointmentPublicId: appointment.publicId,
+        oldStart,
+        newStart: structural.startsAt.toISOString(),
+      },
+      hooks: input.hooks,
+    });
+    return {
+      ok: true,
+      publicId: appointment.publicId,
+      status: rule.to,
+      version: nextVersion,
+      message: LIFECYCLE_SAFE_MESSAGES.rescheduled,
+      start: structural.startsAt.toISOString(),
+      end: structural.endsAt.toISOString(),
+    };
+  });
+}
+
+export async function declineRescheduleAppointment(
+  ctx: IdentityContext,
+  input: LifecycleMutationInput,
+): Promise<LifecycleResult> {
+  return runMutation(ctx, input, "DECLINE_RESCHEDULE", async (db, actor, principal) => {
+    const appointment = await loadAppointmentForUpdate(db, input.publicId, {
+      psychologistUserId: principal.userId,
+    });
+    assertOwnership(appointment, principal, actor);
+    assertExpectedVersion(appointment, input.expectedVersion);
+    let rule;
+    try {
+      rule = appointmentStateMachine.resolve(
+        appointment.status as AppointmentStatus,
+        "DECLINE_RESCHEDULE",
+        actor,
+      );
+    } catch {
+      throw transitionFailure(
+        appointment.status as AppointmentStatus,
+        "DECLINE_RESCHEDULE",
+      );
+    }
+    const now = ctx.now();
+    const nextVersion = appointment.version + 1;
+    await casUpdateAppointment(db, appointment, {
+      status: rule.to,
+      version: nextVersion,
+      proposedStartsAt: null,
+      proposedEndsAt: null,
+      updatedAt: now,
+    });
+    await input.hooks?.afterAppointmentUpdate?.();
+    const updated = {
+      ...appointment,
+      status: rule.to,
+      version: nextVersion,
+      proposedStartsAt: null,
+      proposedEndsAt: null,
+    };
+    await insertLifecycleSideEffects(ctx, db, {
+      appointment: updated,
+      actorUserId: principal.userId,
+      actorRole: actor,
+      action: "DECLINE_RESCHEDULE",
+      fromStatus: appointment.status as AppointmentStatus,
+      toStatus: rule.to,
+      historyEvent: rule.historyEvent,
+      auditAction: "APPOINTMENT_CONFIRMED",
+      outboxKey: "AppointmentConfirmed",
+      metadata: {
+        appointmentPublicId: appointment.publicId,
+        declinedReschedule: true,
+      },
+      hooks: input.hooks,
+    });
+    return {
+      ok: true,
+      publicId: appointment.publicId,
+      status: rule.to,
+      version: nextVersion,
+      message: LIFECYCLE_SAFE_MESSAGES.rescheduleDeclined,
+      start: appointment.startsAt.toISOString(),
+      end: appointment.endsAt.toISOString(),
+    };
+  });
 }

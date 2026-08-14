@@ -78,11 +78,22 @@ export default async function PracticeAppointmentDetailPage({
             <dd>{formatWhen(appointment.createdAt, appointment.timezone)}</dd>
           </div>
         </dl>
+        {appointment.proposedStart ? (
+          <p className="mt-4 text-sm">
+            Patient requested new time:{" "}
+            {formatWhen(appointment.proposedStart, appointment.timezone)}
+            {appointment.proposedEnd
+              ? ` – ${formatWhen(appointment.proposedEnd, appointment.timezone)}`
+              : ""}
+          </p>
+        ) : null}
         <PracticeAppointmentActions
           publicId={appointment.publicId}
           version={appointment.version}
           actions={appointment.actions}
           timezone={appointment.timezone}
+          proposedStart={appointment.proposedStart}
+          proposedEnd={appointment.proposedEnd}
         />
         <h2 className="mt-10 text-lg">History</h2>
         <ol className="mt-4 space-y-3 text-sm">

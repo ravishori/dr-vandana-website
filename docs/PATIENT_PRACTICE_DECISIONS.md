@@ -561,7 +561,23 @@ This milestone did **not** approve cancellation windows, reschedule notice, or n
 | Cancellation window | Schema field used when set; production value **OPEN**; psychologist window **OPEN** (not applied) |
 | Reschedule | Immediate `CONFIRMED`; history `RESCHEDULED`; window **OPEN** |
 | Super Admin appointment access | **Not granted** |
-| Patient appointment history UI | **Not started** (Phase 2E) |
+| Patient appointment history UI | **Implemented in Phase 2E** |
+| Notifications | Outbox rows only; **email / WhatsApp / SMS NOT IMPLEMENTED** |
+
+---
+
+## 16. Phase 2E patient portal notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md` (Patient Appointment Portal). **Production launch remains BLOCKED.**
+
+This milestone did **not** approve cancellation windows, reschedule notice, or notification providers.
+
+| Topic | Status |
+|---|---|
+| Patient dashboard / history / detail | `/patient/appointments`, `/history`, `/[publicId]` |
+| Patient cancellation UI | Calls Phase 2D `cancelAppointment`; policy **OPEN** |
+| Patient reschedule | `REQUEST_RESCHEDULE` (proposed slot); not immediate `CONFIRMED`; window **OPEN** |
+| Super Admin appointment access | **Not granted** |
 | Notifications | Outbox rows only; **email / WhatsApp / SMS NOT IMPLEMENTED** |
 
 ---

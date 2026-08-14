@@ -24,6 +24,30 @@ export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
   REJECTED: "Rejected",
 };
 
+/** Patient-facing status copy. Do not show raw database identifiers in the portal. */
+export const PATIENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  REQUESTED: "Appointment request pending",
+  PENDING: "Appointment request pending",
+  CONFIRMED: "Appointment confirmed",
+  RESCHEDULE_REQUESTED: "Reschedule requested",
+  CANCELLED: "Cancelled",
+  COMPLETED: "Appointment completed",
+  NO_SHOW: "Appointment marked as no-show",
+  REJECTED: "Request not accepted",
+};
+
+export const PATIENT_HISTORY_LABELS: Record<string, string> = {
+  CREATED: "Appointment requested",
+  REQUESTED: "Appointment requested",
+  CONFIRMED: "Appointment confirmed",
+  REJECTED: "Request not accepted",
+  RESCHEDULE_REQUESTED: "Reschedule requested",
+  RESCHEDULED: "Appointment rescheduled",
+  CANCELLED: "Appointment cancelled",
+  COMPLETED: "Appointment completed",
+  NO_SHOW: "Appointment marked as no-show",
+};
+
 /**
  * Statuses that occupy the psychologist calendar.
  * REQUESTED is not durable after successful validation (becomes PENDING).
@@ -88,6 +112,7 @@ export const OUTBOX_EVENT_KEYS = [
   "AppointmentRejected",
   "AppointmentCancelled",
   "AppointmentRescheduled",
+  "AppointmentRescheduleRequested",
   "AppointmentCompleted",
   "AppointmentNoShow",
 ] as const;
@@ -146,9 +171,17 @@ export const LIFECYCLE_SAFE_MESSAGES = {
   confirmed: "The appointment is confirmed.",
   rejected: "The appointment request was declined.",
   cancelled: "The appointment was cancelled.",
+  cancelledByPatient: "Your appointment has been cancelled.",
   completed: "The appointment was marked as completed.",
   noShow: "The appointment was marked as a no-show.",
   rescheduled: "The appointment was rescheduled.",
+  rescheduleRequested:
+    "Your reschedule request has been submitted and is awaiting confirmation.",
+  rescheduleDeclined: "The current appointment time was kept.",
+  inaccessible: "This appointment cannot be accessed.",
+  sessionExpired: "Please sign in again.",
+  pendingExplanation:
+    "Your appointment request has been submitted and is awaiting confirmation.",
 } as const;
 
 export const OPERATIONAL_CANCEL_REASON_CODES = [
@@ -177,6 +210,20 @@ export type DashboardFilter = (typeof DASHBOARD_FILTERS)[number];
 export const DASHBOARD_SORTS = ["starts_at_asc", "starts_at_desc"] as const;
 export type DashboardSort = (typeof DASHBOARD_SORTS)[number];
 
+export const PATIENT_FILTERS = [
+  "upcoming",
+  "pending",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "rejected",
+  "no_show",
+  "history",
+  "range",
+] as const;
+
+export type PatientFilter = (typeof PATIENT_FILTERS)[number];
+
 export const LIFECYCLE_PAGE_SIZE_DEFAULT = 20;
 export const LIFECYCLE_PAGE_SIZE_MAX = 50;
 
@@ -188,4 +235,5 @@ export const APPOINTMENT_RATE_LIMITS = {
   request: { max: 10, windowMs: 15 * 60 * 1000 },
   mutate: { max: 20, windowMs: 15 * 60 * 1000 },
   lifecycle: { max: 60, windowMs: 15 * 60 * 1000 },
+  portal: { max: 60, windowMs: 15 * 60 * 1000 },
 } as const;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 
 import {
   loadBookingSlotsAction,
@@ -67,8 +68,13 @@ export function PatientBookingForm({
           {confirmation.date} {formatSlot(confirmation.start, confirmation.timezone)}
           –{formatSlot(confirmation.end, confirmation.timezone)} ({confirmation.timezone})
         </p>
-        <p>Status: {confirmation.status}</p>
+        <p>Status: appointment request pending. This is not a confirmed appointment.</p>
         <p>No email, WhatsApp, or SMS notification is sent in this phase.</p>
+        <p>
+          <Link className="underline" href="/patient/appointments">
+            View my appointments
+          </Link>
+        </p>
       </IdentityShell>
     );
   }

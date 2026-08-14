@@ -43,7 +43,11 @@ export default async function PatientAccountPage() {
       <p>Hello {profile?.displayName ?? "there"}.</p>
       <p>Your public reference is {user?.publicId}.</p>
       <p>
-        You can request an appointment at{" "}
+        You can view your appointments at{" "}
+        <Link className="underline" href="/patient/appointments">
+          /patient/appointments
+        </Link>
+        {" "}or request a new time at{" "}
         <Link className="underline" href="/patient/appointments/new">
           /patient/appointments/new
         </Link>
