@@ -1,7 +1,8 @@
 /**
  * Operator-only production-gate snapshot.
- * Prints PASS / FAIL / BLOCKED / NOT CONFIGURED.
+ * Prints PASS / BLOCKED / NOT CONFIGURED / HUMAN DECISION / LEGAL REVIEW / FAIL.
  * Never prints secret values. Does not claim external systems are ready.
+ * Env var presence is not vendor or delivery readiness.
  */
 
 import {

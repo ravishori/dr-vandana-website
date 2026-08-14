@@ -1,6 +1,6 @@
 /**
  * Operator production-readiness snapshot.
- * Prints PASS / FAIL / BLOCKED / NOT CONFIGURED only.
+ * Prints PASS / BLOCKED / NOT CONFIGURED / HUMAN DECISION / LEGAL REVIEW / FAIL.
  * Never prints secrets, DATABASE_URL, tokens, or credentials.
  * Does not claim external infrastructure is ready because an env var exists.
  */
@@ -25,7 +25,9 @@ export type ProductionGateStatus =
   | "PASS"
   | "FAIL"
   | "BLOCKED"
-  | "NOT CONFIGURED";
+  | "NOT CONFIGURED"
+  | "HUMAN DECISION"
+  | "LEGAL REVIEW";
 
 export type ProductionGateCategory =
   | "CODE"
@@ -94,22 +96,22 @@ export function evaluateProductionReadinessGates(
     },
     {
       gate: "PostgreSQL vendor",
-      status: "BLOCKED",
+      status: "HUMAN DECISION",
       category: "HUMAN DECISION",
-      evidence: "O1 unset",
+      evidence: "O1 unset; see docs/DECISION_POSTGRESQL.md",
     },
     {
       gate: "PostgreSQL region",
-      status: "BLOCKED",
+      status: "HUMAN DECISION",
       category: "HUMAN DECISION",
-      evidence: "O2 unset",
+      evidence: "O2 unset; India preference not selected; see docs/DECISION_DATA_RESIDENCY.md",
     },
     {
       gate: "DATABASE_URL",
       status: isPostgresUrl(config.databaseUrl) ? "BLOCKED" : "NOT CONFIGURED",
       category: "CONFIGURATION",
       evidence: isPostgresUrl(config.databaseUrl)
-        ? "URL present; production vendor and schema not verified here"
+        ? "URL present in this process; production vendor, TLS, and schema are not verified by env presence"
         : "postgres URL not set",
     },
     {
@@ -146,19 +148,25 @@ export function evaluateProductionReadinessGates(
     },
     {
       gate: "OTP vendor",
-      status: "BLOCKED",
+      status: "HUMAN DECISION",
       category: "PROVIDER",
       evidence: OTP_VENDOR_ADAPTER_IMPLEMENTED
-        ? "adapter flag true; vendor still requires human verification"
-        : "OTP_VENDOR_ADAPTER_IMPLEMENTED=false",
+        ? "adapter flag true; vendor still requires human verification and must not be treated as ready from OTP_* env presence"
+        : "OTP_VENDOR_ADAPTER_IMPLEMENTED=false; India SMS/DLT vendor unset; see docs/DECISION_OTP_PROVIDER.md",
     },
     {
       gate: "SMTP",
       status: smtpConfigured ? "BLOCKED" : "NOT CONFIGURED",
       category: "CONFIGURATION",
       evidence: smtpConfigured
-        ? "SMTP env present; production delivery unverified"
+        ? "SMTP env present; production delivery, SPF/DKIM/DMARC, and bounce handling unverified"
         : "SMTP not configured",
+    },
+    {
+      gate: "SMTP production identity",
+      status: "HUMAN DECISION",
+      category: "PROVIDER",
+      evidence: "sender identity unset; env vars do not prove mailbox authentication; see docs/DECISION_SMTP_PROVIDER.md",
     },
     {
       gate: "email provider mode",
@@ -178,43 +186,55 @@ export function evaluateProductionReadinessGates(
           ? "FAIL"
           : "BLOCKED",
       category: "PROVIDER",
-      evidence: `mode=${whatsappMode}; production activation OPEN`,
+      evidence: `mode=${whatsappMode}; TWILIO_WHATSAPP_ENABLED must stay false until sender, templates, and legal review exist; env presence is not production readiness`,
+    },
+    {
+      gate: "WhatsApp processor / data residency",
+      status: "HUMAN DECISION",
+      category: "LEGAL",
+      evidence: "Twilio/Meta processing locations unverified; see docs/TWILIO_WHATSAPP_PRODUCTION_CHECKLIST.md",
+    },
+    {
+      gate: "WhatsApp opt-in wording",
+      status: "LEGAL REVIEW",
+      category: "LEGAL",
+      evidence: "checkbox exists; consent copy unapproved; see docs/LEGAL_REVIEW_REQUIRED.md",
     },
     {
       gate: "notification worker",
-      status: "BLOCKED",
+      status: "HUMAN DECISION",
       category: "HUMAN DECISION",
-      evidence: "O15 unset; CLI refuses production",
+      evidence: "O15 unset; CLI refuses production; see docs/NOTIFICATION_WORKER_RUNBOOK.md",
     },
     {
       gate: "MFA recovery policy",
-      status: "BLOCKED",
+      status: "HUMAN DECISION",
       category: "HUMAN DECISION",
-      evidence: "O12 unset; backup codes only; no email bypass",
+      evidence: "O12 unset; backup codes only; EMAIL-ONLY MFA BYPASS IS FORBIDDEN; see docs/DECISION_MFA_RECOVERY.md",
     },
     {
       gate: "Privacy / Terms / consent",
-      status: "BLOCKED",
+      status: "LEGAL REVIEW",
       category: "LEGAL",
-      evidence: "legal copy still describes an informational website",
+      evidence: "legal copy still describes an informational website; see docs/LEGAL_REVIEW_REQUIRED.md",
     },
     {
       gate: "data residency",
-      status: "BLOCKED",
+      status: "HUMAN DECISION",
       category: "HUMAN DECISION",
-      evidence: "O18 unset",
+      evidence: "O18 unset; see docs/DECISION_DATA_RESIDENCY.md",
     },
     {
       gate: "retention",
-      status: "BLOCKED",
-      category: "HUMAN DECISION",
-      evidence: "O10 unset",
+      status: "LEGAL REVIEW",
+      category: "LEGAL",
+      evidence: "O10 unset; periods must not be invented; see docs/DECISION_DATA_RETENTION.md",
     },
     {
-      gate: "backups",
-      status: "BLOCKED",
+      gate: "backups / RPO / RTO",
+      status: "HUMAN DECISION",
       category: "INFRASTRUCTURE",
-      evidence: "no production backup configured in this repository",
+      evidence: "no production backup configured; RPO/RTO values must not be invented; see docs/DECISION_BACKUP_RPO_RTO.md",
     },
     {
       gate: "restore test",
@@ -224,9 +244,27 @@ export function evaluateProductionReadinessGates(
     },
     {
       gate: "monitoring",
-      status: "BLOCKED",
+      status: "HUMAN DECISION",
       category: "CONFIGURATION",
-      evidence: "no production APM selected",
+      evidence: "no production APM selected; see docs/PRODUCTION_MONITORING_CHECKLIST.md",
+    },
+    {
+      gate: "patient 403 vs 404",
+      status: "HUMAN DECISION",
+      category: "HUMAN DECISION",
+      evidence: "O17 unset for patient resources; psychologist reads already NOT_FOUND",
+    },
+    {
+      gate: "cancellation / reschedule notice",
+      status: "HUMAN DECISION",
+      category: "HUMAN DECISION",
+      evidence: "O9 policy values unset; hours/duration also OPEN; code defaults are not an approved practice policy",
+    },
+    {
+      gate: "clinical records / Super Admin boundary",
+      status: "PASS",
+      category: "CODE",
+      evidence: "Option C not implemented; SUPER_ADMIN is not granted clinical permissions; SUPER_ADMIN ≠ ALL_DATA_ACCESS",
     },
     {
       gate: "CI",
@@ -248,8 +286,18 @@ export function evaluateProductionReadinessGates(
 export function formatProductionReadinessGates(
   report: ProductionReadinessReport,
 ): string {
+  const blocked = report.gates.filter((g) => g.status === "BLOCKED").length;
+  const notConfigured = report.gates.filter((g) => g.status === "NOT CONFIGURED").length;
+  const failed = report.gates.filter((g) => g.status === "FAIL").length;
+  const passed = report.gates.filter((g) => g.status === "PASS").length;
+  const humanDecision = report.gates.filter((g) => g.status === "HUMAN DECISION").length;
+  const legalReview = report.gates.filter((g) => g.status === "LEGAL REVIEW").length;
+
   return [
     `OVERALL ${report.overall}`,
+    "Statuses: PASS | BLOCKED | NOT CONFIGURED | HUMAN DECISION | LEGAL REVIEW | FAIL",
+    "Env var presence never proves SMTP, OTP, Twilio, backup, or monitoring delivery.",
+    `Counts — PASS: ${passed}  BLOCKED: ${blocked}  NOT CONFIGURED: ${notConfigured}  HUMAN DECISION: ${humanDecision}  LEGAL REVIEW: ${legalReview}  FAIL: ${failed}`,
     ...report.gates.map(
       (row) => `${row.status} ${row.gate} [${row.category}] ${row.evidence}`,
     ),
