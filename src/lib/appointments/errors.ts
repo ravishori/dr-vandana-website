@@ -83,6 +83,23 @@ export function isExclusionViolation(error: unknown): boolean {
   return postgresErrorCode(error) === "23P01";
 }
 
+export function isSerializationFailure(error: unknown): boolean {
+  const code = postgresErrorCode(error);
+  return code === "40P01" || code === "40001";
+}
+
+export function isCalendarLockUnavailable(error: unknown): boolean {
+  return error instanceof Error && error.message === "CALENDAR_LOCK_UNAVAILABLE";
+}
+
+export function isOccupancyContention(error: unknown): boolean {
+  return (
+    isExclusionViolation(error) ||
+    isSerializationFailure(error) ||
+    isCalendarLockUnavailable(error)
+  );
+}
+
 export function safeBookingFailure(error: unknown): {
   ok: false;
   message: string;
@@ -91,7 +108,7 @@ export function safeBookingFailure(error: unknown): {
   if (isBookingDomainError(error) || isAppointmentDomainError(error)) {
     return { ok: false, message: error.message, code: error.code };
   }
-  if (isExclusionViolation(error)) {
+  if (isOccupancyContention(error)) {
     return {
       ok: false,
       message: BOOKING_SAFE_MESSAGES.slotUnavailable,
@@ -136,7 +153,7 @@ export function safeLifecycleFailure(error: unknown): {
   if (isLifecycleDomainError(error) || isBookingDomainError(error) || isAppointmentDomainError(error)) {
     return { ok: false, message: error.message, code: error.code };
   }
-  if (isExclusionViolation(error)) {
+  if (isOccupancyContention(error)) {
     return {
       ok: false,
       message: LIFECYCLE_SAFE_MESSAGES.slotUnavailable,

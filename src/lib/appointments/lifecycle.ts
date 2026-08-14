@@ -16,6 +16,7 @@ import {
   AppointmentDomainError,
   LifecycleDomainError,
   isExclusionViolation,
+  isOccupancyContention,
   safeLifecycleFailure,
   type LifecycleErrorCode,
 } from "@/lib/appointments/errors";
@@ -275,6 +276,39 @@ async function loadAppointmentForUpdate(
   return row;
 }
 
+async function lockOwnedCalendarThenLoad(
+  db: AppointmentQueryDb,
+  publicId: string,
+  owner: { patientUserId: string } | { psychologistUserId: string },
+): Promise<LoadedAppointment> {
+  const ownerFilter =
+    "patientUserId" in owner
+      ? and(
+          eq(appointments.publicId, publicId),
+          eq(appointments.patientUserId, owner.patientUserId),
+        )
+      : and(
+          eq(appointments.publicId, publicId),
+          eq(appointments.psychologistUserId, owner.psychologistUserId),
+        );
+  const [peek] = await db
+    .select({ psychologistUserId: appointments.psychologistUserId })
+    .from(appointments)
+    .where(ownerFilter)
+    .limit(1);
+  if (!peek) {
+    if ("patientUserId" in owner) {
+      throw new LifecycleDomainError(
+        "NOT_FOUND",
+        LIFECYCLE_SAFE_MESSAGES.inaccessible,
+      );
+    }
+    throw new LifecycleDomainError("NOT_FOUND", LIFECYCLE_SAFE_MESSAGES.notFound);
+  }
+  await lockPsychologistCalendar(db, peek.psychologistUserId);
+  return loadAppointmentForUpdate(db, publicId, owner);
+}
+
 function assertOwnership(
   appointment: LoadedAppointment,
   principal: AuthorizationPrincipal,
@@ -498,7 +532,7 @@ async function runMutation(
       execute(asQueryDb(tx), authorized.actor, authorized.principal),
     );
   } catch (error) {
-    if (isExclusionViolation(error)) {
+    if (isOccupancyContention(error)) {
       logStructured("WARNING", {
         operation: "appointment_lifecycle",
         errorType: "exclusion_conflict",
@@ -894,7 +928,7 @@ export async function rescheduleAppointment(
   input: LifecycleMutationInput & { requestedStart: string },
 ): Promise<LifecycleResult> {
   return runMutation(ctx, input, "RESCHEDULE", async (db, actor, principal) => {
-    const appointment = await loadAppointmentForUpdate(db, input.publicId, {
+    const appointment = await lockOwnedCalendarThenLoad(db, input.publicId, {
       psychologistUserId: principal.userId,
     });
     assertOwnership(appointment, principal, actor);
@@ -910,7 +944,6 @@ export async function rescheduleAppointment(
       throw transitionFailure(appointment.status as AppointmentStatus, "RESCHEDULE");
     }
 
-    await lockPsychologistCalendar(db, appointment.psychologistUserId);
     const structural = await validateRequestedSlot(
       ctx,
       db,
@@ -998,7 +1031,7 @@ export async function requestRescheduleAppointment(
   input: LifecycleMutationInput & { requestedStart: string },
 ): Promise<LifecycleResult> {
   return runMutation(ctx, input, "REQUEST_RESCHEDULE", async (db, actor, principal) => {
-    const appointment = await loadAppointmentForUpdate(db, input.publicId, {
+    const appointment = await lockOwnedCalendarThenLoad(db, input.publicId, {
       patientUserId: principal.userId,
     });
     assertOwnership(appointment, principal, actor);
@@ -1017,7 +1050,6 @@ export async function requestRescheduleAppointment(
       );
     }
 
-    await lockPsychologistCalendar(db, appointment.psychologistUserId);
     const structural = await validateRequestedSlot(
       ctx,
       db,
@@ -1075,7 +1107,7 @@ export async function acceptRescheduleAppointment(
   input: LifecycleMutationInput,
 ): Promise<LifecycleResult> {
   return runMutation(ctx, input, "ACCEPT_RESCHEDULE", async (db, actor, principal) => {
-    const appointment = await loadAppointmentForUpdate(db, input.publicId, {
+    const appointment = await lockOwnedCalendarThenLoad(db, input.publicId, {
       psychologistUserId: principal.userId,
     });
     assertOwnership(appointment, principal, actor);
@@ -1099,7 +1131,6 @@ export async function acceptRescheduleAppointment(
         LIFECYCLE_SAFE_MESSAGES.noLongerAvailable,
       );
     }
-    await lockPsychologistCalendar(db, appointment.psychologistUserId);
     const structural = await validateRequestedSlot(
       ctx,
       db,

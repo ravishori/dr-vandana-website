@@ -17,9 +17,10 @@ export async function lockPsychologistCalendar(
       sql`select pg_advisory_xact_lock(hashtext(${psychologistUserId}))`,
     );
   } catch {
-    logStructured("WARNING", {
+    logStructured("ERROR", {
       operation: "appointment_calendar_lock",
       errorType: "advisory_lock_unavailable",
     });
+    throw new Error("CALENDAR_LOCK_UNAVAILABLE");
   }
 }

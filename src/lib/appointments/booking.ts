@@ -15,6 +15,7 @@ import type { AppointmentQueryDb } from "@/lib/appointments/db-types";
 import {
   BookingDomainError,
   isExclusionViolation,
+  isOccupancyContention,
   postgresErrorCode,
   safeBookingFailure,
   type BookingErrorCode,
@@ -650,7 +651,7 @@ async function executeBooking(
       updatedAt: now,
     });
   } catch (error) {
-    if (isExclusionViolation(error) || isBookingDomainErrorSafe(error)) {
+    if (isOccupancyContention(error) || isBookingDomainErrorSafe(error)) {
       const mapped: BookingFailure = {
         ok: false,
         code: "SLOT_UNAVAILABLE",
@@ -831,7 +832,7 @@ export async function requestAppointment(
       }),
     );
   } catch (error) {
-    if (isExclusionViolation(error)) {
+    if (isOccupancyContention(error)) {
       logStructured("WARNING", {
         operation: "appointment_booking",
         errorType: "exclusion_conflict",
