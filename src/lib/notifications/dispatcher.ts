@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import {
@@ -640,7 +640,7 @@ async function finalizeDelivery(
       : "dead";
 }
 
-async function rollupOutbox(
+export async function rollupOutbox(
   deps: NotificationDispatcherDeps,
   outboxId: string,
 ): Promise<void> {
@@ -672,7 +672,12 @@ async function rollupOutbox(
         lockedAt: null,
         updatedAt: now,
       })
-      .where(eq(appointmentNotificationOutbox.id, outboxId));
+      .where(
+        and(
+          eq(appointmentNotificationOutbox.id, outboxId),
+          notInArray(appointmentNotificationOutbox.status, ["DEAD"]),
+        ),
+      );
     return;
   }
   if (active.length > 0) {
@@ -689,7 +694,12 @@ async function rollupOutbox(
         lockedAt: null,
         updatedAt: now,
       })
-      .where(eq(appointmentNotificationOutbox.id, outboxId));
+      .where(
+        and(
+          eq(appointmentNotificationOutbox.id, outboxId),
+          notInArray(appointmentNotificationOutbox.status, ["SENT", "DEAD"]),
+        ),
+      );
     return;
   }
   if (dead.length > 0) {
@@ -702,7 +712,12 @@ async function rollupOutbox(
         lastErrorCode: dead[0]?.lastErrorCode ?? "PERMANENT_PROVIDER_ERROR",
         updatedAt: now,
       })
-      .where(eq(appointmentNotificationOutbox.id, outboxId));
+      .where(
+        and(
+          eq(appointmentNotificationOutbox.id, outboxId),
+          notInArray(appointmentNotificationOutbox.status, ["SENT"]),
+        ),
+      );
   }
 }
 

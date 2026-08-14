@@ -1,8 +1,14 @@
 import { ResendEmailForm, VerifyEmailConfirmForm } from "@/components/identity/PatientAuthForms";
 import { IdentityShell } from "@/components/identity/IdentityShell";
+import type { Metadata } from "next";
 
 type PageProps = {
   searchParams: Promise<{ token?: string }>;
+};
+
+export const metadata: Metadata = {
+  referrer: "no-referrer",
+  robots: { index: false, follow: false },
 };
 
 export default async function VerifyEmailPage({ searchParams }: PageProps) {

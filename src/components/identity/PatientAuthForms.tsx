@@ -269,6 +269,7 @@ export function VerifyEmailConfirmForm({ token }: { token: string }) {
               setMessage(result.message ?? null);
               if (result.ok) {
                 setVerified(true);
+                window.history.replaceState(null, "", "/patient/verify-email");
               }
             });
           }}

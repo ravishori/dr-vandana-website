@@ -243,11 +243,8 @@ export async function getPracticeAppointmentDetail(
     .innerJoin(patientProfiles, eq(patientProfiles.userId, users.id))
     .where(eq(appointments.publicId, publicId))
     .limit(1);
-  if (!row) {
+  if (!row || row.psychologistUserId !== authorized.principal.userId) {
     return { ok: false, code: "NOT_FOUND", message: LIFECYCLE_SAFE_MESSAGES.notFound };
-  }
-  if (row.psychologistUserId !== authorized.principal.userId) {
-    return { ok: false, code: "FORBIDDEN", message: LIFECYCLE_SAFE_MESSAGES.forbidden };
   }
   const historyRows = await ctx.db
     .select({
