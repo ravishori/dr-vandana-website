@@ -64,6 +64,8 @@ Additive follow-up: `drizzle/0002_mfa_replay_guard.sql` adds `mfa_credentials.la
 
 A Phase 1B code-level review is recorded in `docs/PHASE_1B_SECURITY_AUDIT.md`. **Status: PRODUCTION BLOCKED.**
 
+Phase 1C production-gate preparation is recorded in `docs/PHASE_1C_PRODUCTION_GATE_REGISTER.md`. It does **not** enable registration, select vendors, or deploy. Operator YES/NO snapshot (no secret values): `npm run identity:gates`.
+
 ---
 
 ## Environment variables (names only)
@@ -112,9 +114,9 @@ Never commit values. Production identity operations fail closed if `AUTH_SESSION
 
 Logout revokes the server-side session, then clears the cookie.
 
-Password reset: `/patient/forgot-password` and `/patient/reset-password`. Responses do not reveal whether an email exists. Successful reset revokes sessions.
+Password reset: `/patient/forgot-password` and `/patient/reset-password`. Responses do not reveal whether an email exists. Successful reset revokes sessions. Email verification and password reset use **GET → confirm/form → POST consume** so mail prefetch does not consume tokens. Tokens still appear in emailed URLs (**MEDIUM — ACCEPTED FOR CURRENT PHASE**; see Phase 1B F15 and the Phase 1C register).
 
-Registration remains gated by `PATIENT_REGISTRATION_ENABLED` and production configuration checks.
+Registration remains gated by `PATIENT_REGISTRATION_ENABLED` (safe default `false`; only the string `true` turns it on) and production configuration checks. There is no alternate production bypass.
 
 ### Psychologist (new practice identity)
 
@@ -302,3 +304,9 @@ WhatsApp is **not implemented**.
 - Double-booking protection
 
 Do not start Phase 2 from this document automatically.
+
+---
+
+## Phase 1C
+
+Readiness documentation only: `docs/PHASE_1C_PRODUCTION_GATE_REGISTER.md`. Patient registration stays disabled. No production database, OTP, or SMTP credentials are created in that phase.

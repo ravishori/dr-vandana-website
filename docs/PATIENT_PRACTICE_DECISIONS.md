@@ -485,6 +485,28 @@ Do not start Phase 2 from the Phase 1B audit.
 
 ---
 
+## 12. Phase 1C production-gate notes (14 August 2026)
+
+Readiness register: `docs/PHASE_1C_PRODUCTION_GATE_REGISTER.md`. **Production launch remains BLOCKED.**
+
+This phase did **not** approve open decisions. Items that still need humans:
+
+| ID | Phase 1C note | Status |
+|---|---|---|
+| O1 / O2 | PostgreSQL provider and region unset | **OPEN** |
+| O4 | OTP vendor unset; no production adapter | **OPEN** |
+| O10 | Retention unset | **OPEN** |
+| O11 | Privacy/terms/consent still **REQUIRES REVIEW** | **OPEN** |
+| O12 | MFA recovery options A–D documented; none selected; email bypass forbidden | **OPEN** |
+| O18 | Data residency / cross-region transfers unset | **OPEN** |
+| O19 | Production Super Admin/psychologist bootstrap unset | **OPEN** |
+
+`PATIENT_REGISTRATION_ENABLED` remains **false** by default. Development provisioning remains refused in production.
+
+Do not start Phase 2 from the Phase 1C register.
+
+---
+
 ## Document control
 
 | Field | Value |
