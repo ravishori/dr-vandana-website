@@ -49,7 +49,7 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm install
-      - run: npx tsx --test src/lib/appointments/booking.pg.test.ts
+      - run: npx tsx --test --test-concurrency=1 src/lib/appointments/booking.pg.test.ts src/lib/appointments/lifecycle.pg.test.ts
         env:
           APPOINTMENT_PG_URL: postgres://postgres:postgres@localhost:5432/appointments
           AUTH_SESSION_SECRET: ci-placeholder-session-secret-32chars

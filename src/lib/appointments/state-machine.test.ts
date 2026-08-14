@@ -61,4 +61,15 @@ describe("appointment state machine", () => {
     assert.equal(appointmentStateMachine.isBlocking("COMPLETED"), false);
     assert.equal(appointmentStateMachine.isBlocking("NO_SHOW"), false);
   });
+
+  it("lists psychologist actions from the current status", () => {
+    const pending = appointmentStateMachine.availableActions("PENDING", "PSYCHOLOGIST");
+    assert.equal(pending.includes("CONFIRM"), true);
+    assert.equal(pending.includes("REJECT"), true);
+    assert.equal(pending.includes("COMPLETE"), false);
+    const confirmed = appointmentStateMachine.availableActions("CONFIRMED", "PSYCHOLOGIST");
+    assert.equal(confirmed.includes("RESCHEDULE"), true);
+    assert.equal(confirmed.includes("COMPLETE"), true);
+    assert.equal(confirmed.includes("NO_SHOW"), true);
+  });
 });
