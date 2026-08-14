@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 
 import { BLOCKING_STATUSES } from "@/lib/appointments/constants";
 import type { AppointmentQueryDb } from "@/lib/appointments/db-types";
@@ -20,20 +20,23 @@ export async function loadBlockingOccupiedRanges(
   psychologistUserId: string,
   rangeStart: Date,
   rangeEnd: Date,
+  excludeAppointmentId?: string,
 ): Promise<{ start: Date; end: Date }[]> {
+  const filters = [
+    eq(appointments.psychologistUserId, psychologistUserId),
+    inArray(appointments.status, [...BLOCKING_STATUSES]),
+    occupiedRangesOverlapSql(rangeStart, rangeEnd),
+  ];
+  if (excludeAppointmentId) {
+    filters.push(ne(appointments.id, excludeAppointmentId));
+  }
   const rows = await db
     .select({
       occupiedStartsAt: appointments.occupiedStartsAt,
       occupiedEndsAt: appointments.occupiedEndsAt,
     })
     .from(appointments)
-    .where(
-      and(
-        eq(appointments.psychologistUserId, psychologistUserId),
-        inArray(appointments.status, [...BLOCKING_STATUSES]),
-        occupiedRangesOverlapSql(rangeStart, rangeEnd),
-      ),
-    );
+    .where(and(...filters));
   return rows.map((row) => ({
     start: row.occupiedStartsAt,
     end: row.occupiedEndsAt,
@@ -45,17 +48,20 @@ export async function hasBlockingOccupiedOverlap(
   psychologistUserId: string,
   occupiedStart: Date,
   occupiedEnd: Date,
+  excludeAppointmentId?: string,
 ): Promise<boolean> {
+  const filters = [
+    eq(appointments.psychologistUserId, psychologistUserId),
+    inArray(appointments.status, [...BLOCKING_STATUSES]),
+    occupiedRangesOverlapSql(occupiedStart, occupiedEnd),
+  ];
+  if (excludeAppointmentId) {
+    filters.push(ne(appointments.id, excludeAppointmentId));
+  }
   const rows = await db
     .select({ occupiedStartsAt: appointments.occupiedStartsAt })
     .from(appointments)
-    .where(
-      and(
-        eq(appointments.psychologistUserId, psychologistUserId),
-        inArray(appointments.status, [...BLOCKING_STATUSES]),
-        occupiedRangesOverlapSql(occupiedStart, occupiedEnd),
-      ),
-    )
+    .where(and(...filters))
     .limit(1);
   return rows.length > 0;
 }

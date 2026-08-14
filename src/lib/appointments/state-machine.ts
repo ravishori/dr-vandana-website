@@ -132,6 +132,16 @@ export class AppointmentStateMachine {
     }
     return rule;
   }
+
+  availableActions(
+    from: AppointmentStatus,
+    actor: AppointmentActorRole,
+  ): AppointmentAction[] {
+    return TRANSITIONS.filter(
+      (candidate) =>
+        candidate.from.includes(from) && candidate.actors.includes(actor),
+    ).map((candidate) => candidate.action);
+  }
 }
 
 export const appointmentStateMachine = new AppointmentStateMachine();

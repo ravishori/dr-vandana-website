@@ -13,6 +13,17 @@ export const APPOINTMENT_STATUSES = [
 
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
+export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  REQUESTED: "Requested",
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  RESCHEDULE_REQUESTED: "Reschedule requested",
+  CANCELLED: "Cancelled",
+  COMPLETED: "Completed",
+  NO_SHOW: "No-show",
+  REJECTED: "Rejected",
+};
+
 /**
  * Statuses that occupy the psychologist calendar.
  * REQUESTED is not durable after successful validation (becomes PENDING).
@@ -119,6 +130,56 @@ export const BOOKING_OPERATION = "appointment.request" as const;
 export const BOOKING_IDEMPOTENCY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const BOOKING_IDEMPOTENCY_KEY_PATTERN = /^[\w.:-]{8,128}$/;
 
+export const LIFECYCLE_SAFE_MESSAGES = {
+  unauthenticated: "Please sign in to continue.",
+  forbidden: "You do not have access to that.",
+  notFound: "That appointment could not be found.",
+  alreadyConfirmed: "This appointment has already been confirmed.",
+  noLongerAvailable: "This appointment is no longer available.",
+  invalidTransition:
+    "This appointment cannot be changed to the requested status.",
+  stale: "This appointment was updated. Please refresh and try again.",
+  slotUnavailable:
+    "This time is no longer available. Please choose another time.",
+  rateLimited: APPOINTMENT_SAFE_MESSAGES.rateLimited,
+  cancellationNotAllowed: APPOINTMENT_SAFE_MESSAGES.cancellationNotAllowed,
+  confirmed: "The appointment is confirmed.",
+  rejected: "The appointment request was declined.",
+  cancelled: "The appointment was cancelled.",
+  completed: "The appointment was marked as completed.",
+  noShow: "The appointment was marked as a no-show.",
+  rescheduled: "The appointment was rescheduled.",
+} as const;
+
+export const OPERATIONAL_CANCEL_REASON_CODES = [
+  "SCHEDULING_CONFLICT",
+  "PATIENT_UNAVAILABLE",
+  "OTHER",
+] as const;
+
+export type OperationalCancelReasonCode =
+  (typeof OPERATIONAL_CANCEL_REASON_CODES)[number];
+
+export const DASHBOARD_FILTERS = [
+  "today",
+  "upcoming",
+  "pending",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "no_show",
+  "rejected",
+  "range",
+] as const;
+
+export type DashboardFilter = (typeof DASHBOARD_FILTERS)[number];
+
+export const DASHBOARD_SORTS = ["starts_at_asc", "starts_at_desc"] as const;
+export type DashboardSort = (typeof DASHBOARD_SORTS)[number];
+
+export const LIFECYCLE_PAGE_SIZE_DEFAULT = 20;
+export const LIFECYCLE_PAGE_SIZE_MAX = 50;
+
 export const PUBLIC_APPOINTMENT_ID_PATTERN = /^APT-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/;
 export const PUBLIC_APPOINTMENT_TYPE_ID_PATTERN =
   /^ATY-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/;
@@ -126,4 +187,5 @@ export const PUBLIC_APPOINTMENT_TYPE_ID_PATTERN =
 export const APPOINTMENT_RATE_LIMITS = {
   request: { max: 10, windowMs: 15 * 60 * 1000 },
   mutate: { max: 20, windowMs: 15 * 60 * 1000 },
+  lifecycle: { max: 60, windowMs: 15 * 60 * 1000 },
 } as const;

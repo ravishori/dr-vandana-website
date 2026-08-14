@@ -525,7 +525,7 @@ This milestone did **not** approve open scheduling policy. Test fixtures are lab
 | Timezone | **Asia/Kolkata** (already **APPROVED**) |
 | Availability vs booking | Availability is **advisory**; exclusion constraint + booking transaction remain authoritative |
 
-Do not start Phase 2D from this note until that milestone is explicitly approved.
+Do not start Phase 2C from this note until that milestone is explicitly approved.
 
 ---
 
@@ -544,7 +544,25 @@ This milestone did **not** approve open scheduling policy, notification provider
 | Notifications | Outbox row only; **email / WhatsApp / SMS NOT IMPLEMENTED** |
 | One-appointment-per-day | **Not implemented** (not approved) |
 | Multi-psychologist coexistence | Not a Phase 2 product feature; occupancy is per `psychologist_user_id` |
-| Cancellation / reschedule / complete / no-show | **Not started** (Phase 2D) |
+| Cancellation / reschedule / complete / no-show | **Implemented in Phase 2D** (policies remain **OPEN**) |
+
+---
+
+## 15. Phase 2D lifecycle notes (14 August 2026)
+
+Implementation: `docs/PHASE_2_APPOINTMENT_ENGINE.md` (Psychologist Appointment Management). **Production launch remains BLOCKED.**
+
+This milestone did **not** approve cancellation windows, reschedule notice, or notification providers.
+
+| Topic | Status |
+|---|---|
+| Psychologist dashboard / detail | `/psychologist/practice/appointments` |
+| Confirm / reject / cancel / complete / no-show / reschedule | Implemented; server-side state machine |
+| Cancellation window | Schema field used when set; production value **OPEN**; psychologist window **OPEN** (not applied) |
+| Reschedule | Immediate `CONFIRMED`; history `RESCHEDULED`; window **OPEN** |
+| Super Admin appointment access | **Not granted** |
+| Patient appointment history UI | **Not started** (Phase 2E) |
+| Notifications | Outbox rows only; **email / WhatsApp / SMS NOT IMPLEMENTED** |
 
 ---
 

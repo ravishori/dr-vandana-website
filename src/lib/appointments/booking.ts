@@ -34,6 +34,7 @@ import {
 } from "@/lib/identity/authorization";
 import type { IdentityContext } from "@/lib/identity/context";
 import { generatePublicId, generateUuid, hashWithSecret } from "@/lib/identity/crypto";
+import { lockPsychologistCalendar } from "@/lib/appointments/lock";
 import type { IdentityDb } from "@/lib/identity/db";
 import { users } from "@/lib/identity/schema";
 import { logStructured } from "@/lib/observability/logger";
@@ -260,16 +261,7 @@ async function lockPsychologist(
   db: AppointmentQueryDb,
   psychologistUserId: string,
 ): Promise<void> {
-  try {
-    await db.execute(
-      sql`select pg_advisory_xact_lock(hashtext(${psychologistUserId}))`,
-    );
-  } catch {
-    logStructured("WARNING", {
-      operation: "appointment_booking",
-      errorType: "advisory_lock_unavailable",
-    });
-  }
+  await lockPsychologistCalendar(db, psychologistUserId);
 }
 
 async function resolveAppointmentType(

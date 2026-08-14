@@ -1,11 +1,11 @@
 # Phase 2 Appointment Engine
 
-**Status:** Phase 2C implemented in code; **not** a production launch  
+**Status:** Phase 2D implemented in code; **not** a production launch  
 **Date:** 14 August 2026  
 **Product:** Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice  
 **Tagline:** Your Mental Well-being Matters.
 
-This document describes the appointment domain through **Phase 2C (Secure Appointment Booking)**. It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
+This document describes the appointment domain through **Phase 2D (Psychologist Appointment Management)**. It is **not** legal advice and does **not** claim DPDP or professional-ethics compliance.
 
 **PRODUCTION remains BLOCKED.** Patient registration stays disabled. This phase does not deploy, choose a PostgreSQL vendor, enable OTP, or send appointment notifications.
 
@@ -17,9 +17,9 @@ This document describes the appointment domain through **Phase 2C (Secure Appoin
 |---|---|
 | Phase 2A — appointment schema, types, hours, exceptions, history, state model | Present in `drizzle/0003_appointment_engine.sql` and `src/lib/appointments/` |
 | Phase 2B — server-side availability and slot engine | Present in `src/lib/appointments/availability.ts` |
-| Phase 2C — secure appointment booking workflow | **This document** |
-| Phase 2D — psychologist appointment management and lifecycle | **Not started** |
-| Patient appointment history / cancel / reschedule UI | **Not started** |
+| Phase 2C — secure appointment booking workflow | Present in `src/lib/appointments/booking.ts` |
+| Phase 2D — psychologist appointment management and lifecycle | **This document** |
+| Phase 2E — patient appointment portal and history | **Not started** |
 | Notifications (email / WhatsApp / reminders) | **Not implemented** |
 
 ---
@@ -372,13 +372,112 @@ The availability service does not expose a public HTTP route. Booking uses the P
 
 ---
 
+## Phase 2D — Psychologist Appointment Management
+
+Phase 2D lets the authenticated psychologist manage appointment requests and lifecycle events. It is operational, not clinical. No EHR, notes, assessments, or documents.
+
+### Authorization
+
+Every psychologist mutation and list/detail read requires:
+
+- Phase 1 practice session (`/psychologist/practice/login`)
+- Role `PSYCHOLOGIST` (not question-portal HMAC)
+- Permission `MANAGE_APPOINTMENT_SETTINGS`
+- MFA completed (`AuthorizationService`)
+- Account `ACTIVE`
+- **Practice ownership:** `appointments.psychologist_user_id = session user`
+
+`SUPER_ADMIN` does **not** receive all appointments. `STAFF` has no lifecycle authority. Patients cannot confirm, reject, complete, or mark no-show. Patient **cancellation** is supported in the domain (no patient UI in this phase).
+
+### Psychologist UI
+
+- `/psychologist/practice/appointments` — server-filtered, paginated list (limit 20, max 50)
+- `/psychologist/practice/appointments/[publicId]` — operational detail + history + actions
+
+Filters: today, upcoming, pending, confirmed, completed, cancelled, no-show, rejected, date range. Sort whitelist: `starts_at_asc` / `starts_at_desc`. Default upcoming nearest-first; historical newest-first.
+
+List query joins appointment, type, and patient display name in one statement (no N+1, no clinical tables). Detail may show patient display name, public id, and email as operational contact. No passwords, OTP, MFA, DOB, gender, or emergency contact.
+
+Action buttons are derived from the state machine. UI visibility is not authorization.
+
+### Lifecycle transitions
+
+Centralized in `AppointmentStateMachine`. The client cannot set status.
+
+| Action | From | Actor | To | History | Outbox | Audit |
+|---|---|---|---|---|---|---|
+| CONFIRM | PENDING | PSYCHOLOGIST | CONFIRMED | CONFIRMED | AppointmentConfirmed | APPOINTMENT_CONFIRMED |
+| REJECT | PENDING | PSYCHOLOGIST | REJECTED | REJECTED | AppointmentRejected | APPOINTMENT_REJECTED |
+| CANCEL | PENDING, CONFIRMED, RESCHEDULE_REQUESTED | PATIENT or PSYCHOLOGIST | CANCELLED | CANCELLED | AppointmentCancelled | APPOINTMENT_CANCELLED |
+| RESCHEDULE | CONFIRMED, RESCHEDULE_REQUESTED | PSYCHOLOGIST | CONFIRMED | RESCHEDULED | AppointmentRescheduled | APPOINTMENT_RESCHEDULED |
+| COMPLETE | CONFIRMED | PSYCHOLOGIST | COMPLETED | COMPLETED | AppointmentCompleted | APPOINTMENT_COMPLETED |
+| NO_SHOW | CONFIRMED | PSYCHOLOGIST | NO_SHOW | NO_SHOW | AppointmentNoShow | APPOINTMENT_NO_SHOW |
+
+`RESCHEDULED` is a **history event**. Current status after a successful psychologist reschedule is `CONFIRMED`.
+
+Terminal: `CANCELLED`, `REJECTED`, `COMPLETED`, `NO_SHOW`. No reopen transitions.
+
+### Blocking after lifecycle changes
+
+Unchanged from Phase 2A:
+
+Blocking: `PENDING`, `CONFIRMED`, `RESCHEDULE_REQUESTED`  
+Non-blocking: `CANCELLED`, `REJECTED`, `COMPLETED`, `NO_SHOW`
+
+Appointments are never deleted. Status change removes them from the exclusion constraint and occupancy queries. Slots become bookable again.
+
+### Confirmation
+
+Transaction: `SELECT … FOR UPDATE` + `version` CAS. Re-validates that the existing start is still an exact practice slot and that no **other** blocking occupancy overlaps (self excluded). Concurrent confirms: one success, the other stale / already confirmed.
+
+### Cancellation policy (OPEN)
+
+`practice_appointment_settings.cancellation_minimum_notice_minutes` is nullable.
+
+- `null`: no extra window (state machine only)
+- set: **patient** cancel is refused when `starts_at < now + notice` (TEST FIXTURE values in tests)
+- psychologist cancel is **not** window-restricted in this phase because “psychologist may cancel at any time” remains **OPEN**
+
+Do not treat fixture numbers as production policy. Actor is recorded as `PATIENT`, `PSYCHOLOGIST`, or never invented.
+
+### Rescheduling
+
+Same psychologist calendar lock as booking (`pg_advisory_xact_lock`). New start is validated like booking. Duration and buffers are recalculated from the current appointment type.
+
+The row is **updated in place** (new `starts_at` / `ends_at` / occupied range) so the old occupancy is replaced atomically. There is no delete-then-insert. If the new slot is unavailable, the original row is unchanged and no `RESCHEDULED` history is written.
+
+Copy: “This time is no longer available. Please choose another time.”
+
+Reschedule **window** is not implemented (OPEN). Direct psychologist reschedule is immediately `CONFIRMED` (not a patient request). Patient `REQUEST_RESCHEDULE` remains in the state machine for Phase 2E.
+
+### Concurrency
+
+- Confirm race: row lock + version
+- Complete vs no-show: only one terminal state
+- Reschedule onto the same slot: occupancy + exclusion
+- Cancel vs reschedule: one winner; the other stale/invalid
+
+Isolation remains `READ COMMITTED`. Advisory lock is for calendar occupancy changes (booking + reschedule). Status-only transitions use row `FOR UPDATE` + `version`.
+
+### History, audit, outbox
+
+Every successful transition appends immutable history, an outbox row (`PENDING`), and an audit `SUCCESS` in the **same transaction**. Rollback tests cover update/history/outbox failures. **No email, WhatsApp, or SMS is sent.**
+
+Outbox payloads: appointment public id, status, start, end, timezone. No clinical content.
+
+### Unresolved policy (still OPEN)
+
+Cancellation window production value, whether psychologist cancel is always allowed, patient-cancel approval, reschedule minimum notice, practice hours, duration, buffers, notification provider. Tests use **TEST FIXTURE ONLY** values.
+
+---
+
 ## What later phases still do not implement
 
-Phase 2C added `/patient/appointments/new` only. Still not implemented:
+Phase 2D added psychologist lifecycle UI. Still not implemented:
 
-- Confirm, reject, cancel, reschedule, complete, no-show
-- `/patient/appointments` list/history and `/psychologist/practice/appointments`
-- Super Admin dashboard
+- Patient appointment history list (`/patient/appointments`)
+- Patient cancellation / reschedule UI
+- Super Admin appointment console
 - Email / WhatsApp / SMS / reminders
 - Clinical records, documents, payments, teleconsultation, calendar sync
 
@@ -403,8 +502,9 @@ Phase 1C gates remain: PostgreSQL provider/region, OTP provider, SMTP, privacy/t
 - Pure slot-generation tests with an injected clock
 - PGlite tests reading hours, exceptions, and `tstzrange` occupancy
 - Booking authz, validation, idempotency, IDOR, rate-limit, and rollback tests
-- PGlite concurrent booking tests (advisory lock + occupancy)
-- Optional PostgreSQL 16 concurrent exclusion test when `APPOINTMENT_PG_URL` is set (CI job `appointment-pg-concurrency`)
+- Lifecycle transitions, dashboard filters, IDOR, history immutability, rollback
+- PGlite concurrent booking and lifecycle tests
+- Optional PostgreSQL 16 concurrent tests when `APPOINTMENT_PG_URL` is set (CI job `appointment-pg-concurrency`)
 - Identity tests remain in the suite
 
 Run: `npm test` (includes `src/lib/appointments/**/*.test.ts`).

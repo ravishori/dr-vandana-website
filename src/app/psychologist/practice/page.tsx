@@ -5,6 +5,7 @@ import { loadPrincipal } from "@/lib/identity/principal";
 import { createAppIdentityContext } from "@/lib/identity/runtime";
 import { readSession } from "@/lib/identity/sessions";
 import { authorizationService } from "@/lib/identity/authorization";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function PsychologistPracticeHomePage() {
@@ -29,8 +30,11 @@ export default async function PsychologistPracticeHomePage() {
   return (
     <IdentityShell kicker="Practice identity" title="Practice identity is active">
       <p>
-        Appointment tools are not enabled in this phase. The existing question
-        portal remains at /psychologist.
+        You can manage appointment requests at{" "}
+        <Link className="underline" href="/psychologist/practice/appointments">
+          /psychologist/practice/appointments
+        </Link>
+        . The existing question portal remains at /psychologist.
       </p>
       <form action={async () => {
         "use server";

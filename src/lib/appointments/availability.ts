@@ -357,7 +357,7 @@ export class AvailabilityService {
 
   async getPracticeAvailability(
     ctx: IdentityContext,
-    input: { appointmentTypePublicId: string; dateLocal: string },
+    input: { appointmentTypePublicId: string; dateLocal: string; excludeAppointmentId?: string },
   ): Promise<PracticeAvailabilityResult> {
     try {
       const loaded = await this.loadSlotContext(ctx.db, ctx.now(), input);
@@ -379,7 +379,7 @@ export class AvailabilityService {
 
   async getAvailableSlots(
     ctx: IdentityContext,
-    input: { appointmentTypePublicId: string; dateLocal: string },
+    input: { appointmentTypePublicId: string; dateLocal: string; excludeAppointmentId?: string },
   ): Promise<AvailableSlotsResult> {
     try {
       const loaded = await this.loadSlotContext(ctx.db, ctx.now(), input);
@@ -423,6 +423,7 @@ export class AvailabilityService {
       const loaded = await this.loadSlotContext(ctx.db, ctx.now(), {
         appointmentTypePublicId: input.appointmentTypePublicId,
         dateLocal,
+        excludeAppointmentId: undefined,
       });
       const match = this.isExactSlot(loaded.slotsInput, input.startsAt);
       if (!match) {
@@ -472,7 +473,11 @@ export class AvailabilityService {
   async loadSlotContext(
     db: AppointmentQueryDb,
     now: Date,
-    input: { appointmentTypePublicId: string; dateLocal: string },
+    input: {
+      appointmentTypePublicId: string;
+      dateLocal: string;
+      excludeAppointmentId?: string;
+    },
   ) {
     if (!PUBLIC_APPOINTMENT_TYPE_ID_PATTERN.test(input.appointmentTypePublicId)) {
       throw new AppointmentDomainError(
@@ -564,6 +569,7 @@ export class AvailabilityService {
       appointmentType.psychologistUserId,
       dayStart,
       dayEnd,
+      input.excludeAppointmentId,
     );
 
     const hours: PracticeHourInput[] = hourRows.map((row) => ({

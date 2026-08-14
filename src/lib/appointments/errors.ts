@@ -1,4 +1,4 @@
-import { APPOINTMENT_SAFE_MESSAGES, BOOKING_SAFE_MESSAGES } from "@/lib/appointments/constants";
+import { APPOINTMENT_SAFE_MESSAGES, BOOKING_SAFE_MESSAGES, LIFECYCLE_SAFE_MESSAGES } from "@/lib/appointments/constants";
 
 export type AvailabilityErrorCode =
   | "NOT_CONFIGURED"
@@ -102,5 +102,50 @@ export function safeBookingFailure(error: unknown): {
     ok: false,
     message: BOOKING_SAFE_MESSAGES.outsideAvailability,
     code: "NOT_CONFIGURED",
+  };
+}
+
+export type LifecycleErrorCode =
+  | BookingErrorCode
+  | "NOT_FOUND"
+  | "STALE"
+  | "ALREADY_CONFIRMED"
+  | "POLICY";
+
+export class LifecycleDomainError extends Error {
+  readonly code: LifecycleErrorCode;
+
+  constructor(code: LifecycleErrorCode, message: string) {
+    super(message);
+    this.name = "LifecycleDomainError";
+    this.code = code;
+  }
+}
+
+export function isLifecycleDomainError(
+  error: unknown,
+): error is LifecycleDomainError {
+  return error instanceof LifecycleDomainError;
+}
+
+export function safeLifecycleFailure(error: unknown): {
+  ok: false;
+  message: string;
+  code: LifecycleErrorCode;
+} {
+  if (isLifecycleDomainError(error) || isBookingDomainError(error) || isAppointmentDomainError(error)) {
+    return { ok: false, message: error.message, code: error.code };
+  }
+  if (isExclusionViolation(error)) {
+    return {
+      ok: false,
+      message: LIFECYCLE_SAFE_MESSAGES.slotUnavailable,
+      code: "SLOT_UNAVAILABLE",
+    };
+  }
+  return {
+    ok: false,
+    message: APPOINTMENT_SAFE_MESSAGES.invalidTransition,
+    code: "INVALID_TRANSITION",
   };
 }
