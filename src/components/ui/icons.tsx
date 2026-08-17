@@ -152,6 +152,10 @@ export const LeafIcon = createStrokeIcon(
 
 export const ArrowRightIcon = createStrokeIcon("M5 12h14M13 6l6 6-6 6");
 
+export const MailIcon = createStrokeIcon(
+  "M4 6.5h16A1.5 1.5 0 0 1 21.5 8v8A1.5 1.5 0 0 1 20 17.5H4A1.5 1.5 0 0 1 2.5 16V8A1.5 1.5 0 0 1 4 6.5zM4 8l8 5.5L20 8",
+);
+
 export function MapPinIcon({ className, title }: IconProps) {
   return (
     <svg

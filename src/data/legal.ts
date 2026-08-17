@@ -15,7 +15,7 @@ export type LegalPageContent = {
   closingNote: string;
 };
 
-const publicContactReference = `${practiceContact.whatsappDisplay} (WhatsApp) or the Contact page`;
+const publicContactReference = `${practiceContact.whatsappDisplay} (WhatsApp), ${practiceContact.email}, or the Contact page`;
 
 export const privacyPolicyContent: LegalPageContent = {
   title: "Privacy Policy",
