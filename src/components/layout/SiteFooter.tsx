@@ -14,6 +14,7 @@ import { professionalProfile } from "@/data/professional";
 import {
   getBookingHref,
   getMapsHref,
+  getVerifiedEmailHref,
   getVerifiedWhatsAppHref,
 } from "@/lib/contact-actions";
 import { isPlaceholder, resolveDisplayValue } from "@/types/site";
@@ -84,8 +85,15 @@ export function SiteFooter() {
                   {practiceContact.labels.bookInstantly}
                 </a>
               </p>
-              <p className="text-text-muted">
-                Email: {resolveDisplayValue(siteConfig.contact.email)}
+              <p>
+                Email:{" "}
+                <a
+                  href={getVerifiedEmailHref()}
+                  className="text-brand no-underline hover:underline"
+                  aria-label={practiceContact.labels.emailAria}
+                >
+                  {practiceContact.email}
+                </a>
               </p>
             </div>
           </div>

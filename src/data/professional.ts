@@ -15,5 +15,5 @@ export const professionalProfile: ProfessionalProfile = {
   positioning:
     "Compassionate, confidential and evidence-informed psychological support.",
   verificationNote:
-    "Only verified project information is stored here. Remaining unverified contact details (for example email and consultation hours) must stay placeholders until confirmed.",
+    "Only verified project information is stored here. Remaining unverified contact details (for example consultation hours) must stay placeholders until confirmed.",
 };

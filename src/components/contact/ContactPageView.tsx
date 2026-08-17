@@ -1,11 +1,12 @@
 import { PracticeLocationCard } from "@/components/contact/PracticeLocationCard";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
-import { PhoneIcon, WhatsAppIcon } from "@/components/ui/icons";
+import { MailIcon, PhoneIcon, WhatsAppIcon } from "@/components/ui/icons";
 import { Section } from "@/components/ui/Section";
 import { contactPage, practiceContact } from "@/data/contact";
 import {
   getBookingHref,
+  getVerifiedEmailHref,
   getVerifiedPhoneHref,
   getVerifiedWhatsAppHref,
 } from "@/lib/contact-actions";
@@ -90,12 +91,35 @@ export function ContactPageView() {
                   <span>{practiceContact.labels.call}</span>
                 </a>
               </li>
+              <li>
+                <a
+                  href={getVerifiedEmailHref()}
+                  aria-label={practiceContact.labels.emailAria}
+                  className={cn(
+                    actionBase,
+                    "bg-surface text-brand border-brand-muted hover:border-brand hover:bg-background border",
+                  )}
+                >
+                  <MailIcon className="h-4 w-4" aria-hidden="true" />
+                  <span>{practiceContact.labels.email}</span>
+                </a>
+              </li>
             </ul>
             <p className="text-text-muted mt-4 text-sm">
               WhatsApp / appointment:{" "}
               <span className="text-text font-medium">
                 {practiceContact.whatsappDisplay}
               </span>
+            </p>
+            <p className="text-text-muted mt-2 text-sm">
+              Email:{" "}
+              <a
+                href={getVerifiedEmailHref()}
+                className="text-brand no-underline hover:underline"
+                aria-label={practiceContact.labels.emailAria}
+              >
+                {practiceContact.email}
+              </a>
             </p>
           </div>
 
@@ -109,7 +133,6 @@ export function ContactPageView() {
           </aside>
 
           <div className="text-text-muted mt-6 space-y-2 text-sm">
-            <p>Email: {contactPage.unverified.email}</p>
             <p>
               Consultation hours: {contactPage.unverified.consultationHours}
             </p>

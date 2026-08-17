@@ -15,6 +15,7 @@ export function getPracticeJsonLd() {
     description: siteConfig.description,
     url: siteConfig.url,
     telephone: `+${practiceContact.phoneDigits}`,
+    email: practiceContact.email,
     image: `${siteConfig.url}/og-image.png`,
     address: {
       "@type": "PostalAddress",
