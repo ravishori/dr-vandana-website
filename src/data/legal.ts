@@ -23,7 +23,7 @@ export const privacyPolicyContent: LegalPageContent = {
   description:
     "Privacy information for the public website of Dr. Vandana Rajiv Chaudhary. This site is primarily informational and is not used to maintain clinical records.",
   intro:
-    "This Privacy Policy explains how the public website at drvandana.trinetra.net is intended to work. It is informational and does not constitute legal advice.",
+    "This Privacy Policy explains how the public website at drvandana.trinetralab.net is intended to work. It is informational and does not constitute legal advice.",
   sections: [
     {
       heading: "Informational website",
