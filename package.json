@@ -14,6 +14,8 @@
     "identity:gates": "tsx scripts/check-identity-production-gates.ts",
     "production:gates": "tsx scripts/check-production-gates.ts",
     "db:verify-production": "tsx scripts/verify-production-schema.ts",
+    "staging:otp-config": "tsx scripts/staging-otp-config-check.ts",
+    "staging:otp-db-lifecycle": "tsx scripts/staging-otp-db-lifecycle.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
