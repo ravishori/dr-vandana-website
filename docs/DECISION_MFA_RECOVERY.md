@@ -1,7 +1,7 @@
 # MFA Recovery Decision
 
 **Status:** OPEN (O12) — HUMAN DECISION REQUIRED  
-**Date:** 14 August 2026  
+**Date:** 14 August 2026 (Phase 2A clarification 25 August 2026)
 
 Implemented today: hashed, single-use TOTP **backup codes**, shown once at enrollment. Password is still required to reach the MFA challenge. There is **no** in-app recovery if both the authenticator **and** the backup codes are lost.
 
@@ -12,12 +12,14 @@ Implemented today: hashed, single-use TOTP **backup codes**, shown once at enrol
 ```text
 Forgot MFA
 +
-Send email
+Send email OTP / SMS OTP
 =
 MFA bypass
 ```
 
-That pattern must not be added. Email control is not equivalent to a second factor.
+That pattern must not be added. Email or SMS OTP control is **not** equivalent to TOTP MFA for privileged roles (PSYCHOLOGIST, SUPER_ADMIN).
+
+Phase 2A adds email/SMS OTP for **patient identity verification** only. It must not weaken psychologist MFA.
 
 Related: O19 (who holds Super Admin / psychologist backup codes) remains OPEN. Super Admin dashboard remains DEFERRED.
 

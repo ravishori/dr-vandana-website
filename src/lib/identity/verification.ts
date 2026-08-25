@@ -214,6 +214,7 @@ export async function verifyPhoneOtpAndActivate(
         userId: user.id,
         code: input.code,
         ip: input.ip,
+        expectedDestination: user.mobileNormalized ?? undefined,
       });
       if (!verified.ok) {
         outcome = verified;

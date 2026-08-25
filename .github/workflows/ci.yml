@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
       - run: npm install
       - run: npm test
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
       - run: npm install
       - run: npx tsx --test --test-concurrency=1 src/lib/appointments/booking.pg.test.ts src/lib/appointments/lifecycle.pg.test.ts src/lib/notifications/dispatcher.pg.test.ts src/lib/identity/schema.pg.test.ts

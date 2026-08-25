@@ -9,6 +9,7 @@ import {
   type IdentityRuntimeConfig,
 } from "@/lib/identity/config";
 import { isMfaKeyUsable } from "@/lib/identity/crypto";
+import { isTwilioSmsOtpConfigured } from "@/lib/identity/otp-providers/twilio-sms-config";
 
 export type GateAnswer = "YES" | "NO";
 
@@ -16,6 +17,7 @@ export type IdentityProductionGateReport = {
   databaseConfigured: GateAnswer;
   smtpConfigured: GateAnswer;
   otpProductionProviderConfigured: GateAnswer;
+  twilioSmsConfigured: GateAnswer;
   mfaEncryptionKeyConfigured: GateAnswer;
   sessionSecretConfigured: GateAnswer;
   patientRegistrationFlag: GateAnswer;
@@ -32,21 +34,29 @@ function yn(value: boolean): GateAnswer {
  * Operator-only readiness snapshot. Never include secret values, URLs with
  * credentials, API keys, or provider account identifiers.
  *
- * A production SMS/OTP vendor adapter has not been implemented. Until a human
- * selects a vendor and an adapter is added, OTP delivery stays fail-closed.
+ * Phase 2A: Twilio SMS OTP adapter is implemented in code. Production remains
+ * fail-closed until OTP_PROVIDER=twilio and Twilio + SMTP credentials are set
+ * in the host environment (never in source control).
  */
-export const OTP_VENDOR_ADAPTER_IMPLEMENTED = false;
+export const OTP_VENDOR_ADAPTER_IMPLEMENTED = true;
 
 export function evaluateIdentityProductionGates(
   config: IdentityRuntimeConfig = loadIdentityConfig(),
   options?: {
     smtpConfigured?: boolean;
+    twilioSmsConfigured?: boolean;
   },
 ): IdentityProductionGateReport {
   const smtpConfigured = options?.smtpConfigured ?? isSmtpReadyForIdentity();
+  const twilioSmsConfigured =
+    options?.twilioSmsConfigured ?? isTwilioSmsOtpConfigured();
   const otpMode = resolveOtpProviderMode(config);
+  const provider = config.otpProvider?.toLowerCase();
   const otpEnvLooksProduction =
-    otpMode === "production_required" && Boolean(config.otpApiKey);
+    otpMode === "production_required" &&
+    (provider === "twilio" || provider === "twilio_sms"
+      ? twilioSmsConfigured
+      : Boolean(config.otpApiKey));
   const otpProductionProviderConfigured =
     OTP_VENDOR_ADAPTER_IMPLEMENTED && otpEnvLooksProduction;
 
@@ -54,6 +64,7 @@ export function evaluateIdentityProductionGates(
     databaseConfigured: yn(isPostgresUrl(config.databaseUrl)),
     smtpConfigured: yn(smtpConfigured),
     otpProductionProviderConfigured: yn(otpProductionProviderConfigured),
+    twilioSmsConfigured: yn(twilioSmsConfigured),
     mfaEncryptionKeyConfigured: yn(isMfaKeyUsable(config.mfaEncryptionKey)),
     sessionSecretConfigured: yn(isSessionSecretUsable(config.sessionSecret)),
     patientRegistrationFlag: yn(config.registrationEnabled),
@@ -72,6 +83,7 @@ export function formatIdentityProductionGates(
     `DATABASE configured: ${report.databaseConfigured}`,
     `SMTP configured: ${report.smtpConfigured}`,
     `OTP production provider configured: ${report.otpProductionProviderConfigured}`,
+    `Twilio SMS configured: ${report.twilioSmsConfigured}`,
     `MFA encryption key configured: ${report.mfaEncryptionKeyConfigured}`,
     `Session secret configured: ${report.sessionSecretConfigured}`,
     `Patient registration flag: ${report.patientRegistrationFlag}`,

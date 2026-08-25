@@ -7,13 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test \"src/lib/**/*.test.ts\"",
+    "test": "node scripts/run-unit-tests.mjs",
     "notifications:process": "tsx scripts/process-notifications.ts",
     "db:migrate": "tsx scripts/migrate-identity.ts",
     "db:provision": "tsx scripts/provision-identity-user.ts",
     "identity:gates": "tsx scripts/check-identity-production-gates.ts",
     "production:gates": "tsx scripts/check-production-gates.ts",
     "db:verify-production": "tsx scripts/verify-production-schema.ts",
+    "staging:otp-config": "tsx scripts/staging-otp-config-check.ts",
+    "staging:otp-db-lifecycle": "tsx scripts/staging-otp-db-lifecycle.ts",
+    "staging:otp-failclosed": "tsx scripts/staging-otp-failclosed-check.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

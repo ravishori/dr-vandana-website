@@ -112,12 +112,13 @@ export async function processNotificationBatch(
 
 async function expandDueOutbox(deps: NotificationDispatcherDeps): Promise<number> {
   const now = deps.now();
+  const nowIso = now.toISOString();
   const ids = await deps.db.transaction(async (tx) => {
     const selected = await tx.execute(sql`
       SELECT id
       FROM appointment_notification_outbox
       WHERE status IN ('PENDING', 'RETRY')
-        AND (next_attempt_at IS NULL OR next_attempt_at <= ${now})
+        AND (next_attempt_at IS NULL OR next_attempt_at <= ${nowIso}::timestamptz)
       ORDER BY created_at ASC
       LIMIT ${deps.settings.expandBatchSize}
       FOR UPDATE SKIP LOCKED
@@ -220,6 +221,8 @@ export async function claimDeliveries(
 ): Promise<{ id: string; lockedAt: Date }[]> {
   const now = deps.now();
   const leaseExpired = new Date(now.getTime() - deps.settings.leaseMs);
+  const nowIso = now.toISOString();
+  const leaseExpiredIso = leaseExpired.toISOString();
   return deps.db.transaction(async (tx) => {
     const selected = await tx.execute(sql`
       SELECT id
@@ -227,12 +230,12 @@ export async function claimDeliveries(
       WHERE (
         (
           status IN ('PENDING', 'RETRY')
-          AND (next_attempt_at IS NULL OR next_attempt_at <= ${now})
+          AND (next_attempt_at IS NULL OR next_attempt_at <= ${nowIso}::timestamptz)
         )
         OR (
           status = 'PROCESSING'
           AND locked_at IS NOT NULL
-          AND locked_at <= ${leaseExpired}
+          AND locked_at <= ${leaseExpiredIso}::timestamptz
         )
       )
       ORDER BY created_at ASC
