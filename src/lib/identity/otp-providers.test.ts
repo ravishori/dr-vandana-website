@@ -149,6 +149,18 @@ describe("phase 2a otp infrastructure", () => {
           assert.equal(smtp.config.fromEmail, "ravishori@gmail.com");
         }
 
+        // Canonical names win over legacy aliases when both are set.
+        process.env.SMTP_HOST = "smtp.legacy.example";
+        process.env.SMTP_USER = "legacy-user@example.test";
+        process.env.SMTP_FROM_EMAIL = "from-override@example.test";
+        const preferred = getSmtpTransportConfig();
+        assert.equal(preferred.ok, true);
+        if (preferred.ok) {
+          assert.equal(preferred.config.host, "smtp.gmail.com");
+          assert.equal(preferred.config.user, "ravishori@gmail.com");
+          assert.equal(preferred.config.fromEmail, "from-override@example.test");
+        }
+
         process.env.TWILIO_ACCOUNT_SID = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
         process.env.TWILIO_AUTH_TOKEN = "token-not-a-real-secret";
         process.env.TWILIO_PHONE_NUMBER = "+15005550006";
@@ -157,6 +169,12 @@ describe("phase 2a otp infrastructure", () => {
         assert.equal(twilio.ok, true);
         if (twilio.ok) {
           assert.equal(twilio.config.fromNumber, "+15005550006");
+        }
+        process.env.TWILIO_FROM_NUMBER = "+15005550001";
+        const canonicalFrom = loadTwilioSmsConfig();
+        assert.equal(canonicalFrom.ok, true);
+        if (canonicalFrom.ok) {
+          assert.equal(canonicalFrom.config.fromNumber, "+15005550001");
         }
       } finally {
         for (const [key, value] of Object.entries(previous)) {

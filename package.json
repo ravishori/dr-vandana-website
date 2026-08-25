@@ -16,6 +16,7 @@
     "db:verify-production": "tsx scripts/verify-production-schema.ts",
     "staging:otp-config": "tsx scripts/staging-otp-config-check.ts",
     "staging:otp-db-lifecycle": "tsx scripts/staging-otp-db-lifecycle.ts",
+    "staging:otp-failclosed": "tsx scripts/staging-otp-failclosed-check.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

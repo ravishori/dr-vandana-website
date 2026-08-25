@@ -40,27 +40,38 @@ This is not legal advice and does not claim DPDP/HIPAA compliance.
 
 ## Required staging variables (host secret store only)
 
-### Gmail SMTP
+### Gmail SMTP (canonical)
 
 | Variable | Notes |
 |---|---|
-| `SMTP_SERVER` or `SMTP_HOST` | `smtp.gmail.com` |
-| `SMTP_PORT` | `587` |
-| `SMTP_EMAIL` or `SMTP_USER` | sender mailbox |
+| `SMTP_SERVER` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` (STARTTLS / `requireTLS`) |
+| `SMTP_EMAIL` | mailbox used as SMTP auth user and default From |
 | `SMTP_PASSWORD` | **Gmail App Password only** — never the normal Gmail password |
-| `SMTP_FROM_EMAIL` | optional; defaults to `SMTP_EMAIL` |
+
+**Aliases (legacy enquiry names; used only if canonical unset):**  
+`SMTP_HOST` ← `SMTP_SERVER`, `SMTP_USER` ← `SMTP_EMAIL`, optional `SMTP_FROM_EMAIL` overrides From.
+
+**Precedence:** `SMTP_SERVER` → `SMTP_HOST`; `SMTP_EMAIL` → `SMTP_USER`; From: `SMTP_FROM_EMAIL` → `SMTP_EMAIL` → `SMTP_USER`.
 
 Never commit `SMTP_PASSWORD`. Never put it in `.env.example`, README, logs, or screenshots.
 
-### Twilio SMS
+Status helper: `SMTP CONFIGURED` / `SMTP NOT CONFIGURED` (never prints password).
+
+### Twilio SMS (canonical)
 
 | Variable | Notes |
 |---|---|
 | `TWILIO_ACCOUNT_SID` | secret |
 | `TWILIO_AUTH_TOKEN` | secret |
 | `TWILIO_FROM_NUMBER` | **canonical** Messaging From (E.164) |
-| `TWILIO_PHONE_NUMBER` | optional alias for `TWILIO_FROM_NUMBER` |
 | `OTP_PROVIDER` | `twilio` |
+
+**Alias:** `TWILIO_PHONE_NUMBER` — same meaning as `TWILIO_FROM_NUMBER`; used only when `TWILIO_FROM_NUMBER` is unset.  
+**Precedence:** `TWILIO_FROM_NUMBER` → `TWILIO_PHONE_NUMBER`.  
+WhatsApp remains separate (`TWILIO_WHATSAPP_*`).
+
+Status helper: `TWILIO CONFIGURED` / `TWILIO NOT CONFIGURED`.
 
 ### Identity / rate limit
 

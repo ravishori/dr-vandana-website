@@ -4,13 +4,17 @@
  *
  * Store secrets in `.env.local` (gitignored). Never use NEXT_PUBLIC_*.
  *
- * SMTP transport (canonical + Gmail-friendly aliases):
- * - SMTP_HOST or SMTP_SERVER (alias)
- * - SMTP_PORT
- * - SMTP_USER or SMTP_EMAIL (alias)
+ * Canonical Gmail / SMTP variables (preferred):
+ * - SMTP_SERVER (e.g. smtp.gmail.com)
+ * - SMTP_PORT (587)
+ * - SMTP_EMAIL (mailbox / auth user; also default From)
  * - SMTP_PASSWORD (Gmail App Password when using smtp.gmail.com — never the account password)
- * - SMTP_FROM_EMAIL or SMTP_EMAIL (alias)
- * - SMTP_FROM_NAME (optional)
+ *
+ * Backwards-compatible aliases (legacy enquiry SMTP names):
+ * - SMTP_HOST → alias of SMTP_SERVER
+ * - SMTP_USER → alias of SMTP_EMAIL (auth user)
+ * - SMTP_FROM_EMAIL → optional From override (falls back to SMTP_EMAIL)
+ * - SMTP_FROM_NAME (optional display name)
  *
  * Appointment delivery destination:
  * - APPOINTMENT_TO_EMAIL
@@ -66,14 +70,25 @@ export function getSmtpConfigurationStatus():
     : { status: "SMTP NOT CONFIGURED" };
 }
 
+/**
+ * Resolve SMTP transport.
+ *
+ * Precedence (canonical first):
+ * - host: SMTP_SERVER → SMTP_HOST
+ * - auth user: SMTP_EMAIL → SMTP_USER
+ * - password: SMTP_PASSWORD (required; no alias)
+ * - from: SMTP_FROM_EMAIL → SMTP_EMAIL → SMTP_USER
+ * - port: SMTP_PORT
+ */
 export function getSmtpTransportConfig(): SmtpConfigResult {
-  const host = readNonEmptyEnv("SMTP_HOST") ?? readNonEmptyEnv("SMTP_SERVER");
+  const host = readNonEmptyEnv("SMTP_SERVER") ?? readNonEmptyEnv("SMTP_HOST");
   const portRaw = readNonEmptyEnv("SMTP_PORT");
-  const user = readNonEmptyEnv("SMTP_USER") ?? readNonEmptyEnv("SMTP_EMAIL");
+  const user = readNonEmptyEnv("SMTP_EMAIL") ?? readNonEmptyEnv("SMTP_USER");
   const password = readNonEmptyEnv("SMTP_PASSWORD");
   const fromRaw =
     readNonEmptyEnv("SMTP_FROM_EMAIL") ??
     readNonEmptyEnv("SMTP_EMAIL") ??
+    readNonEmptyEnv("SMTP_USER") ??
     user;
   const fromName =
     readNonEmptyEnv("SMTP_FROM_NAME") ??

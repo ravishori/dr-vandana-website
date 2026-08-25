@@ -45,28 +45,30 @@ function main() {
   console.log(smtpStatus);
   if (!getSmtpTransportConfig().ok) {
     console.log(
-      "SMTP requires: SMTP_HOST|SMTP_SERVER, SMTP_PORT, SMTP_USER|SMTP_EMAIL, SMTP_PASSWORD, SMTP_FROM_EMAIL|SMTP_EMAIL",
+      "SMTP requires canonical: SMTP_SERVER, SMTP_PORT, SMTP_EMAIL, SMTP_PASSWORD (aliases: SMTP_HOST, SMTP_USER; optional SMTP_FROM_EMAIL)",
     );
     console.log(
       `Unset among checked names: ${unsetAmong([
-        "SMTP_HOST",
         "SMTP_SERVER",
+        "SMTP_HOST",
         "SMTP_PORT",
-        "SMTP_USER",
         "SMTP_EMAIL",
+        "SMTP_USER",
         "SMTP_PASSWORD",
         "SMTP_FROM_EMAIL",
       ]).join(", ")}`,
     );
   } else {
-    console.log("SMTP App Password requirement: Gmail App Password when host is smtp.gmail.com");
+    console.log(
+      "SMTP App Password requirement: Gmail App Password when host is smtp.gmail.com",
+    );
   }
 
   const twilioStatus = getTwilioSmsConfigurationStatus().status;
   console.log(twilioStatus);
   if (!isTwilioSmsOtpConfigured()) {
     console.log(
-      "Twilio requires: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER|TWILIO_PHONE_NUMBER",
+      "Twilio requires canonical: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER (alias: TWILIO_PHONE_NUMBER)",
     );
     console.log(
       `Unset among checked names: ${unsetAmong([
