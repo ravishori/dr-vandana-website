@@ -4,16 +4,18 @@
  *
  * Store secrets in `.env.local` (gitignored). Never use NEXT_PUBLIC_*.
  *
- * SMTP transport:
- * - SMTP_HOST
+ * SMTP transport (canonical + Gmail-friendly aliases):
+ * - SMTP_HOST or SMTP_SERVER (alias)
  * - SMTP_PORT
- * - SMTP_USER
- * - SMTP_PASSWORD
- * - SMTP_FROM_EMAIL
+ * - SMTP_USER or SMTP_EMAIL (alias)
+ * - SMTP_PASSWORD (Gmail App Password when using smtp.gmail.com — never the account password)
+ * - SMTP_FROM_EMAIL or SMTP_EMAIL (alias)
  * - SMTP_FROM_NAME (optional)
  *
  * Appointment delivery destination:
  * - APPOINTMENT_TO_EMAIL
+ *
+ * Never log or commit SMTP_PASSWORD.
  */
 
 export type SmtpTransportConfig = {
@@ -53,12 +55,26 @@ function extractEmailAddress(value: string): string | undefined {
   return looksLikeEmail(candidate) ? candidate : undefined;
 }
 
+/**
+ * Configuration presence check only. Never returns or logs secret values.
+ */
+export function getSmtpConfigurationStatus():
+  | { status: "SMTP CONFIGURED" }
+  | { status: "SMTP NOT CONFIGURED" } {
+  return getSmtpTransportConfig().ok
+    ? { status: "SMTP CONFIGURED" }
+    : { status: "SMTP NOT CONFIGURED" };
+}
+
 export function getSmtpTransportConfig(): SmtpConfigResult {
-  const host = readNonEmptyEnv("SMTP_HOST");
+  const host = readNonEmptyEnv("SMTP_HOST") ?? readNonEmptyEnv("SMTP_SERVER");
   const portRaw = readNonEmptyEnv("SMTP_PORT");
-  const user = readNonEmptyEnv("SMTP_USER");
+  const user = readNonEmptyEnv("SMTP_USER") ?? readNonEmptyEnv("SMTP_EMAIL");
   const password = readNonEmptyEnv("SMTP_PASSWORD");
-  const fromRaw = readNonEmptyEnv("SMTP_FROM_EMAIL");
+  const fromRaw =
+    readNonEmptyEnv("SMTP_FROM_EMAIL") ??
+    readNonEmptyEnv("SMTP_EMAIL") ??
+    user;
   const fromName =
     readNonEmptyEnv("SMTP_FROM_NAME") ??
     "Dr. Vandana Rajiv Chaudhary Website";

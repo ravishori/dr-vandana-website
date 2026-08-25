@@ -1,12 +1,14 @@
 # OTP Provider Decision Pack
 
-**Status:** HUMAN DECISION REQUIRED (O4)  
-**PRODUCTION OTP: BLOCKED**  
-**Date:** 14 August 2026  
+**Status:** Phase 2A adapter implemented (Twilio SMS) — staging configuration still required  
+**PRODUCTION OTP:** still **BLOCKED** until host credentials, India DLT/legal review, and registration gates close  
+**Date:** updated 25 August 2026  
 
-Production must remain **fail-closed**. There is **no** production vendor adapter (`OTP_VENDOR_ADAPTER_IMPLEMENTED=false`). Do not activate a provider. Do not add credentials. Do not implement a vendor-specific adapter until a vendor is **approved**.
+`OTP_VENDOR_ADAPTER_IMPLEMENTED=true` (Twilio SMS + SMTP email OTP providers in code).  
+Production/staging must remain **fail-closed** when `OTP_PROVIDER` / Twilio / SMTP secrets are missing.  
+**Never commit** `TWILIO_AUTH_TOKEN`, `SMTP_PASSWORD`, or other secrets.
 
-`OTP_*` environment variables are **not** production readiness.
+`OTP_*` / `TWILIO_*` environment variable **presence alone is not production readiness**.
 
 This is not legal advice.
 
@@ -15,9 +17,9 @@ This is not legal advice.
 ## Current code behaviour
 
 ```text
-Production
-  → real OTP provider required
-  → missing / test / mock / unimplemented adapter
+OTP_PROVIDER=twilio + Twilio SMS configured + SMTP configured (for email OTP)
+  → composite provider (SMS via Twilio, EMAIL via SMTP/Gmail)
+Missing credentials / test|mock in production
   → fail closed (UNCONFIGURED)
 ```
 
@@ -25,66 +27,33 @@ Production
 - No hard-coded OTP
 - No email-as-OTP MFA bypass
 - Hashes stored; plaintext OTP is not retained in application tables
-- IP rate-limit on verify runs before user lookup
+- Destination + purpose binding; atomic consume; delivery status tracked
+- IP / account / destination rate limits on send; IP rate limit on verify
 
 ---
 
-## Requirements the owner must evaluate
+## Chosen technical adapter (Phase 2A)
 
-| Requirement | Why | Status |
+| Channel | Provider | Env |
 |---|---|---|
-| India SMS delivery | Patient mobiles are Indian numbers in this practice | HUMAN DECISION |
-| OTP API | HTTPS API; not a UI-only portal | HUMAN DECISION |
-| Delivery reliability / latency | Activation depends on timely SMS | HUMAN DECISION — measure with vendor |
-| Sender requirements | Sender ID / header as applicable | HUMAN DECISION |
-| DLT (TRAI) | India commercial SMS commonly requires DLT registration, entity ID, template ID | HUMAN DECISION + operator process |
-| Security | TLS, API keys in secret manager, no OTP in logs | CODE partial; provider OPEN |
-| Data processing | Where OTP payloads and numbers are processed | LEGAL REVIEW (O18) |
-| Retention | How long the vendor keeps numbers/messages | LEGAL REVIEW (O10) |
-| Delivery reports | Needed for support without asking the patient to repeat the code | HUMAN DECISION |
-| Rate limits | Provider-side plus application-side | HUMAN DECISION |
-| Cost | Per-SMS / OTP — **REQUIRES VERIFICATION**, not recorded here | HUMAN DECISION |
-| Contract / DPA | Processor terms | LEGAL REVIEW |
+| SMS phone OTP | Twilio Messaging API | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` (alias `TWILIO_PHONE_NUMBER`) |
+| Email OTP | Gmail SMTP (App Password) via existing nodemailer path | `SMTP_SERVER`/`SMTP_HOST`, `SMTP_EMAIL`/`SMTP_USER`, `SMTP_PASSWORD`, `SMTP_PORT=587` |
+
+Canonical SMS sender variable: **`TWILIO_FROM_NUMBER`**.  
+`TWILIO_PHONE_NUMBER` is accepted as an alias.  
+WhatsApp remains separate (`TWILIO_WHATSAPP_*`).
 
 ---
 
-## Options (classes, not a shortlist winner)
+## Still OPEN before production registration
 
-Do **not** treat the following as a selection. They are classes of option the owner may evaluate:
-
-| Option | Notes |
+| Requirement | Status |
 |---|---|
-| India-focused SMS/OTP API (DLT-aware) | Often the most direct fit for TRAI/DLT sender templates |
-| Global CPaaS SMS (including Twilio SMS, if ever considered separately from WhatsApp) | Still needs India delivery + DLT reality |
-| Hyperscaler SMS (e.g. regional SNS equivalents) | Confirm India delivery and sender IDs |
-| Stay fail-closed | Current production state; registration cannot complete mobile verify |
+| India DLT / sender registration as applicable | HUMAN DECISION + LEGAL |
+| Twilio account upgraded past trial for real patients | HUMAN DECISION |
+| Processor / residency review (O18) | LEGAL REVIEW |
+| Retention (O10) | LEGAL REVIEW |
+| Staging delivery verification with synthetic numbers only | OPERATOR |
+| `PATIENT_REGISTRATION_ENABLED=true` | Must stay false until gates green |
 
-**No vendor is recommended as the winner.** Technical recommendation only:
-
-- Keep the provider-agnostic `OtpDeliveryProvider` boundary.
-- Implement **one** adapter after approval.
-- Keep test/mock providers impossible in production.
-- Confirm DLT/template IDs **before** enabling registration.
-
----
-
-## Information the owner must supply after choosing
-
-1. Legal entity name on the SMS/DLT registration  
-2. Vendor name and DPA  
-3. Processing locations  
-4. Sender ID / header  
-5. DLT entity and template IDs (if applicable)  
-6. Expected delivery SLA  
-7. Retention and logging policy  
-8. Secret storage location (not the secret)  
-9. Who operates delivery-failure support  
-
----
-
-## Explicit non-actions
-
-- Do not put `OTP_API_KEY` in Git or `NEXT_PUBLIC_*`
-- Do not enable registration to “try SMS”
-- Do not log OTP codes
-- Do not email the OTP as an MFA bypass
+See `docs/PHASE_2A_OTP_STAGING.md`.

@@ -2,42 +2,14 @@ import {
   isPatientRegistrationRuntimeAllowed,
   isSessionSecretUsable,
   loadIdentityConfig,
-  resolveOtpProviderMode,
   type IdentityRuntimeConfig,
 } from "@/lib/identity/config";
 import type { IdentityContext } from "@/lib/identity/context";
 import { getIdentityDb } from "@/lib/identity/db";
 import { createSmtpEmailService } from "@/lib/identity/email-service";
-import {
-  createOtpService,
-  createProductionBoundaryOtpProvider,
-  createTestOtpProvider,
-  createUnconfiguredOtpProvider,
-  type OtpDeliveryProvider,
-} from "@/lib/identity/otp";
+import { createOtpService } from "@/lib/identity/otp";
+import { selectRuntimeOtpProvider } from "@/lib/identity/otp-providers/select";
 import { createIdentityRateLimiter } from "@/lib/identity/rate-limit";
-import { logStructured } from "@/lib/observability/logger";
-
-function selectOtpProvider(config: IdentityRuntimeConfig): OtpDeliveryProvider {
-  const mode = resolveOtpProviderMode(config);
-  if (config.nodeEnv === "production" && mode !== "production_required") {
-    logStructured("ERROR", {
-      operation: "identityOtpProvider",
-      errorType: "production_otp_unconfigured",
-    });
-    return createUnconfiguredOtpProvider();
-  }
-  if (mode === "test") {
-    if (config.nodeEnv === "production") {
-      return createUnconfiguredOtpProvider();
-    }
-    return createTestOtpProvider();
-  }
-  if (mode === "production_required") {
-    return createProductionBoundaryOtpProvider();
-  }
-  return createUnconfiguredOtpProvider();
-}
 
 export type AppIdentityContextResult =
   | { ok: true; ctx: IdentityContext }
@@ -64,7 +36,7 @@ export function createAppIdentityContext(
       email,
       rateLimit: createIdentityRateLimiter(),
     };
-    const otpProvider = selectOtpProvider(config);
+    const otpProvider = selectRuntimeOtpProvider({ config, email });
     const otp = createOtpService(base, otpProvider);
     return {
       ok: true,

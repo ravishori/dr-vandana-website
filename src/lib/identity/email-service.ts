@@ -117,3 +117,45 @@ export function passwordResetEmailContent(params: {
     html,
   };
 }
+
+/**
+ * Professional email OTP. Never include passwords, session tokens, or clinical detail.
+ */
+export function emailOtpContent(params: {
+  purpose: string;
+  code: string;
+  expiryMinutes: number;
+}): IdentityEmailMessage {
+  const purposeLabel =
+    params.purpose === "EMAIL_VERIFY"
+      ? "email verification"
+      : params.purpose === "EMAIL_LOGIN"
+        ? "sign-in"
+        : params.purpose === "PASSWORD_RESET"
+          ? "password reset"
+          : "security verification";
+  const text = [
+    "Dr. Vandana Rajiv Chaudhary",
+    "Psychologist",
+    "",
+    `Your ${purposeLabel} code is: ${params.code}`,
+    "",
+    `This code expires in ${params.expiryMinutes} minutes.`,
+    "",
+    "If you did not request this code, you can safely ignore this email.",
+    "Never share this code with anyone.",
+  ].join("\n");
+  const html = [
+    `<p><strong>Dr. Vandana Rajiv Chaudhary</strong><br/>Psychologist</p>`,
+    `<p>Your ${escapeHtml(purposeLabel)} code is:</p>`,
+    `<p style="font-size:24px;letter-spacing:0.2em;font-weight:700">${escapeHtml(params.code)}</p>`,
+    `<p>This code expires in ${params.expiryMinutes} minutes.</p>`,
+    `<p>If you did not request this code, you can safely ignore this email. Never share this code with anyone.</p>`,
+  ].join("");
+  return {
+    to: "",
+    subject: `Verification code — Dr. Vandana Rajiv Chaudhary`,
+    text,
+    html,
+  };
+}

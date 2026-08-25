@@ -215,7 +215,7 @@ describe("phase 1c production gates", () => {
   });
 
   it("reports production gates as YES/NO without secret values", () => {
-    assert.equal(OTP_VENDOR_ADAPTER_IMPLEMENTED, false);
+    assert.equal(OTP_VENDOR_ADAPTER_IMPLEMENTED, true);
     const report = evaluateIdentityProductionGates(
       loadIdentityConfig({
         nodeEnv: "production",
@@ -226,12 +226,13 @@ describe("phase 1c production gates", () => {
         otpApiKey: "otp-secret-should-not-appear",
         registrationEnabled: false,
       }),
-      { smtpConfigured: false },
+      { smtpConfigured: false, twilioSmsConfigured: false },
     );
     assert.equal(report.databaseConfigured, "YES");
     assert.equal(report.smtpConfigured, "NO");
     assert.equal(report.otpProductionProviderConfigured, "NO");
-    assert.equal(report.otpVendorAdapterImplemented, "NO");
+    assert.equal(report.twilioSmsConfigured, "NO");
+    assert.equal(report.otpVendorAdapterImplemented, "YES");
     assert.equal(report.sessionSecretConfigured, "YES");
     assert.equal(report.mfaEncryptionKeyConfigured, "YES");
     assert.equal(report.patientRegistrationFlag, "NO");
@@ -241,6 +242,7 @@ describe("phase 1c production gates", () => {
     const rendered = formatIdentityProductionGates(report);
     assert.match(rendered, /DATABASE configured: YES/);
     assert.match(rendered, /Patient registration flag: NO/);
+    assert.match(rendered, /OTP vendor adapter implemented: YES/);
     assert.doesNotMatch(rendered, /super-secret-password/);
     assert.doesNotMatch(rendered, /otp-secret-should-not-appear/);
     assert.doesNotMatch(rendered, /identity-test-session-secret/);
@@ -326,7 +328,9 @@ describe("phase 1c production gates", () => {
     const database = report.gates.find((row) => row.gate === "DATABASE_URL");
     assert.equal(database?.status, "BLOCKED");
     const otp = report.gates.find((row) => row.gate === "OTP vendor");
-    assert.equal(otp?.status, "HUMAN DECISION");
+    assert.equal(otp?.status, "NOT CONFIGURED");
+    const twilioSms = report.gates.find((row) => row.gate === "Twilio SMS OTP");
+    assert.equal(twilioSms?.status, "NOT CONFIGURED");
     const postgresVendor = report.gates.find((row) => row.gate === "PostgreSQL vendor");
     assert.equal(postgresVendor?.status, "HUMAN DECISION");
     const privacy = report.gates.find((row) => row.gate === "Privacy / Terms / consent");
@@ -366,7 +370,8 @@ describe("phase 1c production gates", () => {
     const smtp = report.gates.find((row) => row.gate === "SMTP");
     assert.equal(smtp?.status, "BLOCKED");
     const otp = report.gates.find((row) => row.gate === "OTP vendor");
-    assert.equal(otp?.status, "HUMAN DECISION");
+    assert.equal(otp?.status, "NOT CONFIGURED");
+    assert.match(otp?.evidence ?? "", /Twilio SMS adapter implemented/);
     const rendered = formatProductionReadinessGates(report);
     assert.doesNotMatch(rendered, /another-secret/);
     assert.doesNotMatch(rendered, /otp-secret-should-not-appear/);

@@ -158,14 +158,28 @@ export const phoneVerifications = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    /** Canonical destination (E.164 mobile or normalized email). */
+    destination: text("destination"),
+    purpose: text("purpose").notNull().default("PHONE_VERIFY"),
+    channel: text("channel").notNull().default("SMS"),
     otpHash: text("otp_hash").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     attemptCount: integer("attempt_count").notNull(),
     maxAttempts: integer("max_attempts").notNull(),
+    deliveryStatus: text("delivery_status").notNull().default("DELIVERED"),
+    lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
     verifiedAt: timestamp("verified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
-  (table) => [index("phone_verifications_user_id_idx").on(table.userId)],
+  (table) => [
+    index("phone_verifications_user_id_idx").on(table.userId),
+    index("phone_verifications_destination_idx").on(table.destination),
+    index("phone_verifications_purpose_status_idx").on(
+      table.userId,
+      table.purpose,
+      table.deliveryStatus,
+    ),
+  ],
 );
 
 export const otpAttempts = pgTable(

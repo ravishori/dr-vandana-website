@@ -1,4 +1,5 @@
 import { getSmtpTransportConfig } from "@/config/appointment-email";
+import { isTwilioSmsOtpConfigured } from "@/lib/identity/otp-providers/twilio-sms-config";
 
 import { PRACTICE_SESSION_COOKIE } from "@/lib/identity/constants";
 
@@ -45,7 +46,8 @@ export type IdentityRuntimeConfig = {
 const DEFAULTS = {
   emailVerificationTtlMs: 24 * 60 * 60 * 1000,
   emailResendCooldownMs: 60 * 1000,
-  otpTtlMs: 10 * 60 * 1000,
+  /** Default 5 minutes (OTP_EXPIRY_SECONDS=300). */
+  otpTtlMs: 5 * 60 * 1000,
   otpResendCooldownMs: 60 * 1000,
   otpMaxAttempts: 5,
   passwordResetTtlMs: 60 * 60 * 1000,
@@ -66,6 +68,15 @@ function readEnv(name: string): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
+function readPositiveIntEnv(name: string, fallback: number): number {
+  const raw = readEnv(name);
+  if (!raw) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function resolveNodeEnv(): IdentityNodeEnv {
   if (process.env.NODE_ENV === "production") {
     return "production";
@@ -80,6 +91,13 @@ export function loadIdentityConfig(
   overrides: Partial<IdentityRuntimeConfig> = {},
 ): IdentityRuntimeConfig {
   const nodeEnv = overrides.nodeEnv ?? resolveNodeEnv();
+  const otpExpirySeconds = readPositiveIntEnv("OTP_EXPIRY_SECONDS", 300);
+  const otpMaxAttempts = readPositiveIntEnv(
+    "OTP_MAX_ATTEMPTS",
+    DEFAULTS.otpMaxAttempts,
+  );
+  // Cap OTP validity to reduce replay window (max 15 minutes).
+  const otpTtlMsFromEnv = Math.min(otpExpirySeconds, 15 * 60) * 1000;
   return {
     nodeEnv,
     databaseUrl: overrides.databaseUrl ?? readEnv("DATABASE_URL"),
@@ -104,10 +122,10 @@ export function loadIdentityConfig(
       overrides.emailVerificationTtlMs ?? DEFAULTS.emailVerificationTtlMs,
     emailResendCooldownMs:
       overrides.emailResendCooldownMs ?? DEFAULTS.emailResendCooldownMs,
-    otpTtlMs: overrides.otpTtlMs ?? DEFAULTS.otpTtlMs,
+    otpTtlMs: overrides.otpTtlMs ?? otpTtlMsFromEnv,
     otpResendCooldownMs:
       overrides.otpResendCooldownMs ?? DEFAULTS.otpResendCooldownMs,
-    otpMaxAttempts: overrides.otpMaxAttempts ?? DEFAULTS.otpMaxAttempts,
+    otpMaxAttempts: overrides.otpMaxAttempts ?? otpMaxAttempts,
     passwordResetTtlMs:
       overrides.passwordResetTtlMs ?? DEFAULTS.passwordResetTtlMs,
     patientIdleMs: overrides.patientIdleMs ?? DEFAULTS.patientIdleMs,
@@ -169,6 +187,17 @@ export function isSmtpReadyForIdentity(): boolean {
   return getSmtpTransportConfig().ok;
 }
 
+function isProductionOtpDeliveryConfigured(
+  config: IdentityRuntimeConfig,
+): boolean {
+  const provider = config.otpProvider?.toLowerCase();
+  if (provider === "twilio" || provider === "twilio_sms") {
+    return isTwilioSmsOtpConfigured();
+  }
+  // Legacy OTP_API_KEY path remains for future non-Twilio adapters.
+  return Boolean(config.otpApiKey);
+}
+
 /**
  * Production patient registration remains gated even when code exists.
  * All of these must be true before considering registration launch-ready.
@@ -189,7 +218,7 @@ export function isPatientRegistrationRuntimeAllowed(
     if (resolveOtpProviderMode(config) !== "production_required") {
       return false;
     }
-    if (!config.otpApiKey) {
+    if (!isProductionOtpDeliveryConfigured(config)) {
       return false;
     }
     if (!isSmtpReadyForIdentity()) {

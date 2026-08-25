@@ -17,6 +17,11 @@ import {
 import { isMfaKeyUsable } from "@/lib/identity/crypto";
 import { OTP_VENDOR_ADAPTER_IMPLEMENTED } from "@/lib/identity/production-readiness";
 import {
+  getTwilioSmsConfigurationStatus,
+  isTwilioSmsOtpConfigured,
+} from "@/lib/identity/otp-providers/twilio-sms-config";
+import { getSmtpConfigurationStatus } from "@/config/appointment-email";
+import {
   resolveEmailProviderMode,
   resolveWhatsAppProviderMode,
 } from "@/lib/notifications/config";
@@ -148,19 +153,35 @@ export function evaluateProductionReadinessGates(
     },
     {
       gate: "OTP vendor",
-      status: "HUMAN DECISION",
+      status: OTP_VENDOR_ADAPTER_IMPLEMENTED
+        ? isTwilioSmsOtpConfigured() &&
+          (config.otpProvider?.toLowerCase() === "twilio" ||
+            config.otpProvider?.toLowerCase() === "twilio_sms")
+          ? "BLOCKED"
+          : "NOT CONFIGURED"
+        : "HUMAN DECISION",
       category: "PROVIDER",
       evidence: OTP_VENDOR_ADAPTER_IMPLEMENTED
-        ? "adapter flag true; vendor still requires human verification and must not be treated as ready from OTP_* env presence"
-        : "OTP_VENDOR_ADAPTER_IMPLEMENTED=false; India SMS/DLT vendor unset; see docs/DECISION_OTP_PROVIDER.md",
+        ? isTwilioSmsOtpConfigured() &&
+          (config.otpProvider?.toLowerCase() === "twilio" ||
+            config.otpProvider?.toLowerCase() === "twilio_sms")
+          ? "Twilio SMS adapter implemented; host credentials present in this process; India DLT/legal and delivery verification still required before production registration"
+          : `Twilio SMS adapter implemented; ${getTwilioSmsConfigurationStatus().status}; set OTP_PROVIDER=twilio and TWILIO_* in host env (never commit secrets); see docs/PHASE_2A_OTP_STAGING.md`
+        : "OTP_VENDOR_ADAPTER_IMPLEMENTED=false; see docs/DECISION_OTP_PROVIDER.md",
+    },
+    {
+      gate: "Twilio SMS OTP",
+      status: isTwilioSmsOtpConfigured() ? "BLOCKED" : "NOT CONFIGURED",
+      category: "CONFIGURATION",
+      evidence: `${getTwilioSmsConfigurationStatus().status}; trial accounts may only SMS verified destinations (STAGING PROVIDER ACCOUNT RESTRICTION)`,
     },
     {
       gate: "SMTP",
       status: smtpConfigured ? "BLOCKED" : "NOT CONFIGURED",
       category: "CONFIGURATION",
       evidence: smtpConfigured
-        ? "SMTP env present; production delivery, SPF/DKIM/DMARC, and bounce handling unverified"
-        : "SMTP not configured",
+        ? `${getSmtpConfigurationStatus().status}; production delivery, SPF/DKIM/DMARC, and bounce handling unverified; Gmail requires App Password`
+        : `${getSmtpConfigurationStatus().status}`,
     },
     {
       gate: "SMTP production identity",
