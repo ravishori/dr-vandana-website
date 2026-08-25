@@ -7,12 +7,18 @@ import { appointments } from "@/lib/appointments/schema";
 /**
  * Occupied intervals use PostgreSQL tstzrange with half-open bounds `[start, end)`.
  * Application code must not treat string timestamps as the overlap authority.
+ *
+ * Date bounds are passed as ISO strings cast to timestamptz so postgres.js
+ * binds them as text→timestamptz rather than mis-typing Date as a string OID
+ * (which throws ERR_INVALID_ARG_TYPE on real PostgreSQL).
  */
 export function occupiedRangesOverlapSql(
   rangeStart: Date,
   rangeEnd: Date,
 ) {
-  return sql`tstzrange(${appointments.occupiedStartsAt}, ${appointments.occupiedEndsAt}, '[)') && tstzrange(${rangeStart}, ${rangeEnd}, '[)')`;
+  const startIso = rangeStart.toISOString();
+  const endIso = rangeEnd.toISOString();
+  return sql`tstzrange(${appointments.occupiedStartsAt}, ${appointments.occupiedEndsAt}, '[)') && tstzrange(${startIso}::timestamptz, ${endIso}::timestamptz, '[)')`;
 }
 
 export async function loadBlockingOccupiedRanges(
