@@ -13,6 +13,7 @@ import {
   filterResources,
   filterVideos,
 } from "@/lib/cms/repository";
+import { safeParseContentStatus } from "@/lib/cms/status";
 import { getCmsRepository } from "@/lib/cms/store";
 import { extractYoutubeVideoId, youtubeThumbnailUrl } from "@/lib/cms/urls";
 import type {
@@ -22,10 +23,19 @@ import type {
   CmsVideo,
   ContentAdminSession,
   ContentDashboardStats,
+  ContentStatus,
   PaginatedResult,
   ResourceListFilters,
   VideoListFilters,
 } from "@/types/cms";
+
+function requireContentStatus(status: unknown): ContentStatus {
+  const parsed = safeParseContentStatus(status);
+  if (!parsed.success) {
+    throw new Error("INVALID_STATUS");
+  }
+  return parsed.data;
+}
 
 function assertAdmin(session: ContentAdminSession | null): ContentAdminSession {
   if (!session || session.role !== "CONTENT_EDITOR") {
@@ -133,9 +143,10 @@ export async function upsertArticle(
 export async function setArticleStatus(
   session: ContentAdminSession | null,
   id: string,
-  status: CmsArticle["status"],
+  status: ContentStatus | string,
 ): Promise<CmsArticle> {
   assertAdmin(session);
+  const nextStatus = requireContentStatus(status);
   const repo = await getCmsRepository();
   const bundle = await repo.read();
   const existing = bundle.articles.find((item) => item.id === id);
@@ -145,13 +156,13 @@ export async function setArticleStatus(
   const timestamp = nowIso();
   const updated: CmsArticle = {
     ...existing,
-    status,
+    status: nextStatus,
     publishedAt:
-      status === "PUBLISHED"
+      nextStatus === "PUBLISHED"
         ? (existing.publishedAt ?? timestamp)
         : existing.publishedAt,
     canonicalPath:
-      status === "PUBLISHED"
+      nextStatus === "PUBLISHED"
         ? (existing.canonicalPath ?? `/blog/${existing.slug}`)
         : existing.canonicalPath,
     updatedAt: timestamp,
@@ -240,16 +251,17 @@ export async function upsertResource(
 export async function setResourceStatus(
   session: ContentAdminSession | null,
   id: string,
-  status: CmsResource["status"],
+  status: ContentStatus | string,
 ): Promise<CmsResource> {
   assertAdmin(session);
+  const nextStatus = requireContentStatus(status);
   const repo = await getCmsRepository();
   const bundle = await repo.read();
   const existing = bundle.resources.find((item) => item.id === id);
   if (!existing) {
     throw new Error("NOT_FOUND");
   }
-  const updated = { ...existing, status, updatedAt: nowIso() };
+  const updated = { ...existing, status: nextStatus, updatedAt: nowIso() };
   bundle.resources = bundle.resources.map((item) =>
     item.id === id ? updated : item,
   );
@@ -340,9 +352,10 @@ export async function upsertVideo(
 export async function setVideoStatus(
   session: ContentAdminSession | null,
   id: string,
-  status: CmsVideo["status"],
+  status: ContentStatus | string,
 ): Promise<CmsVideo> {
   assertAdmin(session);
+  const nextStatus = requireContentStatus(status);
   const repo = await getCmsRepository();
   const bundle = await repo.read();
   const existing = bundle.videos.find((item) => item.id === id);
@@ -352,9 +365,9 @@ export async function setVideoStatus(
   const timestamp = nowIso();
   const updated: CmsVideo = {
     ...existing,
-    status,
+    status: nextStatus,
     publishedAt:
-      status === "PUBLISHED"
+      nextStatus === "PUBLISHED"
         ? (existing.publishedAt ?? timestamp)
         : existing.publishedAt,
     updatedAt: timestamp,

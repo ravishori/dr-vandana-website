@@ -1,7 +1,13 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import { cmsConfig } from "@/config/cms";
+import { getClientIpFromHeaders } from "@/lib/appointment-abuse";
 import { hashPassword, verifyPassword } from "@/lib/cms/crypto";
+import {
+  checkContentAdminLoginRateLimit,
+  clearContentAdminLoginFailures,
+  recordContentAdminLoginFailure,
+} from "@/lib/cms/login-rate-limit";
 import {
   createSessionToken,
   readSessionToken,
@@ -36,10 +42,28 @@ export async function clearContentAdminSessionCookie(): Promise<void> {
   });
 }
 
-export function authenticateContentAdmin(
+export type ContentAdminAuthResult =
+  | { ok: true; token: string }
+  | { ok: false; reason: "CONTENT_ADMIN_NOT_CONFIGURED" | "INVALID_CREDENTIALS" | "RATE_LIMITED" };
+
+/**
+ * Authenticate content admin with IP+email failed-attempt rate limiting.
+ * Does not log passwords, password hashes, or session secrets.
+ */
+export async function authenticateContentAdmin(
   email: string,
   password: string,
-): { ok: true; token: string } | { ok: false; reason: string } {
+  options?: { ip?: string },
+): Promise<ContentAdminAuthResult> {
+  const ip =
+    options?.ip ?? getClientIpFromHeaders(await headers());
+  const normalizedEmail = email.trim().toLowerCase() || "unknown";
+
+  const rate = await checkContentAdminLoginRateLimit(ip, normalizedEmail);
+  if (!rate.allowed) {
+    return { ok: false, reason: "RATE_LIMITED" };
+  }
+
   const expectedEmail = process.env[cmsConfig.adminEmailEnvKey]
     ?.trim()
     .toLowerCase();
@@ -49,23 +73,29 @@ export function authenticateContentAdmin(
   if (!expectedEmail) {
     return { ok: false, reason: "CONTENT_ADMIN_NOT_CONFIGURED" };
   }
-  if (email.trim().toLowerCase() !== expectedEmail) {
+
+  const credentialsMatch = normalizedEmail === expectedEmail;
+  let passwordValid = false;
+
+  if (credentialsMatch) {
+    if (passwordHash) {
+      passwordValid = verifyPassword(password, passwordHash);
+    } else if (
+      process.env.NODE_ENV !== "production" &&
+      typeof devPassword === "string"
+    ) {
+      passwordValid = password === devPassword;
+    } else {
+      return { ok: false, reason: "CONTENT_ADMIN_NOT_CONFIGURED" };
+    }
+  }
+
+  if (!credentialsMatch || !passwordValid) {
+    await recordContentAdminLoginFailure(ip, normalizedEmail);
     return { ok: false, reason: "INVALID_CREDENTIALS" };
   }
 
-  let valid = false;
-  if (passwordHash) {
-    valid = verifyPassword(password, passwordHash);
-  } else if (process.env.NODE_ENV !== "production" && typeof devPassword === "string") {
-    valid = password === devPassword;
-  } else {
-    return { ok: false, reason: "CONTENT_ADMIN_NOT_CONFIGURED" };
-  }
-
-  if (!valid) {
-    return { ok: false, reason: "INVALID_CREDENTIALS" };
-  }
-
+  await clearContentAdminLoginFailures(ip, normalizedEmail);
   return { ok: true, token: createSessionToken(expectedEmail) };
 }
 

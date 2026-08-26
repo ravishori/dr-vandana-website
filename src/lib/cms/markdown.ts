@@ -3,6 +3,8 @@
  * Allows a small subset only. Strips raw HTML tags from input.
  */
 
+import { isSafeHttpsUrl } from "@/lib/cms/urls";
+
 function escapeHtml(text: string): string {
   return text
     .replaceAll("&", "&amp;")
@@ -12,15 +14,74 @@ function escapeHtml(text: string): string {
     .replaceAll("'", "&#39;");
 }
 
+/**
+ * Allow only safe same-origin relative paths (leading slash, no schemes).
+ */
+export function isSafeRelativeMarkdownPath(path: string): boolean {
+  const trimmed = path.trim();
+  if (!trimmed.startsWith("/")) {
+    return false;
+  }
+  if (trimmed.startsWith("//")) {
+    return false;
+  }
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) {
+    return false;
+  }
+  if (/[\\<>"'\s]/.test(trimmed)) {
+    return false;
+  }
+  if (trimmed.includes("..")) {
+    return false;
+  }
+  return /^\/[A-Za-z0-9/_?-]*$/.test(trimmed);
+}
+
+function encodeHref(url: string): string {
+  return escapeHtml(url);
+}
+
 function inlineFormat(text: string): string {
   let out = escapeHtml(text);
   out = out.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   out = out.replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+  // Work from escaped text — relative paths and https URLs appear as literal text.
   out = out.replace(
     /\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g,
-    '<a href="$2" rel="noopener noreferrer" target="_blank">$1</a>',
+    (_match, label: string, href: string) => {
+      if (!isSafeHttpsUrl(href)) {
+        return _match;
+      }
+      return `<a href="${encodeHref(href)}" rel="noopener noreferrer" target="_blank">${label}</a>`;
+    },
   );
+
+  out = out.replace(
+    /\[([^\]]+)\]\((\/[^)\s]*)\)/g,
+    (_match, label: string, href: string) => {
+      if (!isSafeRelativeMarkdownPath(href)) {
+        return _match;
+      }
+      return `<a href="${encodeHref(href)}">${label}</a>`;
+    },
+  );
+
   return out;
+}
+
+/**
+ * Map Markdown heading depth to page-safe HTML heading levels.
+ * Page already owns <h1>, so body starts at <h2>.
+ */
+export function markdownHeadingTag(hashCount: number): "h2" | "h3" | "h4" {
+  if (hashCount <= 1) {
+    return "h2";
+  }
+  if (hashCount === 2) {
+    return "h3";
+  }
+  return "h4";
 }
 
 /**
@@ -60,8 +121,10 @@ export function renderSafeMarkdown(markdown: string): string {
     if (heading) {
       flushParagraph();
       closeUl();
-      const level = heading[1].length;
-      html.push(`<h${level}>${inlineFormat(heading[2].trim())}</h${level}>`);
+      const tag = markdownHeadingTag(heading[1].length);
+      html.push(
+        `<${tag}>${inlineFormat(heading[2].trim())}</${tag}>`,
+      );
       continue;
     }
 

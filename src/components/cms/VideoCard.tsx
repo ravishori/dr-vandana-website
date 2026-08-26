@@ -36,7 +36,7 @@ export function VideoCard({ video, embed = false }: VideoCardProps) {
         <div className="relative aspect-video overflow-hidden rounded-[var(--radius-md)] bg-surface-soft">
           <Image
             src={video.thumbnailUrl}
-            alt=""
+            alt={`Thumbnail for: ${video.title}`}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 33vw"

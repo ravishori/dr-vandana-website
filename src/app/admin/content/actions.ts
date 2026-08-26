@@ -20,9 +20,9 @@ import {
   upsertVideo,
 } from "@/lib/cms/service";
 import { slugify } from "@/lib/cms/slug";
+import { safeParseContentStatus } from "@/lib/cms/status";
 import {
   ARTICLE_CATEGORIES,
-  CONTENT_STATUSES,
   RESOURCE_TYPES,
   VIDEO_CATEGORIES,
 } from "@/types/cms";
@@ -36,14 +36,27 @@ function formBool(formData: FormData, key: string): boolean {
   return value === "on" || value === "true" || value === "1";
 }
 
+function requireValidStatus(raw: string) {
+  const parsed = safeParseContentStatus(raw);
+  if (!parsed.success) {
+    throw new Error("INVALID_STATUS");
+  }
+  return parsed.data;
+}
+
 export async function loginContentAdminAction(
   _prev: { error?: string } | undefined,
   formData: FormData,
 ): Promise<{ error?: string }> {
   const email = formString(formData, "email");
   const password = formString(formData, "password");
-  const result = authenticateContentAdmin(email, password);
+  const result = await authenticateContentAdmin(email, password);
   if (!result.ok) {
+    if (result.reason === "RATE_LIMITED") {
+      return {
+        error: "Too many login attempts. Please wait and try again.",
+      };
+    }
     return {
       error:
         result.reason === "CONTENT_ADMIN_NOT_CONFIGURED"
@@ -64,10 +77,7 @@ export async function saveArticleAction(formData: FormData): Promise<void> {
   const session = await getContentAdminSession();
   const title = formString(formData, "title");
   const slugInput = formString(formData, "slug");
-  const status = formString(formData, "status");
-  if (!CONTENT_STATUSES.includes(status as (typeof CONTENT_STATUSES)[number])) {
-    throw new Error("INVALID_STATUS");
-  }
+  const status = requireValidStatus(formString(formData, "status"));
   const category = formString(formData, "category");
   if (!ARTICLE_CATEGORIES.includes(category as (typeof ARTICLE_CATEGORIES)[number])) {
     throw new Error("INVALID_CATEGORY");
@@ -86,7 +96,7 @@ export async function saveArticleAction(formData: FormData): Promise<void> {
       .map((tag) => tag.trim())
       .filter(Boolean),
     author: formString(formData, "author"),
-    status: status as (typeof CONTENT_STATUSES)[number],
+    status,
     featured: formBool(formData, "featured"),
     seoTitle: formString(formData, "seoTitle") || null,
     seoDescription: formString(formData, "seoDescription") || null,
@@ -98,12 +108,8 @@ export async function saveArticleAction(formData: FormData): Promise<void> {
 export async function articleStatusAction(formData: FormData): Promise<void> {
   const session = await getContentAdminSession();
   const id = formString(formData, "id");
-  const status = formString(formData, "status");
-  await setArticleStatus(
-    session,
-    id,
-    status as (typeof CONTENT_STATUSES)[number],
-  );
+  const status = requireValidStatus(formString(formData, "status"));
+  await setArticleStatus(session, id, status);
   redirect("/admin/content/articles");
 }
 
@@ -116,7 +122,7 @@ export async function deleteArticleAction(formData: FormData): Promise<void> {
 export async function saveResourceAction(formData: FormData): Promise<void> {
   const session = await getContentAdminSession();
   const resourceType = formString(formData, "resourceType");
-  const status = formString(formData, "status");
+  const status = requireValidStatus(formString(formData, "status"));
   await upsertResource(session, {
     id: formString(formData, "id") || undefined,
     title: formString(formData, "title"),
@@ -127,18 +133,15 @@ export async function saveResourceAction(formData: FormData): Promise<void> {
     resourceType: resourceType as (typeof RESOURCE_TYPES)[number],
     featured: formBool(formData, "featured"),
     displayOrder: Number(formString(formData, "displayOrder") || "100"),
-    status: status as (typeof CONTENT_STATUSES)[number],
+    status,
   });
   redirect("/admin/content/resources");
 }
 
 export async function resourceStatusAction(formData: FormData): Promise<void> {
   const session = await getContentAdminSession();
-  await setResourceStatus(
-    session,
-    formString(formData, "id"),
-    formString(formData, "status") as (typeof CONTENT_STATUSES)[number],
-  );
+  const status = requireValidStatus(formString(formData, "status"));
+  await setResourceStatus(session, formString(formData, "id"), status);
   redirect("/admin/content/resources");
 }
 
@@ -151,7 +154,7 @@ export async function deleteResourceAction(formData: FormData): Promise<void> {
 export async function saveVideoAction(formData: FormData): Promise<void> {
   const session = await getContentAdminSession();
   const category = formString(formData, "category");
-  const status = formString(formData, "status");
+  const status = requireValidStatus(formString(formData, "status"));
   await upsertVideo(session, {
     id: formString(formData, "id") || undefined,
     title: formString(formData, "title"),
@@ -160,18 +163,15 @@ export async function saveVideoAction(formData: FormData): Promise<void> {
     category: category as (typeof VIDEO_CATEGORIES)[number],
     featured: formBool(formData, "featured"),
     displayOrder: Number(formString(formData, "displayOrder") || "100"),
-    status: status as (typeof CONTENT_STATUSES)[number],
+    status,
   });
   redirect("/admin/content/videos");
 }
 
 export async function videoStatusAction(formData: FormData): Promise<void> {
   const session = await getContentAdminSession();
-  await setVideoStatus(
-    session,
-    formString(formData, "id"),
-    formString(formData, "status") as (typeof CONTENT_STATUSES)[number],
-  );
+  const status = requireValidStatus(formString(formData, "status"));
+  await setVideoStatus(session, formString(formData, "id"), status);
   redirect("/admin/content/videos");
 }
 
