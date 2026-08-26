@@ -38,6 +38,14 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# local CMS file store
+/data/cms/*.json
+!/data/cms/.gitkeep
+
+# leftover backend checkout artifacts (not part of this Next.js CMS branch)
+/backend/
+
 next-env.d.ts
 
 .vercel

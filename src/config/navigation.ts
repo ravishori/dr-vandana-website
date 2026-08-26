@@ -20,9 +20,11 @@ export const navigationConfig: NavigationConfig = {
       href: "/stress-anxiety-wellness",
       enabled: true,
     },
+    { label: "Blog", href: "/blog", enabled: true },
+    { label: "Resources", href: "/resources", enabled: true },
+    { label: "Videos", href: "/videos", enabled: true },
     { label: "Contact", href: "/contact", enabled: true },
-    // Phase 2 — enable only when routes exist
-    { label: "Resources", href: "/resources", enabled: false },
+    // Future — enable only when routes exist
     { label: "Workshops", href: "/workshops", enabled: false },
   ],
   footer: [
@@ -39,6 +41,9 @@ export const navigationConfig: NavigationConfig = {
       href: "/stress-anxiety-wellness",
       enabled: true,
     },
+    { label: "Blog", href: "/blog", enabled: true },
+    { label: "Resources", href: "/resources", enabled: true },
+    { label: "Videos", href: "/videos", enabled: true },
     { label: "Contact", href: "/contact", enabled: true },
     { label: "Book an Appointment", href: "/book-appointment", enabled: true },
   ],
