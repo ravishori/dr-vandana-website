@@ -1,0 +1,54 @@
+---
+description: Authoritative project rules for Dr. Vandana Rajiv Chaudhary psychology practice website
+alwaysApply: true
+---
+
+# Dr. Vandana Website — Project Rules
+
+Source of truth: project BRD (branding, privacy boundaries, page structure, acceptance criteria).
+Domain: https://drvandana.trinetralab.net
+
+## Architecture
+
+- Next.js App Router under `src/app/`
+- TypeScript with strict typing; no `any` unless unavoidable and justified
+- Server Components by default; Client Components only when interactivity requires `"use client"`
+- Modular, reusable components in `src/components/`
+- Site facts in `src/config/` and `src/data/` — do not hardcode unverified professional details in UI
+- Prefer existing utilities; do not add dependencies unless clearly required by the milestone
+
+## Design & UX
+
+- Mobile-first responsive layouts
+- Accessibility-first: semantic HTML, visible focus, accessible contrast, correct heading hierarchy
+- Respect `prefers-reduced-motion`; keep animation minimal and purposeful
+- Use design tokens from `src/config/design-tokens.ts` / CSS variables — no scattered raw hex values
+- Calm, professional tone; no flashy effects or dark theme unless explicitly requested
+
+## SEO
+
+- Export route metadata (title, description, canonical, Open Graph) on pages
+- Do not fabricate ratings, reviews, awards, or medical claims
+
+## Content integrity
+
+- Never fabricate professional credentials, testimonials, clinic address, phone, email, timings, certifications, or registration details
+- Use explicit placeholders when verified information is unavailable
+- Verified facts only (see `src/data/professional.ts`): name, Psychologist, Ph.D. in Naturopathy, M.A. Psychology, 6+ years experience, tagline, core positioning
+
+## Psychology ethics & privacy (non-negotiable)
+
+- Never diagnose a visitor
+- Never promise treatment outcomes or guarantee recovery
+- Never use fear-based or sensational mental-health marketing
+- Never imply website content replaces professional assessment
+- Never request detailed medical history via public forms
+- Never collect therapy notes, diagnostic records, or session transcripts
+- Never create an EHR/EMR database or patient portal unless explicitly scoped later
+- Public forms: minimum necessary enquiry information only
+- Any general enquiry note must tell users not to provide clinical or sensitive medical information
+- Do not expose sensitive information through analytics, URLs, browser storage, or client-side logs
+
+## Out of scope until requested
+
+Do not implement homepage marketing sections, navbar/footer, appointment forms, WhatsApp, blog, workshops, payments, calendar, CMS, database, auth, patient portal, APIs, or email services unless the active milestone requires them.
