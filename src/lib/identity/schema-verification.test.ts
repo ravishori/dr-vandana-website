@@ -102,4 +102,48 @@ describe("practice schema verification", () => {
     assert.ok(REQUIRED_EXTENSIONS.includes("btree_gist"));
     assert.ok(REQUIRED_CONSTRAINTS.includes("appointments_blocking_occupied_excl"));
   });
+
+  it("requires practice scheduling tables and otp_attempts", () => {
+    const required = REQUIRED_TABLES as readonly string[];
+    for (const name of [
+      "practice_hours",
+      "practice_hour_breaks",
+      "availability_exceptions",
+      "practice_appointment_settings",
+      "otp_attempts",
+    ] as const) {
+      assert.ok(required.includes(name), `missing required table ${name}`);
+    }
+  });
+
+  it("fails when a required practice scheduling table is absent", async () => {
+    const presentTables = REQUIRED_TABLES.filter(
+      (name) => name !== "practice_hours",
+    );
+    const report = await verifyPracticeSchema(async (sql) => {
+      if (sql.includes("pg_tables")) {
+        return presentTables.map((name) => ({ name }));
+      }
+      if (sql.includes("pg_extension")) {
+        return REQUIRED_EXTENSIONS.map((name) => ({ name }));
+      }
+      if (sql.includes("pg_constraint")) {
+        return REQUIRED_CONSTRAINTS.map((name) => ({ name }));
+      }
+      if (sql.includes("pg_indexes")) {
+        return REQUIRED_INDEXES.map((name) => ({ name }));
+      }
+      if (sql.includes("pg_trigger")) {
+        return REQUIRED_TRIGGERS.map((name) => ({ name }));
+      }
+      return [];
+    });
+    assert.equal(report.status, "FAIL");
+    assert.ok(
+      report.checks.some(
+        (check) =>
+          check.name === "table:practice_hours" && check.status === "FAIL",
+      ),
+    );
+  });
 });
