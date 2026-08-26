@@ -1,0 +1,291 @@
+﻿Business Requirements Document (BRD)
+Project Name: Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice Website
+Domain / Infrastructure: drvandana.trinetra.net
+Development Tooling: Cursor AI IDE
+Primary Tech Stack: Next.js (App Router), React, Tailwind CSS, TypeScript, Framer Motion, Lucide Icons
+Target Deployment: Vercel or Node.js Containerized Hosting
+1. Executive Summary & Vision
+1.1 Purpose
+The objective of this project is to build a modern, serene, secure, and highly responsive professional website for Dr. Vandana Rajiv Chaudhary (drvandana.trinetra.net). The web platform serves as a digital gateway designed around five core principles: Trust, Education, Confidentiality, Accessibility, and Conversion.
+1.2 Strategic Intent
+Unlike generic medical or clinical portals, the website is structured specifically for a mental health practice. It minimizes cognitive load for visitors experiencing emotional distress and establishes an ethical, calm, and welcoming digital space while streamlining appointment bookings and B2B/institutional workshop inquiries.
+1.3 Key Technical Directive (Cursor AI Integration)
+The architecture and codebase must be optimized for AI-assisted development using Cursor AI. This requires a modular design, strict TypeScript typing, isolated components, standardized layout primitives, and well-structured prompt context files (.cursorrules).
+2. Project Scope & Phased Implementation
+To ensure a high-quality initial release without feature creep, implementation is divided into distinct phases:
+┌────────────────────────────────────────────────────────────────────────┐
+│                        PHASE 1: Core MVP (Launch)                      │
+├────────────────────────────────────────────────────────────────────────┤
+│  • Homepage (Hero, Stats, Philosophy, Core CTAs)                       │
+│  • About Dr. Vandana (Credentials, Approach, Ethics)                   │
+│  • Areas of Support (Adults, Children, Relationships, Workplace)       │
+│  • Child & Adolescent Psychology (Dedicated Page)                      │
+│  • Stress, Anxiety & Emotional Wellness (Educational Pillar)           │
+│  • Appointment Enquiry System (Low-friction Form)                      │
+│  • Floating WhatsApp Integration (Privacy-safe pre-filled message)     │
+│  • Contact Page (Location, Google Maps, Timings, Emergency Info)       │
+│  • Legal Framework (Privacy Policy, Terms, Disclaimer, Ethics)         │
+└──────────────────────────────────┬─────────────────────────────────────┘
+│
+▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                        PHASE 2: Engagement & Growth                    │
+├────────────────────────────────────────────────────────────────────────┤
+│  • Resource Hub / Mental Wellness Library (Static MDX Blog)            │
+│  • Workshops & Awareness Programs Page (B2C & Community)              │
+│  • Institutional / Corporate & School Programs (B2B Lead Gen)          │
+│  • Event Registration System (Low-friction Form)                       │
+└──────────────────────────────────┬─────────────────────────────────────┘
+│
+▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                        PHASE 3: Advanced Integration                   │
+├────────────────────────────────────────────────────────────────────────┤
+│  • Interactive Calendar Integration (Calendly / Cal.com Embed)          │
+│  • Online Payment Gateway (Razorpay / Stripe Integration)              │
+│  • CMS Integration for Blog & Events (Sanity / Strapi / Decap)         │
+└────────────────────────────────────────────────────────────────────────┘
+3. Architecture & Security Boundary Rules
+┌─────────────────────────────────┐
+│    drvandana.trinetra.net       │
+│  Public Web & Lead Generation   │
+└────────────────┬────────────────┘
+│
+│  Enquiry Metadata Only
+│  (Name, Phone, Preferred Time)
+▼
+┌─────────────────────────────────┐
+│      Secure Email / Notification │
+│   & Low-Touch Lead Database     │
+└─────────────────────────────────┘
+[ STRICT BOUNDARY ]
+┌─────────────────────────────────┐
+│    Clinical Practice Records    │
+│    EHR / Clinical Notes / EMR    │
+│    (ISOLATED OFF-SITE SYSTEM)    │
+└─────────────────────────────────┘
+3.1 Strict Data Boundary Policy
+No EHR/EMR Integration in Website Database: The website functions strictly as a public educational and appointment lead intake platform.
+Zero Sensitive Health Information Collection: Web forms must explicitly state: "Please do not submit detailed medical or clinical history."
+Third-Party Boundary: No client therapy notes, diagnostic records, or session transcripts shall ever touch or pass through the website database, analytics, or logging tools.
+4. Functional Requirements
+4.1 Global Navigation & Layout Architecture
+Header / Navbar:
+Logo / Brand: "Dr. Vandana Rajiv Chaudhary | Psychologist"
+Nav Links: Home, About, Areas of Support (Dropdown), Child & Adolescent, Stress & Wellness, Resources (Phase 2), Workshops (Phase 2), Contact.
+Primary Action Button: "Book Appointment" (Accent button).
+Mobile Navigation: Clean slide-out sheet menu with sticky bottom quick bar (Book, WhatsApp, Call).
+Footer:
+Brand summary & credentials statement.
+Quick sitemap links.
+Contact & Location details.
+Mandatory Emergency Disclaimer box.
+Copyright & Legal links (Privacy Policy, Disclaimer, Terms).
+4.2 Page-by-Page Requirements
+Page 1: Home (/)
+Hero Section:
+Heading: Dr. Vandana Rajiv Chaudhary
+Subheading: Psychologist — Compassionate, confidential, and evidence-informed psychological support for children, adolescents, adults, couples, and families.
+Primary CTAs: Book an Appointment, Chat on WhatsApp, Call Direct.
+Trust Badges / Micro-stats: 6+ Years Experience, Ph.D. in Naturopathy, M.A. Psychology, 100% Confidential Space.
+Philosophy & Approach Teaser: A warm introduction emphasizing safe, non-judgmental care.
+Key Support Areas Grid: Overview cards linking to detailed practice areas.
+Why Choose Dr. Vandana: Key differentiators (Ethical, Evidence-informed, Holistic perspective).
+Client Appreciation / Non-Identifying Feedback: Ethical quotes highlighting empathy, clarity, and comfort (strictly adhering to ethics guidelines without fabricated claims).
+Call-to-Action Banner: Gentle prompt to initiate contact.
+Page 2: About Dr. Vandana (/about)
+Professional Biography: Detailed narrative outlining qualifications, years of clinical experience, and dedication to mental health.
+Qualifications & Credentials:
+Ph.D. in Naturopathy
+M.A. Psychology
+Continuous Professional Development Certifications
+Core Philosophy: Emphasis on empowerment, resilience, confidentiality, and active listening.
+Integrated Naturopathy & Psychological Perspective: How holistic wellness practices complement psychological care.
+Page 3: Areas of Psychological Support (/areas-of-support)
+Structured landing page with tabbed or card-based deep dives into:
+Emotional Well-being: Stress, low self-esteem, personal growth, emotional regulation.
+Mental Health Awareness & Support: Managing anxiety, depression awareness, burnout, anger, and grief.
+Relationships & Family: Couples support, communication enhancement, family dynamics, parenting support.
+Workplace Well-being: Work-life integration, workplace burnout, resilience in high-stress environments.
+Page 4: Child & Adolescent Psychology (/child-adolescent-psychology)
+Target Audience: Parents, guardians, and educators seeking specialized guidance.
+Topics Covered: Academic stress, emotional development, behavioral challenges, peer dynamics, self-confidence, teenage emotional well-being.
+Parenting Guidance: Supporting parents with constructive communication techniques.
+CTA: "Talk to Dr. Vandana about your child's well-being."
+Page 5: Stress, Anxiety & Emotional Wellness (/stress-anxiety-wellness)
+Educational Content: Clear explanations of stress mechanisms, common signs of anxiety, and when everyday stress turns into chronic burnout.
+Self-Assessment Guidance: Informational prompts on when to seek professional consultation.
+Mindfulness & Naturopathic Wellness: Gentle, natural stress-reduction techniques and daily mental hygiene habits.
+Page 6: Appointment Booking & Inquiries (/book-appointment)
+Interactive 4-Step Form:
+Step 1: Select Consultation Category (Individual Adult, Child/Adolescent, Relationship/Family, Stress & Wellness, Follow-up).
+Step 2: Preferred Mode & Time (In-person, Online Video Session | Preferred Morning/Evening).
+Step 3: Contact Details (Full Name, Phone Number, Email, City).
+Step 4: Optional General Note (Short text box; explicitly marked non-clinical).
+Form Features: Client-side validation, instant feedback on submission, automated notification dispatch to clinic administration via API.
+Page 7: Contact & Emergency Information (/contact)
+Contact Card: Direct phone, official email, physical clinic address, consultation hours.
+Embedded Google Maps: Visual pin showing location in Mumbai.
+Emergency Box: High-visibility banner providing national emergency helpline numbers and instructions for immediate crisis situations.
+Page 8: Privacy, Disclaimer & Legal Pages (/privacy-policy, /disclaimer)
+Detailed privacy notices compliant with regional data protection standard practice.
+Explicit medical disclaimer that the website provides educational information and is not a crisis or emergency therapy engine.
+5. UI/UX Design System & Theme Specification
+5.1 Color Palette
+The visual design uses a serene, natural, high-trust wellness palette:
+Color Role
+Color Name
+Hex Code
+Purpose
+Primary Base
+Sage Green
+#5A7361
+Main brand elements, headings, icons
+Secondary Accent
+Soft Mint / Eucalyptus
+#88A090
+Sub-headers, secondary buttons, borders
+Warm Accent
+Soft Sand / Terracotta
+#D99B82
+Warm CTA highlights, subtle badges
+Background Light
+Off-White / Cream
+#FBF9F5
+Primary background (reduces glare)
+Surface Card
+Soft Alabaster
+#FFFFFF
+Content containers, card fills
+Text Primary
+Deep Charcoal
+#2B332C
+Body text (high contrast, softer than pure black)
+Text Muted
+Slate Olive
+#626E65
+Captions, secondary labels, metadata
+5.2 Typography
+Headings: Playfair Display or Lora (Serif — conveys credibility, warmth, and wisdom).
+Body & UI Text: Inter or Plus Jakarta Sans (Clean Sans-Serif — highly readable across all screens).
+5.3 Visual Elements
+Rounded corner radiuses (rounded-2xl / rounded-xl) for soft, friendly edges.
+Subtle nature-inspired icons (leaves, natural sunlight motifs, gentle shields).
+Absence of high-contrast stark medical reds or aggressive dark themes.
+6. Technology Stack & Cursor AI Architecture
+6.1 Tech Stack
+Framework: Next.js 14/15 (App Router, Server Components)
+Language: TypeScript (Strict Mode)
+Styling: Tailwind CSS + clsx / tailwind-merge
+UI Components: Radix UI primitives / Shadcn UI
+Icons: Lucide React (lucide-react)
+Animations: Framer Motion (subtle, soft fade-ins and smooth state transitions)
+Form Handling & Validation: React Hook Form + Zod schema validation
+Email Notification Service: Resend API / SendGrid API
+6.2 Data Model & Schemas (TypeScript / Zod)
+Appointment Inquiry Schema
+TypeScript
+import { z } from "zod";
+export const AppointmentSchema = z.object({
+category: z.enum([
+"adult_individual",
+"child_adolescent",
+"relationship_family",
+"stress_wellness",
+"follow_up"
+], { required_error: "Please select a consultation category." }),
+mode: z.enum(["in_person", "online"], { required_error: "Please select a preferred mode." }),
+fullName: z.string().min(2, "Name must be at least 2 characters."),
+phone: z.string().regex(/^[0-9+\s-]{10,15}$/, "Please enter a valid phone number."),
+email: z.string().email("Please enter a valid email address."),
+preferredTimeSlot: z.enum(["morning", "afternoon", "evening"]),
+notes: z.string().max(300, "Notes cannot exceed 300 characters.").optional(),
+privacyConsent: z.literal(true, {
+errorMap: () => ({ message: "You must accept the privacy policy to proceed." }),
+}),
+});
+export type AppointmentFormInput = z.infer<typeof AppointmentSchema>;
+Workshop Inquiry Schema (Phase 2)
+TypeScript
+import { z } from "zod";
+export const WorkshopInquirySchema = z.object({
+organizationType: z.enum(["school", "corporate", "community", "other"]),
+organizationName: z.string().min(2, "Organization name is required."),
+contactPerson: z.string().min(2, "Contact person name is required."),
+email: z.string().email("Invalid email address."),
+phone: z.string().min(10, "Valid contact number is required."),
+estimatedAudienceSize: z.string().optional(),
+proposedDate: z.string().optional(),
+message: z.string().min(10, "Please provide brief details about your workshop requirements."),
+});
+export type WorkshopInquiryInput = z.infer<typeof WorkshopInquirySchema>;
+7. Development Prompts & Cursor AI Workflow .cursorrules
+To ensure fast, standardized development when opening this project in Cursor, place the following configuration file at the root of the repository.
+.cursorrules Configuration
+JSON
+{
+"project_name": "Dr. Vandana Chaudhary Practice Website",
+"domain": "drvandana.trinetra.net",
+"tech_stack": {
+"framework": "Next.js (App Router)",
+"language": "TypeScript",
+"styling": "Tailwind CSS",
+"component_library": "Shadcn UI / Radix UI",
+"icons": "Lucide React",
+"form_validation": "React Hook Form + Zod"
+},
+"rules": [
+"Always write modular, fully typed TypeScript code with strict interface definitions.",
+"Follow Next.js App Router conventions (app/ directory structure).",
+"Use Tailwind CSS for all styling. Maintain the Sage Green (#5A7361) and Off-White (#FBF9F5) color scheme.",
+"Ensure all web forms use Zod validation and display user-friendly inline error states.",
+"Never introduce inputs asking for sensitive clinical or medical diagnostic history.",
+"Keep all animations gentle and minimal using Framer Motion (fade-ins, subtle shifts). Avoid distracting layout shifts.",
+"Ensure 100% mobile responsiveness with a fixed quick-action bottom menu bar on smaller viewports.",
+"Include appropriate SEO metadata exports on every page router route."
+]
+}
+8. Development Implementation Prompt Commands for Cursor
+Use the step-by-step prompt prompts below directly inside Cursor AI (via Cmd + K or Chat) to generate each phase of the project:
+Step 1: Project Setup & Design System Setup
+Prompt for Cursor:
+"Initialize a Next.js 14 App Router project with TypeScript and Tailwind CSS. Setup the custom color palette in tailwind.config.ts using Sage Green (#5A7361), Soft Mint (#88A090), Soft Sand (#D99B82), Off-White (#FBF9F5), and Deep Charcoal (#2B332C). Configure Google Fonts for Playfair Display (serif) and Plus Jakarta Sans (sans-serif). Create global layout components including a sticky Navbar, Mobile Navigation Drawer, and Footer with integrated emergency disclaimer."
+Step 2: Build the Homepage Components
+Prompt for Cursor:
+"Create the homepage for drvandana.trinetra.net inside app/page.tsx. Build separate modular components for:
+Hero section with headline, subheadline, CTAs (Book, WhatsApp, Phone), and trust indicators.
+Philosophy card emphasizing ethical, compassionate care.
+Grid displaying core support areas linking to dedicated pages.
+Testimonials/Client Appreciation section designed ethically without making health outcome guarantees.
+Soft call-to-action section at the bottom. Ensure smooth Framer Motion fade-ins."
+Step 3: Implement the Appointment Enquiry System
+Prompt for Cursor:
+"Create an appointment booking page at app/book-appointment/page.tsx. Build a multi-step form powered by react-hook-form and zod matching AppointmentSchema. Implement 4 steps: Category Selection, Mode & Time Slot, Contact Details, and Optional Note (with explicit non-clinical notice). Add a Server Action in app/actions/appointment.ts to validate input and send email notifications via API."
+Step 4: WhatsApp Integration & Mobile Quick Bar
+Prompt for Cursor:
+"Build a reusable floating WhatsApp button component components/WhatsAppButton.tsx and a Mobile Sticky Action Bar components/MobileQuickBar.tsx. The WhatsApp button should redirect to [https://wa.me/](https://wa.me/)<number>?text=... with a polite, pre-filled, non-clinical enquiry string. The Mobile Quick Bar must attach to the bottom of mobile screens showing 'Book', 'WhatsApp', and 'Call' buttons."
+9. Verification & Acceptance Criteria
+Area
+Criteria
+Mobile Responsiveness
+Flawless rendering on viewports from 360px up to 4K desktops with sticky quick-bar on mobile.
+Performance
+Google Lighthouse score ≥90 across Performance, Accessibility, Best Practices, and SEO.
+Security & Privacy
+Zero health/clinical records requested or saved; HTTPS enforced; secure form submissions.
+Brand Tone
+Calming visual design using Sage Green palette, clear typography, and compassionate messaging.
+Lead Routing
+Appointment inquiries deliver instant email notifications to Dr. Vandana's clinic administration.
+Area
+Criteria
+Mobile Responsiveness
+Flawless rendering on viewports from 360px up to 4K desktops with sticky quick-bar on mobile.
+Performance
+Google Lighthouse score ≥90 across Performance, Accessibility, Best Practices, and SEO.
+Security & Privacy
+Zero health/clinical records requested or saved; HTTPS enforced; secure form submissions.
+Brand Tone
+Calming visual design using Sage Green palette, clear typography, and compassionate messaging.
+Lead Routing
+Appointment inquiries deliver instant email notifications to Dr. Vandana's clinic administration.
