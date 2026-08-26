@@ -1,0 +1,46 @@
+table_name,module,purpose,sensitivity
+users,Identity,Application users/admin/staff; no plaintext passwords.,High
+roles,Identity,"Role definitions such as super_admin, admin, psychologist, receptionist, content_editor.",High
+permissions,Identity,Fine-grained application permissions.,High
+user_roles,Identity,Many-to-many relationship between users and roles.,High
+role_permissions,Identity,Many-to-many relationship between roles and permissions.,High
+audit_logs,Security,Immutable-style audit trail for sensitive administrative and patient-data operations.,Critical
+patients,Patient,Core patient identity/contact/profile data; keep detailed counselling information elsewhere.,Critical
+patient_contacts,Patient,Additional patient contact methods.,High
+patient_emergency_contacts,Patient,Emergency contact details.,Critical
+patient_consents,Patient,"Consent records, versions, status and timestamps.",Critical
+patient_notes,Patient,Administrative/general notes; not a substitute for structured session notes.,Critical
+patient_tags,Patient,Configurable patient tags.,High
+patient_tag_assignments,Patient,Many-to-many patient/tag relationship.,High
+patient_documents,Patient,Secure metadata/reference for documents stored in private Azure Blob Storage.,Critical
+appointment_types,Appointments,"Types such as initial consultation, follow-up, online, in-person, parenting guidance.",High
+appointments,Appointments,Appointment booking and lifecycle records.,Critical
+appointment_status_history,Appointments,History of appointment status changes.,High
+availability_slots,Appointments,Future availability/calendar scheduling support.,High
+holidays,Appointments,Clinic/provider unavailable dates.,Medium
+counselling_sessions,Counselling,Session-level records linked to patient and appointment.,Critical
+session_notes,Counselling,Detailed counselling/session information with strict authorization.,Critical
+treatment_goals,Goals,Reusable goal definitions.,High
+patient_goals,Goals,Patient-specific goals and progress.,Critical
+invoices,Billing,Invoice header and financial status.,High
+invoice_items,Billing,Line items belonging to invoices.,High
+payments,Billing,Payment records; never store raw card data.,High
+payment_transactions,Billing,Gateway transaction/reference information for future payment integrations.,High
+pages,CMS,Dynamic website pages and SEO metadata.,Medium
+blog_categories,CMS,Blog category taxonomy.,Medium
+blog_posts,CMS,"Blog articles, publishing workflow and SEO metadata.",Medium
+blog_tags,CMS,Blog tag taxonomy.,Low
+blog_post_tags,CMS,Many-to-many blog post/tag relationship.,Low
+media,CMS,Metadata for public website media; actual files in Azure Blob Storage.,Medium
+faqs,CMS,Frequently asked questions.,Low
+testimonials,CMS,Testimonials with consent/status controls.,High
+contact_enquiries,Enquiries,General website contact submissions.,Medium
+appointment_enquiries,Enquiries,Appointment requests before they become confirmed appointments.,High
+newsletter_subscribers,Communication,Newsletter subscriptions and consent/unsubscribe state.,Medium
+notifications,Communication,In-app/user notifications.,Medium
+email_logs,Communication,Outbound email delivery audit/log metadata.,Medium
+sms_logs,Communication,Outbound SMS delivery audit/log metadata.,Medium
+site_settings,Configuration,Public website configuration.,Medium
+clinic_settings,Configuration,Clinic/practice configuration and operating hours.,High
+notification_settings,Configuration,Notification preferences/templates configuration.,Medium
+website_events,Analytics,Privacy-conscious website/application event records.,Low
