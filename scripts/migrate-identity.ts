@@ -2,26 +2,34 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 
 import { seedIdentityCatalog } from "../src/lib/identity/catalog";
-import { isPostgresUrl } from "../src/lib/identity/config";
 import { applyIdentityMigrationSql, practiceSchema } from "../src/lib/identity/db";
+import { assertStagingMigrateTarget } from "../src/lib/identity/migrate-target-guard";
 import {
   formatSchemaVerification,
   verifyPracticeSchema,
 } from "../src/lib/identity/schema-verification";
 
 async function main() {
-  const url = process.env.DATABASE_URL;
-  if (!isPostgresUrl(url)) {
-    console.error("DATABASE_URL must be a postgres:// or postgresql:// URL.");
+  // Fail closed on production / ambiguous targets BEFORE any DB connection.
+  const target = assertStagingMigrateTarget(process.env.DATABASE_URL);
+  if (!target.ok) {
+    console.error(target.reason);
     process.exit(1);
   }
-  const databaseUrl = url;
+
   if (process.env.APPLY_IDENTITY_MIGRATION !== "true") {
     console.error(
       "Refusing to migrate. Set APPLY_IDENTITY_MIGRATION=true after taking a backup.",
     );
     process.exit(1);
   }
+
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.error("DATABASE_URL is missing.");
+    process.exit(1);
+  }
+
   const sql = postgres(databaseUrl, { max: 1, prepare: false });
   try {
     await applyIdentityMigrationSql((statement) => sql.unsafe(statement));
