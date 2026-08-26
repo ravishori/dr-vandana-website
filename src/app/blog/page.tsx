@@ -9,6 +9,8 @@ import { siteConfig } from "@/config/site";
 import { ARTICLE_CATEGORIES } from "@/types/cms";
 import { listPublishedArticles } from "@/lib/cms/service";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Blog & Psychology Articles",
   description:

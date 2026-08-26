@@ -7,6 +7,8 @@ import { Section } from "@/components/ui/Section";
 import { siteConfig } from "@/config/site";
 import { listPublishedResources } from "@/lib/cms/service";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Psychology Resources",
   description:

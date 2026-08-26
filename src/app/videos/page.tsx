@@ -6,6 +6,8 @@ import { Section } from "@/components/ui/Section";
 import { siteConfig } from "@/config/site";
 import { listPublishedVideos } from "@/lib/cms/service";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Videos",
   description:
