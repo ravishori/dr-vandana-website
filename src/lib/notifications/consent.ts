@@ -44,6 +44,12 @@ export async function readPatientWhatsAppConsent(
   };
 }
 
+/**
+ * Trusted-caller helper: mutates WhatsApp consent for the supplied userId.
+ * Callers MUST pass the authenticated session userId (see patient account action).
+ * This function does not perform role checks by design — authorization belongs
+ * at the Server Action / service boundary that invokes it.
+ */
 export async function setPatientWhatsAppConsent(
   ctx: IdentityContext,
   input: {
