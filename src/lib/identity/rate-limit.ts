@@ -12,12 +12,16 @@ export type IdentityRateLimiter = {
   consume: (key: string, maxAttempts: number, windowMs: number) => Promise<IdentityRateLimitResult>;
 };
 
-export function createMemoryRateLimiter(): IdentityRateLimiter {
+export function createMemoryRateLimiter(options?: {
+  /** Injectable clock for deterministic tests (defaults to Date.now). */
+  now?: () => number;
+}): IdentityRateLimiter {
   const buckets = new Map<string, number[]>();
+  const clock = options?.now ?? Date.now;
 
   return {
     async consume(key, maxAttempts, windowMs) {
-      const now = Date.now();
+      const now = clock();
       const existing = buckets.get(key) ?? [];
       const pruned = existing.filter((stamp) => now - stamp < windowMs);
       if (pruned.length >= maxAttempts) {
@@ -82,4 +86,7 @@ export const IDENTITY_RATE_LIMITS = {
   otpPublicIp: { max: 5, windowMs: 15 * 60 * 1000 },
   otpVerifyIp: { max: 10, windowMs: 15 * 60 * 1000 },
   mfaVerifyIp: { max: 10, windowMs: 15 * 60 * 1000 },
+  /** Authenticated password change — IP and account dimensions. */
+  passwordChangeIp: { max: 5, windowMs: 15 * 60 * 1000 },
+  passwordChangeAccount: { max: 5, windowMs: 15 * 60 * 1000 },
 } as const;

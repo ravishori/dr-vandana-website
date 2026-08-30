@@ -522,7 +522,8 @@ describe("phase 1 identity foundation", () => {
       });
       assert.equal(unverified.ok, false);
       if (!unverified.ok) {
-        assert.equal(unverified.code, "UNVERIFIED");
+        assert.equal(unverified.code, "INVALID");
+        assert.equal(unverified.message, SAFE_MESSAGES.genericAuthFailure);
       }
 
       await registerAndVerifyEmail(w, "forced@example.test", "9876543212");
@@ -537,7 +538,8 @@ describe("phase 1 identity foundation", () => {
       });
       assert.equal(forcedActive.ok, false);
       if (!forcedActive.ok) {
-        assert.equal(forcedActive.code, "UNVERIFIED");
+        assert.equal(forcedActive.code, "INVALID");
+        assert.equal(forcedActive.message, SAFE_MESSAGES.genericAuthFailure);
       }
 
       await activatePatient(w, "asha@example.test", "9876543210");
@@ -547,6 +549,10 @@ describe("phase 1 identity foundation", () => {
         ip: "203.0.113.12",
       });
       assert.equal(wrong.ok, false);
+      if (!wrong.ok) {
+        assert.equal(wrong.code, "INVALID");
+        assert.equal(wrong.message, SAFE_MESSAGES.genericAuthFailure);
+      }
 
       const ok = await loginWithPassword(w.ctx, {
         email: "asha@example.test",
@@ -572,7 +578,8 @@ describe("phase 1 identity foundation", () => {
       });
       assert.equal(disabled.ok, false);
       if (!disabled.ok) {
-        assert.equal(disabled.code, "DISABLED");
+        assert.equal(disabled.code, "INVALID");
+        assert.equal(disabled.message, SAFE_MESSAGES.genericAuthFailure);
       }
       const stale = await readSession(w.ctx, ok.token);
       assert.equal(stale, null);
@@ -1314,6 +1321,97 @@ describe("phase 1 identity foundation", () => {
       }
       assert.equal(afterReset.mfaEnrolled, true);
       assert.equal(afterReset.mustChangePassword, false);
+    });
+  });
+
+  describe("password change rate limiting", () => {
+    it("allows a valid change, denies wrong current password, and rate-limits abuse", async () => {
+      const w = await world();
+      await activatePatient(w, "rate-pwd@example.test", "9876543298");
+      const login = await loginWithPassword(w.ctx, {
+        email: "rate-pwd@example.test",
+        password: STRONG_PASSWORD,
+        ip: "198.51.100.60",
+        expectedRole: "PATIENT",
+      });
+      assert.equal(login.ok, true);
+      if (!login.ok) {
+        return;
+      }
+
+      const wrong = await changePasswordAuthenticated(w.ctx, {
+        userId: login.ok ? (await readSession(w.ctx, login.token))!.userId : "",
+        sessionId: login.sessionId,
+        currentPassword: "definitely-wrong-12",
+        newPassword: "brand-new-password",
+        newPasswordConfirm: "brand-new-password",
+        ip: "198.51.100.60",
+      });
+      assert.equal(wrong.ok, false);
+      if (!wrong.ok) {
+        assert.match(wrong.message, /[Cc]urrent password/);
+      }
+
+      const [before] = await w.ctx.db
+        .select({ passwordHash: users.passwordHash })
+        .from(users)
+        .where(eq(users.emailNormalized, "rate-pwd@example.test"))
+        .limit(1);
+      assert.ok(before);
+
+      for (
+        let index = 0;
+        index < IDENTITY_RATE_LIMITS.passwordChangeAccount.max - 1;
+        index += 1
+      ) {
+        await changePasswordAuthenticated(w.ctx, {
+          userId: (await readSession(w.ctx, login.token))!.userId,
+          sessionId: login.sessionId,
+          currentPassword: "wrong-password-xx",
+          newPassword: "brand-new-password",
+          newPasswordConfirm: "brand-new-password",
+          ip: "198.51.100.60",
+        });
+      }
+
+      const limited = await changePasswordAuthenticated(w.ctx, {
+        userId: (await readSession(w.ctx, login.token))!.userId,
+        sessionId: login.sessionId,
+        currentPassword: STRONG_PASSWORD,
+        newPassword: "brand-new-password",
+        newPasswordConfirm: "brand-new-password",
+        ip: "198.51.100.60",
+      });
+      assert.equal(limited.ok, false);
+      if (!limited.ok) {
+        assert.equal(limited.message, SAFE_MESSAGES.rateLimited);
+      }
+
+      const [afterLimited] = await w.ctx.db
+        .select({ passwordHash: users.passwordHash })
+        .from(users)
+        .where(eq(users.emailNormalized, "rate-pwd@example.test"))
+        .limit(1);
+      assert.equal(afterLimited?.passwordHash, before.passwordHash);
+
+      w.advanceMs(IDENTITY_RATE_LIMITS.passwordChangeAccount.windowMs + 1_000);
+
+      const changed = await changePasswordAuthenticated(w.ctx, {
+        userId: (await readSession(w.ctx, login.token))!.userId,
+        sessionId: login.sessionId,
+        currentPassword: STRONG_PASSWORD,
+        newPassword: "brand-new-password",
+        newPasswordConfirm: "brand-new-password",
+        ip: "198.51.100.60",
+      });
+      assert.equal(changed.ok, true);
+
+      const [after] = await w.ctx.db
+        .select({ passwordHash: users.passwordHash })
+        .from(users)
+        .where(eq(users.emailNormalized, "rate-pwd@example.test"))
+        .limit(1);
+      assert.notEqual(after?.passwordHash, before.passwordHash);
     });
   });
 });

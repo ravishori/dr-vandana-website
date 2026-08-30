@@ -236,6 +236,7 @@ export async function practiceChangePasswordAction(input: {
     currentPassword: input.currentPassword,
     newPassword: input.newPassword,
     newPasswordConfirm: input.newPasswordConfirm,
+    ip: await ip(),
   });
   if (!changed.ok) {
     return changed;

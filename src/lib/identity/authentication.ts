@@ -30,7 +30,7 @@ export type LoginResult =
     }
   | {
       ok: false;
-      code: "INVALID" | "UNVERIFIED" | "DISABLED" | "RATE_LIMITED" | "NOT_CONFIGURED";
+      code: "INVALID" | "RATE_LIMITED" | "NOT_CONFIGURED";
       message: string;
     };
 
@@ -135,10 +135,11 @@ export async function loginWithPassword(
       eventType: "LOGIN_FAILURE",
       metadata: { reason: "disabled" },
     });
+    // External response is generic; internal audit retains the real reason.
     return {
       ok: false,
-      code: "DISABLED",
-      message: SAFE_MESSAGES.accountUnavailable,
+      code: "INVALID",
+      message: SAFE_MESSAGES.genericAuthFailure,
     };
   }
 
@@ -150,8 +151,8 @@ export async function loginWithPassword(
     });
     return {
       ok: false,
-      code: "UNVERIFIED",
-      message: SAFE_MESSAGES.verificationIncomplete,
+      code: "INVALID",
+      message: SAFE_MESSAGES.genericAuthFailure,
     };
   }
 
@@ -167,8 +168,8 @@ export async function loginWithPassword(
     });
     return {
       ok: false,
-      code: "UNVERIFIED",
-      message: SAFE_MESSAGES.verificationIncomplete,
+      code: "INVALID",
+      message: SAFE_MESSAGES.genericAuthFailure,
     };
   }
   if (input.expectedRole && !roleList.includes(input.expectedRole)) {
