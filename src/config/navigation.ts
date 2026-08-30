@@ -41,6 +41,16 @@ export const navigationConfig: NavigationConfig = {
       enabled: true,
     },
     { label: "Contact", href: "/contact", enabled: true },
+    {
+      label: "Patient Login",
+      href: "/patient/login",
+      enabled: true,
+    },
+    {
+      label: "Psychologist Login",
+      href: "/psychologist/practice/login",
+      enabled: true,
+    },
     // Phase 2 — enable only when routes exist
     { label: "Resources", href: "/resources", enabled: false },
     { label: "Workshops", href: "/workshops", enabled: false },
@@ -86,6 +96,21 @@ export const navigationConfig: NavigationConfig = {
       enabled: true,
     },
     { label: "Book an Appointment", href: "/book-appointment", enabled: true },
+    {
+      label: "Patient Login",
+      href: "/patient/login",
+      enabled: true,
+    },
+    {
+      label: "Patient Registration",
+      href: "/patient/register",
+      enabled: true,
+    },
+    {
+      label: "Psychologist Login",
+      href: "/psychologist/practice/login",
+      enabled: true,
+    },
   ],
   legal: [
     { label: "Privacy Policy", href: "/privacy-policy", enabled: true },

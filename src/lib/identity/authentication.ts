@@ -5,6 +5,7 @@ import { authorizationService } from "@/lib/identity/authorization";
 import { MFA_REQUIRED_ROLES, SAFE_MESSAGES, type RoleName } from "@/lib/identity/constants";
 import type { IdentityContext } from "@/lib/identity/context";
 import { hashWithSecret } from "@/lib/identity/crypto";
+import { isValidEmail, normalizeEmail, normalizeMobile } from "@/lib/identity/normalize";
 import { loadPrincipal, userHasRole } from "@/lib/identity/principal";
 import { IDENTITY_RATE_LIMITS } from "@/lib/identity/rate-limit";
 import { mfaCredentials, roles, userRoles, users } from "@/lib/identity/schema";
@@ -24,6 +25,7 @@ export type LoginResult =
       sessionId: string;
       mfaRequired: boolean;
       mfaEnrolled: boolean;
+      mustChangePassword: boolean;
       expiresAt: Date;
     }
   | {
@@ -62,13 +64,14 @@ export async function loginWithPassword(
     };
   }
 
+  const identifier = input.email.trim();
   const ipLimit = await ctx.rateLimit.consume(
     `login-ip:${input.ip}`,
     IDENTITY_RATE_LIMITS.loginIp.max,
     IDENTITY_RATE_LIMITS.loginIp.windowMs,
   );
   const accountLimit = await ctx.rateLimit.consume(
-    `login-email:${input.email.trim().toLowerCase()}`,
+    `login-email:${identifier.toLowerCase()}`,
     IDENTITY_RATE_LIMITS.loginAccount.max,
     IDENTITY_RATE_LIMITS.loginAccount.windowMs,
   );
@@ -85,11 +88,28 @@ export async function loginWithPassword(
     };
   }
 
-  const emailNormalized = input.email.trim().toLowerCase();
+  const emailNormalized = isValidEmail(identifier)
+    ? normalizeEmail(identifier)
+    : null;
+  const mobileNormalized = emailNormalized
+    ? null
+    : normalizeMobile(identifier);
+  if (!emailNormalized && !mobileNormalized) {
+    return {
+      ok: false,
+      code: "INVALID",
+      message: SAFE_MESSAGES.genericAuthFailure,
+    };
+  }
+
   const [user] = await ctx.db
     .select()
     .from(users)
-    .where(eq(users.emailNormalized, emailNormalized))
+    .where(
+      emailNormalized
+        ? eq(users.emailNormalized, emailNormalized)
+        : eq(users.mobileNormalized, mobileNormalized as string),
+    )
     .limit(1);
 
   const passwordOk =
@@ -200,6 +220,7 @@ export async function loginWithPassword(
     sessionId: session.sessionId,
     mfaRequired,
     mfaEnrolled,
+    mustChangePassword: user.mustChangePassword === true,
     expiresAt: session.expiresAt,
   };
 }

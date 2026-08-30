@@ -8,7 +8,7 @@ import { isPrivilegedProvisionAllowed } from "@/lib/identity/config";
 import type { IdentityContext } from "@/lib/identity/context";
 import { generatePublicId, generateUuid } from "@/lib/identity/crypto";
 import { isValidEmail, normalizeEmail, normalizeMobile } from "@/lib/identity/normalize";
-import { evaluatePasswordPolicy } from "@/lib/identity/password-policy";
+import { evaluatePasswordPolicy, evaluateProvisionalPasswordPolicy } from "@/lib/identity/password-policy";
 import {
   permissions,
   psychologistProfiles,
@@ -28,6 +28,11 @@ export type ProvisionInput = {
   password: string;
   displayName: string;
   mobile?: string;
+  /**
+   * When true, password may be provisional (policy bypass) and the user
+   * must change it before portal use.
+   */
+  mustChangePassword?: boolean;
 };
 
 export async function provisionPrivilegedUser(
@@ -46,7 +51,10 @@ export async function provisionPrivilegedUser(
   if (!isValidEmail(input.email)) {
     return { ok: false, message: "A valid email is required." };
   }
-  const policy = evaluatePasswordPolicy(input.password, input.email);
+  const mustChangePassword = input.mustChangePassword === true;
+  const policy = mustChangePassword
+    ? evaluateProvisionalPasswordPolicy(input.password)
+    : evaluatePasswordPolicy(input.password, input.email);
   if (!policy.ok) {
     return { ok: false, message: policy.message };
   }
@@ -58,6 +66,17 @@ export async function provisionPrivilegedUser(
     .limit(1);
   if (existing) {
     return { ok: false, message: "That account could not be provisioned." };
+  }
+  const mobileNormalized = input.mobile ? normalizeMobile(input.mobile) : null;
+  if (mobileNormalized) {
+    const [mobileOwner] = await ctx.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.mobileNormalized, mobileNormalized))
+      .limit(1);
+    if (mobileOwner) {
+      return { ok: false, message: "That account could not be provisioned." };
+    }
   }
   const roleId = await getRoleIdByName(ctx.db, input.role);
   if (!roleId) {
@@ -72,7 +91,6 @@ export async function provisionPrivilegedUser(
         ? "PSY"
         : "STF";
   const publicId = generatePublicId(prefix);
-  const mobileNormalized = input.mobile ? normalizeMobile(input.mobile) : null;
   const passwordHash = await hashPassword(input.password);
 
   await ctx.db.transaction(async (tx) => {
@@ -87,6 +105,7 @@ export async function provisionPrivilegedUser(
       mobileVerifiedAt: mobileNormalized ? now : null,
       emailVerifiedAt: now,
       status: "ACTIVE",
+      mustChangePassword,
       createdAt: now,
       updatedAt: now,
       lastLoginAt: null,
@@ -113,7 +132,10 @@ export async function provisionPrivilegedUser(
     targetType: "user",
     targetId: userId,
     result: "SUCCESS",
-    metadata: { role: input.role },
+    metadata: {
+      role: input.role,
+      mustChangePassword,
+    },
   });
   return { ok: true, userId, publicId };
 }

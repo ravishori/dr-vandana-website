@@ -1,5 +1,5 @@
 /**
- * Development-only privileged user provisioning.
+ * Development/staging privileged user provisioning.
  * Refuses to run when NODE_ENV=production.
  * Credentials must be supplied via environment variables — nothing is committed.
  */
@@ -26,7 +26,7 @@ async function main() {
   }
   const url = process.env.DATABASE_URL;
   if (!isPostgresUrl(url)) {
-    console.error("DATABASE_URL must point at local PostgreSQL.");
+    console.error("DATABASE_URL must point at PostgreSQL.");
     process.exit(1);
   }
   const role = process.env.PROVISION_ROLE;
@@ -44,6 +44,8 @@ async function main() {
     );
     process.exit(1);
   }
+
+  const mustChangePassword = process.env.PROVISION_MUST_CHANGE_PASSWORD === "true";
 
   const sql = postgres(url, { max: 1, prepare: false });
   try {
@@ -71,13 +73,17 @@ async function main() {
       password,
       displayName,
       mobile: process.env.PROVISION_MOBILE,
+      mustChangePassword,
     };
     const result = await provisionPrivilegedUser(ctx, input);
     if (!result.ok) {
       console.error(result.message);
       process.exit(1);
     }
-    console.info(`Provisioned ${role} public id ${result.publicId}`);
+    console.info(
+      `Provisioned ${role} public id ${result.publicId}` +
+        (mustChangePassword ? " (must change password)" : ""),
+    );
   } finally {
     await sql.end({ timeout: 5 });
   }

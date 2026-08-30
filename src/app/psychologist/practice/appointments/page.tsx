@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { loadPracticeAppointmentsPage } from "@/app/psychologist/practice/appointments/actions";
+import { PracticeNav } from "@/components/practice/PracticeNav";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import {
@@ -33,9 +34,16 @@ const FILTER_LABELS: Record<DashboardFilter, string> = {
 export default async function PracticeAppointmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; page?: string; from?: string; to?: string }>;
+  searchParams: Promise<{
+    filter?: string;
+    page?: string;
+    from?: string;
+    to?: string;
+    view?: string;
+  }>;
 }) {
   const params = await searchParams;
+  const view = params.view === "week" ? "week" : "list";
   const result = await loadPracticeAppointmentsPage({
     filter: params.filter,
     page: params.page ? Number(params.page) : 1,
@@ -53,9 +61,17 @@ export default async function PracticeAppointmentsPage({
     );
   }
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
+  const byDay = new Map<string, typeof result.items>();
+  for (const item of result.items) {
+    const key = item.date;
+    const bucket = byDay.get(key) ?? [];
+    bucket.push(item);
+    byDay.set(key, bucket);
+  }
   return (
     <Section className="pt-12 md:pt-16">
       <Container>
+        <PracticeNav current="/psychologist/practice/appointments" />
         <p className="text-text-muted text-sm font-medium tracking-[0.18em] uppercase">
           Practice
         </p>
@@ -64,13 +80,27 @@ export default async function PracticeAppointmentsPage({
           Operational appointment management only. Clinical notes and records are
           not part of this view.
         </p>
+        <p className="mt-4 flex flex-wrap gap-3 text-sm">
+          <Link
+            href={`/psychologist/practice/appointments?filter=${result.filter}&view=list`}
+            className={view === "list" ? "underline" : "text-text-muted"}
+          >
+            List
+          </Link>
+          <Link
+            href={`/psychologist/practice/appointments?filter=${result.filter}&view=week`}
+            className={view === "week" ? "underline" : "text-text-muted"}
+          >
+            Day groups
+          </Link>
+        </p>
         <nav aria-label="Appointment filters" className="mt-6 flex flex-wrap gap-2">
           {DASHBOARD_FILTERS.filter((filter) => filter !== "range").map((filter) => {
             const active = result.filter === filter;
             return (
               <Link
                 key={filter}
-                href={`/psychologist/practice/appointments?filter=${filter}`}
+                href={`/psychologist/practice/appointments?filter=${filter}&view=${view}`}
                 className={
                   active
                     ? "bg-accent text-text rounded-full px-3 py-2 text-sm"
@@ -116,6 +146,37 @@ export default async function PracticeAppointmentsPage({
         )}
         {result.items.length === 0 ? (
           <p className="mt-8 text-sm">No appointments in this view.</p>
+        ) : view === "week" ? (
+          <div className="mt-8 space-y-8">
+            {[...byDay.entries()].map(([day, items]) => (
+              <section key={day} aria-labelledby={`day-${day}`}>
+                <h2 id={`day-${day}`} className="text-base font-medium">
+                  {day}
+                </h2>
+                <ul className="mt-3 space-y-3 text-sm">
+                  {items.map((item) => (
+                    <li
+                      key={item.publicId}
+                      className="border-brand-muted/25 rounded border px-3 py-3"
+                    >
+                      <Link
+                        className="underline"
+                        href={`/psychologist/practice/appointments/${item.publicId}`}
+                      >
+                        {formatWhen(item.start, item.timezone)}
+                      </Link>
+                      <span className="text-text-muted">
+                        {" "}
+                        · {item.patient.displayName} ·{" "}
+                        {item.appointmentType.name} ·{" "}
+                        {APPOINTMENT_STATUS_LABELS[item.status]}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
         ) : (
           <div className="mt-8 overflow-x-auto">
             <table className="w-full min-w-[40rem] text-left text-sm">
@@ -133,7 +194,14 @@ export default async function PracticeAppointmentsPage({
                 {result.items.map((item) => (
                   <tr key={item.publicId} className="border-brand-muted/20 border-b">
                     <td className="py-3 pr-3">{formatWhen(item.start, item.timezone)}</td>
-                    <td className="py-3 pr-3">{item.patient.displayName}</td>
+                    <td className="py-3 pr-3">
+                      <Link
+                        className="underline"
+                        href={`/psychologist/practice/patients/${item.patient.publicId}`}
+                      >
+                        {item.patient.displayName}
+                      </Link>
+                    </td>
                     <td className="py-3 pr-3">{item.appointmentType.name}</td>
                     <td className="py-3 pr-3">
                       {APPOINTMENT_STATUS_LABELS[item.status]}

@@ -55,6 +55,7 @@ export const SECURITY_EVENT_TYPES = [
   "LOGIN_FAILURE",
   "LOGOUT",
   "PASSWORD_CHANGED",
+  "PASSWORD_CHANGE_FAILURE",
   "PASSWORD_RESET",
   "EMAIL_VERIFIED",
   "PHONE_VERIFIED",
@@ -92,8 +93,10 @@ export const SAFE_MESSAGES = {
   otpUnavailable: "We couldn't send a verification code just now. Please try again later.",
   rateLimited: "Please wait a little while before trying again.",
   passwordResetAccepted:
-    "If an account exists for that email, we sent reset instructions.",
+    "If the account is eligible, a verification message has been sent.",
   passwordResetInvalid: "This reset link is not valid or has expired.",
+  passwordResetOtpInvalid:
+    "That verification code is not valid. Please try again.",
   mfaRequired: "Additional verification is required to continue.",
   mfaInvalid: "That verification code is not valid. Please try again.",
   mfaLocked: "Too many attempts. Please wait before trying again.",

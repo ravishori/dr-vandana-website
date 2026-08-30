@@ -166,6 +166,7 @@ export async function registerPatient(
         mobileVerifiedAt: null,
         emailVerifiedAt: null,
         status: "PENDING_VERIFICATION",
+        mustChangePassword: false,
         createdAt: now,
         updatedAt: now,
         lastLoginAt: null,

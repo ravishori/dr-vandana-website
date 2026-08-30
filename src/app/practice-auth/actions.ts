@@ -1,5 +1,6 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -17,8 +18,15 @@ import {
   consumeRecoveryCode,
   verifyMfaChallenge,
 } from "@/lib/identity/mfa";
+import { changePasswordAuthenticated } from "@/lib/identity/password-change";
+import {
+  requestPasswordResetByIdentifier,
+  resetPasswordWithToken,
+  verifyMobilePasswordResetOtp,
+} from "@/lib/identity/password-reset";
 import { loadPrincipal } from "@/lib/identity/principal";
 import { createAppIdentityContext } from "@/lib/identity/runtime";
+import { users } from "@/lib/identity/schema";
 import { readSession } from "@/lib/identity/sessions";
 
 export type PracticeAuthResult =
@@ -28,11 +36,41 @@ export type PracticeAuthResult =
       recoveryCodes?: string[];
       otpauthUri?: string;
       secretBase32?: string;
+      channelHint?: "email" | "sms";
+      resetToken?: string;
     }
   | { ok: false; message: string };
 
 async function ip(): Promise<string> {
   return getClientIpFromHeaders(await headers());
+}
+
+async function userMustChangePassword(
+  ctx: Parameters<typeof readSession>[0],
+  userId: string,
+): Promise<boolean> {
+  const [row] = await ctx.db
+    .select({ mustChangePassword: users.mustChangePassword })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return row?.mustChangePassword === true;
+}
+
+function changePasswordPath(
+  role: Extract<RoleName, "PSYCHOLOGIST" | "SUPER_ADMIN">,
+): string {
+  return role === "PSYCHOLOGIST"
+    ? "/psychologist/practice/change-password"
+    : "/super-admin/change-password";
+}
+
+function postAuthPath(
+  role: Extract<RoleName, "PSYCHOLOGIST" | "SUPER_ADMIN">,
+): string {
+  return role === "PSYCHOLOGIST"
+    ? "/psychologist/practice"
+    : "/super-admin/signed-in";
 }
 
 async function requirePendingMfaSession(role: RoleName) {
@@ -163,8 +201,108 @@ export async function verifyMfaAction(input: {
   if (!result.ok) {
     return result;
   }
-  if (input.role === "PSYCHOLOGIST") {
-    redirect("/psychologist/practice");
+  const mustChange = await userMustChangePassword(
+    pending.ctx,
+    pending.session.userId,
+  );
+  if (mustChange) {
+    redirect(changePasswordPath(input.role));
   }
-  redirect("/super-admin/signed-in");
+  redirect(postAuthPath(input.role));
+}
+
+export async function practiceChangePasswordAction(input: {
+  role: Extract<RoleName, "PSYCHOLOGIST" | "SUPER_ADMIN">;
+  currentPassword: string;
+  newPassword: string;
+  newPasswordConfirm: string;
+}): Promise<PracticeAuthResult> {
+  const identity = createAppIdentityContext();
+  if (!identity.ok) {
+    return { ok: false, message: SAFE_MESSAGES.notConfigured };
+  }
+  const token = await readPracticeSessionCookie();
+  const session = await readSession(identity.ctx, token);
+  if (!session || !session.mfaCompleted) {
+    return { ok: false, message: SAFE_MESSAGES.csrfOrSession };
+  }
+  const principal = await loadPrincipal(identity.ctx, session);
+  if (!principal.roles.includes(input.role)) {
+    return { ok: false, message: SAFE_MESSAGES.unauthorized };
+  }
+  const changed = await changePasswordAuthenticated(identity.ctx, {
+    userId: session.userId,
+    sessionId: session.sessionId,
+    currentPassword: input.currentPassword,
+    newPassword: input.newPassword,
+    newPasswordConfirm: input.newPasswordConfirm,
+  });
+  if (!changed.ok) {
+    return changed;
+  }
+  redirect(postAuthPath(input.role));
+}
+
+export async function practiceForgotPasswordAction(
+  identifier: string,
+): Promise<PracticeAuthResult> {
+  const identity = createAppIdentityContext();
+  if (!identity.ok) {
+    return { ok: false, message: SAFE_MESSAGES.notConfigured };
+  }
+  const result = await requestPasswordResetByIdentifier(identity.ctx, {
+    identifier,
+    ip: await ip(),
+  });
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+  return {
+    ok: true,
+    message: result.message,
+    channelHint: result.channelHint,
+  };
+}
+
+export async function practiceVerifyMobileResetOtpAction(input: {
+  mobile: string;
+  code: string;
+}): Promise<PracticeAuthResult> {
+  const identity = createAppIdentityContext();
+  if (!identity.ok) {
+    return { ok: false, message: SAFE_MESSAGES.notConfigured };
+  }
+  const result = await verifyMobilePasswordResetOtp(identity.ctx, {
+    mobile: input.mobile,
+    code: input.code,
+    ip: await ip(),
+  });
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+  return { ok: true, resetToken: result.resetToken };
+}
+
+export async function practiceResetPasswordWithTokenAction(input: {
+  token: string;
+  password: string;
+  passwordConfirm: string;
+}): Promise<PracticeAuthResult> {
+  const identity = createAppIdentityContext();
+  if (!identity.ok) {
+    return { ok: false, message: SAFE_MESSAGES.notConfigured };
+  }
+  const result = await resetPasswordWithToken(identity.ctx, {
+    token: input.token,
+    password: input.password,
+    passwordConfirm: input.passwordConfirm,
+  });
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+  return {
+    ok: true,
+    message:
+      "Password updated. Sign in with your new password and authenticator code.",
+  };
 }

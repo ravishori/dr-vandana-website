@@ -1,7 +1,6 @@
 "use server";
 
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 
 import { getClientIpFromHeaders } from "@/lib/appointment-abuse";
 import type { IdentityContext } from "@/lib/identity/context";
@@ -21,42 +20,14 @@ import {
   listPracticeAppointments,
   listRescheduleSlots,
 } from "@/lib/appointments/queries";
-import { authorizationService } from "@/lib/identity/authorization";
-import { readPracticeSessionCookie } from "@/lib/identity/cookies";
-import { loadPrincipal } from "@/lib/identity/principal";
-import { createAppIdentityContext } from "@/lib/identity/runtime";
-import { readSession } from "@/lib/identity/sessions";
+import { loadAuthorizedPracticeSession, requireAuthorizedPracticeSession } from "@/lib/practice/session";
 
 export type PracticeActionResult =
   | { ok: true; message: string; status?: string; version?: number; start?: string; end?: string }
   | { ok: false; message: string };
 
-async function loadPracticeSession() {
-  const identity = createAppIdentityContext();
-  if (!identity.ok) {
-    return { ok: false as const, message: "Please sign in to continue." };
-  }
-  const session = await readSession(identity.ctx, await readPracticeSessionCookie());
-  if (!session) {
-    return { ok: false as const, message: "Please sign in to continue." };
-  }
-  const principal = await loadPrincipal(identity.ctx, session);
-  const access = authorizationService.canAccess(principal, {
-    roles: ["PSYCHOLOGIST"],
-    permission: "MANAGE_APPOINTMENT_SETTINGS",
-  });
-  if (!access.allowed) {
-    return { ok: false as const, message: "You do not have access to that." };
-  }
-  return { ok: true as const, ctx: identity.ctx, principal };
-}
-
 export async function requirePracticeAppointmentsSession() {
-  const loaded = await loadPracticeSession();
-  if (!loaded.ok) {
-    redirect("/psychologist/practice/login");
-  }
-  return loaded;
+  return requireAuthorizedPracticeSession();
 }
 
 export async function loadPracticeAppointmentsPage(input: {
@@ -81,9 +52,9 @@ async function mutate(
     ip: string,
   ) => Promise<PracticeActionResult>,
 ): Promise<PracticeActionResult> {
-  const loaded = await loadPracticeSession();
+  const loaded = await loadAuthorizedPracticeSession();
   if (!loaded.ok) {
-    return loaded;
+    return { ok: false, message: loaded.message };
   }
   return run(loaded.ctx, loaded.principal, getClientIpFromHeaders(await headers()));
 }
@@ -220,9 +191,9 @@ export async function loadRescheduleSlotsAction(input: {
   publicId: string;
   dateLocal: string;
 }) {
-  const loaded = await loadPracticeSession();
+  const loaded = await loadAuthorizedPracticeSession();
   if (!loaded.ok) {
-    return loaded;
+    return { ok: false as const, message: loaded.message };
   }
   return listRescheduleSlots(loaded.ctx, loaded.principal, input);
 }

@@ -19,6 +19,7 @@ import {
 } from "@/lib/identity/mfa";
 import { createUnconfiguredOtpProvider, type OtpDeliveryProvider } from "@/lib/identity/otp";
 import { loadPrincipal } from "@/lib/identity/principal";
+import { changePasswordAuthenticated } from "@/lib/identity/password-change";
 import { assignRole, grantPermissionToRole, provisionPrivilegedUser } from "@/lib/identity/provision";
 import { registerPatient } from "@/lib/identity/registration";
 import { requestPasswordReset, resetPasswordWithToken } from "@/lib/identity/password-reset";
@@ -1169,6 +1170,150 @@ describe("phase 1 identity foundation", () => {
         displayName: "Admin",
       });
       assert.equal(result.ok, false);
+    });
+
+    it("allows provisional password only with mustChangePassword and forces authenticated change", async () => {
+      const w = await world();
+      const rejected = await provisionPrivilegedUser(w.ctx, {
+        role: "SUPER_ADMIN",
+        email: "temp-admin@example.test",
+        password: "12345",
+        displayName: "Temp Admin",
+      });
+      assert.equal(rejected.ok, false);
+
+      const provisioned = await provisionPrivilegedUser(w.ctx, {
+        role: "SUPER_ADMIN",
+        email: "temp-admin@example.test",
+        password: "12345",
+        displayName: "Temp Admin",
+        mobile: "9987671916",
+        mustChangePassword: true,
+      });
+      assert.equal(provisioned.ok, true);
+      if (!provisioned.ok) {
+        return;
+      }
+
+      const byMobile = await loginWithPassword(w.ctx, {
+        email: "9987671916",
+        password: "12345",
+        ip: "203.0.113.40",
+        expectedRole: "SUPER_ADMIN",
+      });
+      assert.equal(byMobile.ok, true);
+      if (!byMobile.ok) {
+        return;
+      }
+      assert.equal(byMobile.mustChangePassword, true);
+      assert.equal(byMobile.mfaRequired, true);
+
+      const begin = await beginMfaEnrollment(w.ctx, {
+        userId: provisioned.userId,
+      });
+      assert.equal(begin.ok, true);
+      if (!begin.ok) {
+        return;
+      }
+      const timestamp = w.ctx.now().getTime();
+      const totp = generateTotpCodeForTests(
+        begin.secretBase32,
+        timestamp,
+        "temp-admin@example.test",
+      );
+      const confirmed = await confirmMfaEnrollment(w.ctx, {
+        userId: provisioned.userId,
+        code: totp,
+        timestamp,
+      });
+      assert.equal(confirmed.ok, true);
+      if (!confirmed.ok) {
+        return;
+      }
+      const verified = await verifyMfaChallenge(w.ctx, {
+        userId: provisioned.userId,
+        sessionId: byMobile.sessionId,
+        code: generateTotpCodeForTests(
+          begin.secretBase32,
+          timestamp + 30_000,
+          "temp-admin@example.test",
+        ),
+        ip: "203.0.113.40",
+        timestamp: timestamp + 30_000,
+      });
+      assert.equal(verified.ok, true);
+
+      const tooShort = await changePasswordAuthenticated(w.ctx, {
+        userId: provisioned.userId,
+        sessionId: byMobile.sessionId,
+        currentPassword: "12345",
+        newPassword: "short-pass",
+        newPasswordConfirm: "short-pass",
+      });
+      assert.equal(tooShort.ok, false);
+
+      const changed = await changePasswordAuthenticated(w.ctx, {
+        userId: provisioned.userId,
+        sessionId: byMobile.sessionId,
+        currentPassword: "12345",
+        newPassword: STRONG_PASSWORD,
+        newPasswordConfirm: STRONG_PASSWORD,
+      });
+      assert.equal(changed.ok, true);
+
+      const [row] = await w.ctx.db
+        .select({ mustChangePassword: users.mustChangePassword })
+        .from(users)
+        .where(eq(users.id, provisioned.userId))
+        .limit(1);
+      assert.equal(row?.mustChangePassword, false);
+
+      const oldRejected = await loginWithPassword(w.ctx, {
+        email: "temp-admin@example.test",
+        password: "12345",
+        ip: "203.0.113.41",
+        expectedRole: "SUPER_ADMIN",
+      });
+      assert.equal(oldRejected.ok, false);
+
+      const newLogin = await loginWithPassword(w.ctx, {
+        email: "temp-admin@example.test",
+        password: STRONG_PASSWORD,
+        ip: "203.0.113.42",
+        expectedRole: "SUPER_ADMIN",
+      });
+      assert.equal(newLogin.ok, true);
+      if (!newLogin.ok) {
+        return;
+      }
+      assert.equal(newLogin.mustChangePassword, false);
+      assert.equal(newLogin.mfaEnrolled, true);
+
+      await requestPasswordReset(w.ctx, {
+        email: "temp-admin@example.test",
+        ip: "203.0.113.43",
+      });
+      const resetToken = extractTokenFromLastEmail(w.email, "reset");
+      assert.ok(resetToken);
+      const reset = await resetPasswordWithToken(w.ctx, {
+        token: resetToken,
+        password: "another-strong-pass",
+        passwordConfirm: "another-strong-pass",
+      });
+      assert.equal(reset.ok, true);
+
+      const afterReset = await loginWithPassword(w.ctx, {
+        email: "temp-admin@example.test",
+        password: "another-strong-pass",
+        ip: "203.0.113.44",
+        expectedRole: "SUPER_ADMIN",
+      });
+      assert.equal(afterReset.ok, true);
+      if (!afterReset.ok) {
+        return;
+      }
+      assert.equal(afterReset.mfaEnrolled, true);
+      assert.equal(afterReset.mustChangePassword, false);
     });
   });
 });
