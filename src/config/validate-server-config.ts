@@ -4,6 +4,7 @@ import {
 } from "@/config/appointment-email";
 import { getErrorReportingConfig } from "@/config/error-reporting";
 import {
+  describeUpstashCredentialPresence,
   hasUpstashCredentials,
   resolveAppointmentRateLimitStoreMode,
 } from "@/config/appointment-submission";
@@ -68,8 +69,9 @@ export function validateServerConfigAtStartup(): void {
         code: "RATE_LIMIT_MISCONFIGURED",
         source: "CONFIGURATION",
         message:
-          "APPOINTMENT_RATE_LIMIT_STORE=upstash but Upstash credentials are missing.",
+          "APPOINTMENT_RATE_LIMIT_STORE=upstash but usable HTTPS Upstash REST credentials were not resolved.",
         operation: "validateServerConfigAtStartup",
+        ...describeUpstashCredentialPresence(),
       });
     }
 

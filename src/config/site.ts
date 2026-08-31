@@ -11,16 +11,13 @@ export const siteConfig: SiteConfig = {
   professionalName: practiceContact.practiceName,
   profession: practiceContact.profession,
   tagline: "Your Mental Well-being Matters.",
-  domain: "drvandana.trinetra.net",
-  url: "https://drvandana.trinetra.net",
+  domain: "drvandana.trinetralab.net",
+  url: "https://drvandana.trinetralab.net",
   description:
     "Compassionate, confidential and evidence-informed psychological support with Dr. Vandana Rajiv Chaudhary, Psychologist.",
   locale: "en_IN",
   contact: {
-    email: {
-      isPlaceholder: true,
-      value: "[Email to be confirmed]",
-    },
+    email: practiceContact.emailDisplay,
     phone: practiceContact.whatsappDisplay,
     whatsapp: practiceContact.whatsappDisplay,
   },

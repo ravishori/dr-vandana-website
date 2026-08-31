@@ -57,6 +57,7 @@ export async function createAvailabilityTestWorld(): Promise<AvailabilityTestWor
     emailNormalized: "availability-patient@example.test",
     passwordHash: "unused-test-hash",
     status: "ACTIVE",
+    mustChangePassword: false,
     createdAt: now,
     updatedAt: now,
     lastLoginAt: null,

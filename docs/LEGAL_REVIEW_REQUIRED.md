@@ -62,3 +62,36 @@ Do not change this wording without approval.
 ## Processor / cross-border wording
 
 Processor list and cross-border transfers (host, PostgreSQL, SMTP, OTP, Twilio, Meta) **REQUIRES LEGAL REVIEW** (O18). Retention **OPEN** (O10).
+
+---
+
+## O-B-01 verification (2026-08-30) — do not invent replacement copy
+
+**Source audit:** `docs/OPTION_B_PRODUCTION_RELEASE_READINESS_AUDIT.md` (RB-001 / O11).
+
+### What “O11 privacy copy mismatch” means
+
+| Element | Finding |
+|---|---|
+| Public copy location | `src/data/legal.ts` → `/privacy-policy`, `/terms`, `/disclaimer` |
+| Option B product direction | Accounts + appointments are **APPROVED** architecture (`docs/PATIENT_PRACTICE_DECISIONS.md`) |
+| Current production control | `PATIENT_REGISTRATION_ENABLED=false` (must stay false) |
+| Discrepancy type | **Documentation / disclosure readiness gap** before public registration — not a live production portal contradiction **while the flag remains false** |
+| Enquiry-form statement (“does not create a patient database… from these submissions”) | Still accurate for the **email-only enquiry** path |
+| Portal statements (“does not currently offer a production patient portal”) | Accurate **while registration is disabled**; **must** be counsel-updated **before** enabling registration |
+| Terms “Future patient accounts — REQUIRES REVIEW” | Accurate acknowledgement that production account terms are **not** yet written |
+
+### Safe remediation in O-B-01
+
+- **Do not** invent privacy, terms, consent, or WhatsApp legal wording in this phase.
+- **Do not** claim GDPR / HIPAA / DPDP / other compliance.
+- Keep registration disabled until counsel-approved replacement copy exists.
+- Reuse this file + `src/data/legal.ts` as the review checklist for counsel.
+
+### Status after O-B-01
+
+```text
+O11: LEGAL / PROFESSIONAL REVIEW REQUIRED
+Current public copy: adequate for registration-disabled Operation B
+Public account launch: BLOCKED until counsel updates privacy/terms/consent
+```

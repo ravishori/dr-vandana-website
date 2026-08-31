@@ -439,6 +439,10 @@ export async function listPatientRescheduleSlots(
       message: LIFECYCLE_SAFE_MESSAGES.invalidTransition,
     };
   }
+  const authorized = await authorizePortalPatient(ctx, principal);
+  if (!authorized.ok) {
+    return inaccessible();
+  }
   const [row] = await ctx.db
     .select({ id: appointments.id, typePublicId: appointmentTypes.publicId })
     .from(appointments)
@@ -446,7 +450,7 @@ export async function listPatientRescheduleSlots(
     .where(
       and(
         eq(appointments.publicId, input.publicId),
-        eq(appointments.patientUserId, principal?.userId ?? ""),
+        eq(appointments.patientUserId, authorized.principal.userId),
       ),
     )
     .limit(1);

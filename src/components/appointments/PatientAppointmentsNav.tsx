@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { patientLogoutAction } from "@/app/patient/actions";
 import type { PatientFilter } from "@/lib/appointments/constants";
 
 const FILTERS: { href: string; label: string; filter: PatientFilter | "home" }[] = [
@@ -16,7 +17,10 @@ export function PatientAppointmentsNav({
   active: PatientFilter | "home";
 }) {
   return (
-    <nav aria-label="Appointment views" className="mt-6 flex flex-wrap gap-2">
+    <nav
+      aria-label="Appointment views"
+      className="mt-6 flex flex-wrap items-center gap-2"
+    >
       {FILTERS.map((item) => {
         const isActive = item.filter === active;
         return (
@@ -33,6 +37,26 @@ export function PatientAppointmentsNav({
           </Link>
         );
       })}
+      <Link
+        href="/patient/account"
+        className="border-brand-muted/40 rounded-full border px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        My profile
+      </Link>
+      <Link
+        href="/patient/appointments/new"
+        className="border-brand-muted/40 rounded-full border px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        Book
+      </Link>
+      <form action={patientLogoutAction} className="ml-auto">
+        <button
+          type="submit"
+          className="border-brand-muted/40 rounded-full border px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          Sign out
+        </button>
+      </form>
     </nav>
   );
 }

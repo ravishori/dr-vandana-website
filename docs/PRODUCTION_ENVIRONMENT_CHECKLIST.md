@@ -17,8 +17,8 @@ A gate is not PASS merely because code, docs, mocks, or an environment variable 
 | SMTP | Reply-to | HUMAN DECISION | OPEN |
 | SMTP | SPF / DKIM / DMARC | CONFIGURATION | Not changed in this phase |
 | SMTP | Bounce handling / monitoring | HUMAN DECISION + CONFIGURATION | OPEN |
-| OTP | Vendor (O4) | HUMAN DECISION + PROVIDER | BLOCKED; adapter unimplemented |
-| OTP | `OTP_API_KEY` | CONFIGURATION | Must remain fail-closed until adapter exists |
+| OTP | Vendor (O4) | HUMAN DECISION + PROVIDER | BLOCKED until Twilio SMS (or approved vendor) configured in host env; **Twilio SMS adapter is implemented in code** (`OTP_VENDOR_ADAPTER_IMPLEMENTED=true`) |
+| OTP | Twilio SMS / `OTP_PROVIDER=twilio` + `TWILIO_*` | CONFIGURATION | Fail-closed until configured; never commit secrets |
 | TWILIO | Account, WhatsApp sender, Content SIDs | PROVIDER | BLOCKED; `TWILIO_WHATSAPP_ENABLED=false` |
 | AUTH | `AUTH_SESSION_SECRET` | CONFIGURATION | Host secret store only |
 | MFA | `MFA_ENCRYPTION_KEY` | CONFIGURATION | 32-byte key; rotation procedure OPEN |

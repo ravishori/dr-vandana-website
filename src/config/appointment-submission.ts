@@ -10,9 +10,11 @@
  *
  * Production never falls back to memory or unavailable→allow.
  *
- * Upstash credentials (server-only):
- * - UPSTASH_REDIS_REST_URL
- * - UPSTASH_REDIS_REST_TOKEN
+ * Upstash credentials (server-only), preferred order:
+ * - UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN (canonical)
+ * - UPSTASH_REDIS_REST_KV_REST_API_URL + UPSTASH_REDIS_REST_KV_REST_API_TOKEN
+ *   (Vercel Upstash integration naming; kept as compatibility fallback)
+ * - KV_REST_API_URL + KV_REST_API_TOKEN (@upstash/redis fromEnv fallback names)
  *
  * Deployment target (BRD): Vercel or Node.js containerized hosting.
  * Platform-native application-level Server Action rate limiting is not
@@ -65,9 +67,97 @@ export function resolveAppointmentRateLimitStoreMode(
   return "memory-dev";
 }
 
+export type UpstashCredentialSource =
+  | "UPSTASH_REDIS_REST_*"
+  | "UPSTASH_REDIS_REST_KV_REST_API_*"
+  | "KV_REST_API_*"
+  | "explicit";
+
+export type UpstashRestCredentials = {
+  url: string;
+  token: string;
+  source: UpstashCredentialSource;
+};
+
+function asHttpsRestPair(
+  url: string | undefined,
+  token: string | undefined,
+  source: UpstashCredentialSource,
+): UpstashRestCredentials | null {
+  const trimmedUrl = url?.trim() ?? "";
+  const trimmedToken = token?.trim() ?? "";
+  if (!trimmedUrl || !trimmedToken) {
+    return null;
+  }
+  if (!trimmedUrl.startsWith("https://")) {
+    return null;
+  }
+  return { url: trimmedUrl, token: trimmedToken, source };
+}
+
+/**
+ * Read Upstash REST credentials for server-side rate limiting.
+ * Trims whitespace (common when pasting into Vercel).
+ * Requires HTTPS REST URL — never logs or returns secrets to clients.
+ *
+ * Call with zero arguments to resolve from process.env (canonical + fallbacks).
+ * Call with explicit url/token to validate a specific pair (tests/overrides).
+ */
+export function readUpstashRestCredentials(
+  url?: string,
+  token?: string,
+): UpstashRestCredentials | null {
+  if (arguments.length > 0) {
+    return asHttpsRestPair(url, token, "explicit");
+  }
+
+  return (
+    asHttpsRestPair(
+      process.env.UPSTASH_REDIS_REST_URL,
+      process.env.UPSTASH_REDIS_REST_TOKEN,
+      "UPSTASH_REDIS_REST_*",
+    ) ??
+    asHttpsRestPair(
+      process.env.UPSTASH_REDIS_REST_KV_REST_API_URL,
+      process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
+      "UPSTASH_REDIS_REST_KV_REST_API_*",
+    ) ??
+    asHttpsRestPair(
+      process.env.KV_REST_API_URL,
+      process.env.KV_REST_API_TOKEN,
+      "KV_REST_API_*",
+    )
+  );
+}
+
+/** Non-secret metadata for ops logs when credentials fail to resolve. */
+export function describeUpstashCredentialPresence(): Record<string, boolean> {
+  const primaryUrl = process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "";
+  const primaryToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "";
+  const kvUrl = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL?.trim() ?? "";
+  const kvToken = process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN?.trim() ?? "";
+  const legacyUrl = process.env.KV_REST_API_URL?.trim() ?? "";
+  const legacyToken = process.env.KV_REST_API_TOKEN?.trim() ?? "";
+  return {
+    primaryUrlPresent: Boolean(primaryUrl),
+    primaryUrlHttps: primaryUrl.startsWith("https://"),
+    primaryTokenPresent: Boolean(primaryToken),
+    kvPrefixedUrlPresent: Boolean(kvUrl),
+    kvPrefixedUrlHttps: kvUrl.startsWith("https://"),
+    kvPrefixedTokenPresent: Boolean(kvToken),
+    legacyKvUrlPresent: Boolean(legacyUrl),
+    legacyKvUrlHttps: legacyUrl.startsWith("https://"),
+    legacyKvTokenPresent: Boolean(legacyToken),
+    resolved: readUpstashRestCredentials() !== null,
+  };
+}
+
 export function hasUpstashCredentials(
-  url: string | undefined = process.env.UPSTASH_REDIS_REST_URL,
-  token: string | undefined = process.env.UPSTASH_REDIS_REST_TOKEN,
+  url?: string,
+  token?: string,
 ): boolean {
-  return Boolean(url?.trim() && token?.trim());
+  if (arguments.length > 0) {
+    return readUpstashRestCredentials(url, token) !== null;
+  }
+  return readUpstashRestCredentials() !== null;
 }

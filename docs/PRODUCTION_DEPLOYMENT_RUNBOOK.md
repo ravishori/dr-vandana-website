@@ -13,7 +13,7 @@ Order is deliberate. **Enable registration only after the final gate.**
 7. Confirm `btree_gist`.
 8. Confirm `appointments_blocking_occupied_excl`.
 9. Configure SMTP (not test/mock in production).
-10. Configure OTP only after a vendor adapter exists (currently unimplemented — fail-closed).
+10. Configure OTP with `OTP_PROVIDER=twilio` and Twilio SMS secrets in the host secret store (adapter implemented; production remains fail-closed until configured). Do not use test/mock OTP in production.
 11. Configure Twilio only after sender, templates, opt-in legal review, and secrets exist. Keep `TWILIO_WHATSAPP_ENABLED=false` until then.
 12. Configure notification worker hosting (O15). Do not use `npm run notifications:process` in production.
 13. Configure monitoring (provider OPEN).

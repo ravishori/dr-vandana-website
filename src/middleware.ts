@@ -41,7 +41,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith("/super-admin")) {
-    if (pathname === "/super-admin/login") {
+    if (
+      pathname === "/super-admin/login" ||
+      pathname === "/super-admin/forgot-password"
+    ) {
       return nextPrivate();
     }
     const token = request.cookies.get(PRACTICE_SESSION_COOKIE)?.value;
@@ -61,7 +64,10 @@ export async function middleware(request: NextRequest) {
     return nextPrivate();
   }
 
-  if (pathname === "/psychologist/practice/login") {
+  if (
+    pathname === "/psychologist/practice/login" ||
+    pathname === "/psychologist/practice/forgot-password"
+  ) {
     return nextPrivate();
   }
 

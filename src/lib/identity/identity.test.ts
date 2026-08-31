@@ -19,6 +19,7 @@ import {
 } from "@/lib/identity/mfa";
 import { createUnconfiguredOtpProvider, type OtpDeliveryProvider } from "@/lib/identity/otp";
 import { loadPrincipal } from "@/lib/identity/principal";
+import { changePasswordAuthenticated } from "@/lib/identity/password-change";
 import { assignRole, grantPermissionToRole, provisionPrivilegedUser } from "@/lib/identity/provision";
 import { registerPatient } from "@/lib/identity/registration";
 import { requestPasswordReset, resetPasswordWithToken } from "@/lib/identity/password-reset";
@@ -521,7 +522,8 @@ describe("phase 1 identity foundation", () => {
       });
       assert.equal(unverified.ok, false);
       if (!unverified.ok) {
-        assert.equal(unverified.code, "UNVERIFIED");
+        assert.equal(unverified.code, "INVALID");
+        assert.equal(unverified.message, SAFE_MESSAGES.genericAuthFailure);
       }
 
       await registerAndVerifyEmail(w, "forced@example.test", "9876543212");
@@ -536,7 +538,8 @@ describe("phase 1 identity foundation", () => {
       });
       assert.equal(forcedActive.ok, false);
       if (!forcedActive.ok) {
-        assert.equal(forcedActive.code, "UNVERIFIED");
+        assert.equal(forcedActive.code, "INVALID");
+        assert.equal(forcedActive.message, SAFE_MESSAGES.genericAuthFailure);
       }
 
       await activatePatient(w, "asha@example.test", "9876543210");
@@ -546,6 +549,10 @@ describe("phase 1 identity foundation", () => {
         ip: "203.0.113.12",
       });
       assert.equal(wrong.ok, false);
+      if (!wrong.ok) {
+        assert.equal(wrong.code, "INVALID");
+        assert.equal(wrong.message, SAFE_MESSAGES.genericAuthFailure);
+      }
 
       const ok = await loginWithPassword(w.ctx, {
         email: "asha@example.test",
@@ -571,7 +578,8 @@ describe("phase 1 identity foundation", () => {
       });
       assert.equal(disabled.ok, false);
       if (!disabled.ok) {
-        assert.equal(disabled.code, "DISABLED");
+        assert.equal(disabled.code, "INVALID");
+        assert.equal(disabled.message, SAFE_MESSAGES.genericAuthFailure);
       }
       const stale = await readSession(w.ctx, ok.token);
       assert.equal(stale, null);
@@ -1169,6 +1177,241 @@ describe("phase 1 identity foundation", () => {
         displayName: "Admin",
       });
       assert.equal(result.ok, false);
+    });
+
+    it("allows provisional password only with mustChangePassword and forces authenticated change", async () => {
+      const w = await world();
+      const rejected = await provisionPrivilegedUser(w.ctx, {
+        role: "SUPER_ADMIN",
+        email: "temp-admin@example.test",
+        password: "12345",
+        displayName: "Temp Admin",
+      });
+      assert.equal(rejected.ok, false);
+
+      const provisioned = await provisionPrivilegedUser(w.ctx, {
+        role: "SUPER_ADMIN",
+        email: "temp-admin@example.test",
+        password: "12345",
+        displayName: "Temp Admin",
+        mobile: "9987671916",
+        mustChangePassword: true,
+      });
+      assert.equal(provisioned.ok, true);
+      if (!provisioned.ok) {
+        return;
+      }
+
+      const byMobile = await loginWithPassword(w.ctx, {
+        email: "9987671916",
+        password: "12345",
+        ip: "203.0.113.40",
+        expectedRole: "SUPER_ADMIN",
+      });
+      assert.equal(byMobile.ok, true);
+      if (!byMobile.ok) {
+        return;
+      }
+      assert.equal(byMobile.mustChangePassword, true);
+      assert.equal(byMobile.mfaRequired, true);
+
+      const begin = await beginMfaEnrollment(w.ctx, {
+        userId: provisioned.userId,
+      });
+      assert.equal(begin.ok, true);
+      if (!begin.ok) {
+        return;
+      }
+      const timestamp = w.ctx.now().getTime();
+      const totp = generateTotpCodeForTests(
+        begin.secretBase32,
+        timestamp,
+        "temp-admin@example.test",
+      );
+      const confirmed = await confirmMfaEnrollment(w.ctx, {
+        userId: provisioned.userId,
+        code: totp,
+        timestamp,
+      });
+      assert.equal(confirmed.ok, true);
+      if (!confirmed.ok) {
+        return;
+      }
+      const verified = await verifyMfaChallenge(w.ctx, {
+        userId: provisioned.userId,
+        sessionId: byMobile.sessionId,
+        code: generateTotpCodeForTests(
+          begin.secretBase32,
+          timestamp + 30_000,
+          "temp-admin@example.test",
+        ),
+        ip: "203.0.113.40",
+        timestamp: timestamp + 30_000,
+      });
+      assert.equal(verified.ok, true);
+
+      const tooShort = await changePasswordAuthenticated(w.ctx, {
+        userId: provisioned.userId,
+        sessionId: byMobile.sessionId,
+        currentPassword: "12345",
+        newPassword: "short-pass",
+        newPasswordConfirm: "short-pass",
+      });
+      assert.equal(tooShort.ok, false);
+
+      const changed = await changePasswordAuthenticated(w.ctx, {
+        userId: provisioned.userId,
+        sessionId: byMobile.sessionId,
+        currentPassword: "12345",
+        newPassword: STRONG_PASSWORD,
+        newPasswordConfirm: STRONG_PASSWORD,
+      });
+      assert.equal(changed.ok, true);
+
+      const [row] = await w.ctx.db
+        .select({ mustChangePassword: users.mustChangePassword })
+        .from(users)
+        .where(eq(users.id, provisioned.userId))
+        .limit(1);
+      assert.equal(row?.mustChangePassword, false);
+
+      const oldRejected = await loginWithPassword(w.ctx, {
+        email: "temp-admin@example.test",
+        password: "12345",
+        ip: "203.0.113.41",
+        expectedRole: "SUPER_ADMIN",
+      });
+      assert.equal(oldRejected.ok, false);
+
+      const newLogin = await loginWithPassword(w.ctx, {
+        email: "temp-admin@example.test",
+        password: STRONG_PASSWORD,
+        ip: "203.0.113.42",
+        expectedRole: "SUPER_ADMIN",
+      });
+      assert.equal(newLogin.ok, true);
+      if (!newLogin.ok) {
+        return;
+      }
+      assert.equal(newLogin.mustChangePassword, false);
+      assert.equal(newLogin.mfaEnrolled, true);
+
+      await requestPasswordReset(w.ctx, {
+        email: "temp-admin@example.test",
+        ip: "203.0.113.43",
+      });
+      const resetToken = extractTokenFromLastEmail(w.email, "reset");
+      assert.ok(resetToken);
+      const reset = await resetPasswordWithToken(w.ctx, {
+        token: resetToken,
+        password: "another-strong-pass",
+        passwordConfirm: "another-strong-pass",
+      });
+      assert.equal(reset.ok, true);
+
+      const afterReset = await loginWithPassword(w.ctx, {
+        email: "temp-admin@example.test",
+        password: "another-strong-pass",
+        ip: "203.0.113.44",
+        expectedRole: "SUPER_ADMIN",
+      });
+      assert.equal(afterReset.ok, true);
+      if (!afterReset.ok) {
+        return;
+      }
+      assert.equal(afterReset.mfaEnrolled, true);
+      assert.equal(afterReset.mustChangePassword, false);
+    });
+  });
+
+  describe("password change rate limiting", () => {
+    it("allows a valid change, denies wrong current password, and rate-limits abuse", async () => {
+      const w = await world();
+      await activatePatient(w, "rate-pwd@example.test", "9876543298");
+      const login = await loginWithPassword(w.ctx, {
+        email: "rate-pwd@example.test",
+        password: STRONG_PASSWORD,
+        ip: "198.51.100.60",
+        expectedRole: "PATIENT",
+      });
+      assert.equal(login.ok, true);
+      if (!login.ok) {
+        return;
+      }
+
+      const wrong = await changePasswordAuthenticated(w.ctx, {
+        userId: login.ok ? (await readSession(w.ctx, login.token))!.userId : "",
+        sessionId: login.sessionId,
+        currentPassword: "definitely-wrong-12",
+        newPassword: "brand-new-password",
+        newPasswordConfirm: "brand-new-password",
+        ip: "198.51.100.60",
+      });
+      assert.equal(wrong.ok, false);
+      if (!wrong.ok) {
+        assert.match(wrong.message, /[Cc]urrent password/);
+      }
+
+      const [before] = await w.ctx.db
+        .select({ passwordHash: users.passwordHash })
+        .from(users)
+        .where(eq(users.emailNormalized, "rate-pwd@example.test"))
+        .limit(1);
+      assert.ok(before);
+
+      for (
+        let index = 0;
+        index < IDENTITY_RATE_LIMITS.passwordChangeAccount.max - 1;
+        index += 1
+      ) {
+        await changePasswordAuthenticated(w.ctx, {
+          userId: (await readSession(w.ctx, login.token))!.userId,
+          sessionId: login.sessionId,
+          currentPassword: "wrong-password-xx",
+          newPassword: "brand-new-password",
+          newPasswordConfirm: "brand-new-password",
+          ip: "198.51.100.60",
+        });
+      }
+
+      const limited = await changePasswordAuthenticated(w.ctx, {
+        userId: (await readSession(w.ctx, login.token))!.userId,
+        sessionId: login.sessionId,
+        currentPassword: STRONG_PASSWORD,
+        newPassword: "brand-new-password",
+        newPasswordConfirm: "brand-new-password",
+        ip: "198.51.100.60",
+      });
+      assert.equal(limited.ok, false);
+      if (!limited.ok) {
+        assert.equal(limited.message, SAFE_MESSAGES.rateLimited);
+      }
+
+      const [afterLimited] = await w.ctx.db
+        .select({ passwordHash: users.passwordHash })
+        .from(users)
+        .where(eq(users.emailNormalized, "rate-pwd@example.test"))
+        .limit(1);
+      assert.equal(afterLimited?.passwordHash, before.passwordHash);
+
+      w.advanceMs(IDENTITY_RATE_LIMITS.passwordChangeAccount.windowMs + 1_000);
+
+      const changed = await changePasswordAuthenticated(w.ctx, {
+        userId: (await readSession(w.ctx, login.token))!.userId,
+        sessionId: login.sessionId,
+        currentPassword: STRONG_PASSWORD,
+        newPassword: "brand-new-password",
+        newPasswordConfirm: "brand-new-password",
+        ip: "198.51.100.60",
+      });
+      assert.equal(changed.ok, true);
+
+      const [after] = await w.ctx.db
+        .select({ passwordHash: users.passwordHash })
+        .from(users)
+        .where(eq(users.emailNormalized, "rate-pwd@example.test"))
+        .limit(1);
+      assert.notEqual(after?.passwordHash, before.passwordHash);
     });
   });
 });

@@ -28,6 +28,11 @@ export function getMapsHref(): string {
   return practiceContact.googleMapsUrl;
 }
 
+/** Verified practice email mailto link. */
+export function getVerifiedEmailHref(): string {
+  return practiceContact.emailMailtoHref;
+}
+
 /**
  * Legacy helper for VerifiedOrPlaceholder values.
  * Prefer getVerifiedPhoneHref() for the practice number.

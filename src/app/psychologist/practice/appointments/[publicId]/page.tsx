@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { loadPracticeAppointmentPage } from "@/app/psychologist/practice/appointments/actions";
 import { PracticeAppointmentActions } from "@/components/appointments/PracticeAppointmentActions";
+import { PracticeNav } from "@/components/practice/PracticeNav";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { APPOINTMENT_STATUS_LABELS } from "@/lib/appointments/constants";
@@ -40,6 +41,7 @@ export default async function PracticeAppointmentDetailPage({
   return (
     <Section className="pt-12 md:pt-16">
       <Container className="max-w-3xl">
+        <PracticeNav current="/psychologist/practice/appointments" />
         <p className="text-text-muted text-sm font-medium tracking-[0.18em] uppercase">
           Appointment
         </p>
@@ -47,7 +49,14 @@ export default async function PracticeAppointmentDetailPage({
         <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-text-muted">Patient</dt>
-            <dd>{appointment.patient.displayName}</dd>
+            <dd>
+              <Link
+                className="underline"
+                href={`/psychologist/practice/patients/${appointment.patient.publicId}`}
+              >
+                {appointment.patient.displayName}
+              </Link>
+            </dd>
           </div>
           <div>
             <dt className="text-text-muted">Patient reference</dt>

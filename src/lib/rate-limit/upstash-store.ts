@@ -1,7 +1,11 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-import { appointmentSubmissionConfig } from "@/config/appointment-submission";
+import {
+  appointmentSubmissionConfig,
+  readUpstashRestCredentials,
+} from "@/config/appointment-submission";
+import { logStructured } from "@/lib/observability/logger";
 
 let redisClient: Redis | null = null;
 let appointmentBurst: Ratelimit | null = null;
@@ -12,10 +16,63 @@ let aiAskLimitPerMinute = 12;
 let questionSubmitLimit: Ratelimit | null = null;
 let questionLoginLimit: Ratelimit | null = null;
 
+function classifyUpstashError(error: unknown): {
+  errorClass: string;
+  httpStatus: number | null;
+} {
+  const message = error instanceof Error ? error.message : String(error);
+  const statusMatch = message.match(/\b([45]\d\d)\b/);
+  const httpStatus = statusMatch ? Number(statusMatch[1]) : null;
+  const lower = message.toLowerCase();
+  let errorClass = "unknown";
+  if (httpStatus === 401 || lower.includes("unauthorized")) {
+    errorClass = "auth_failure";
+  } else if (httpStatus === 403 || lower.includes("forbidden")) {
+    errorClass = "forbidden";
+  } else if (
+    lower.includes("fetch failed") ||
+    lower.includes("network") ||
+    lower.includes("enotfound") ||
+    lower.includes("econnrefused")
+  ) {
+    errorClass = "network_failure";
+  } else if (lower.includes("upstash_credentials_missing")) {
+    errorClass = "missing_credentials";
+  }
+  return { errorClass, httpStatus };
+}
+
+function recordUpstashStoreFailure(
+  operation: string,
+  error: unknown,
+): void {
+  const { errorClass, httpStatus } = classifyUpstashError(error);
+  logStructured("ERROR", {
+    operation,
+    code: "UPSTASH_STORE_ERROR",
+    source: "CONFIGURATION",
+    errorClass,
+    httpStatus,
+    // Never log URL, token, Authorization, or raw exception messages
+    // (messages can embed request URLs).
+  });
+}
+
+/**
+ * Explicit REST client using trimmed UPSTASH_REDIS_REST_URL/TOKEN.
+ * Avoids Redis.fromEnv() so whitespace-padded Vercel secrets cannot
+ * pass presence checks then fail authentication.
+ */
 function getRedis(): Redis {
   if (!redisClient) {
-    // Uses UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
-    redisClient = Redis.fromEnv();
+    const credentials = readUpstashRestCredentials();
+    if (!credentials) {
+      throw new Error("UPSTASH_CREDENTIALS_MISSING");
+    }
+    redisClient = new Redis({
+      url: credentials.url,
+      token: credentials.token,
+    });
   }
   return redisClient;
 }
@@ -111,7 +168,8 @@ export async function enforceUpstashAppointmentLimit(
     }
 
     return { ok: true, allowed: true };
-  } catch {
+  } catch (error) {
+    recordUpstashStoreFailure("enforceUpstashAppointmentLimit", error);
     return { ok: false, reason: "store_error" };
   }
 }
@@ -140,7 +198,8 @@ export async function enforceUpstashAiAskLimit(
       };
     }
     return { ok: true, allowed: true };
-  } catch {
+  } catch (error) {
+    recordUpstashStoreFailure("enforceUpstashAiAskLimit", error);
     return { ok: false, reason: "store_error" };
   }
 }
@@ -161,7 +220,8 @@ export async function enforceUpstashErrorReportLimit(
     }
 
     return { ok: true, allowed: true };
-  } catch {
+  } catch (error) {
+    recordUpstashStoreFailure("enforceUpstashErrorReportLimit", error);
     return { ok: false, reason: "store_error" };
   }
 }
@@ -188,7 +248,8 @@ export async function enforceUpstashQuestionLimit(
       };
     }
     return { ok: true, allowed: true };
-  } catch {
+  } catch (error) {
+    recordUpstashStoreFailure("enforceUpstashQuestionLimit", error);
     return { ok: false, reason: "store_error" };
   }
 }
@@ -215,7 +276,8 @@ export async function enforceUpstashQuestionLoginLimit(
       };
     }
     return { ok: true, allowed: true };
-  } catch {
+  } catch (error) {
+    recordUpstashStoreFailure("enforceUpstashQuestionLoginLimit", error);
     return { ok: false, reason: "store_error" };
   }
 }
@@ -248,7 +310,8 @@ export async function enforceUpstashIdentityLimit(
       };
     }
     return { ok: true, allowed: true };
-  } catch {
+  } catch (error) {
+    recordUpstashStoreFailure("enforceUpstashIdentityLimit", error);
     return { ok: false, reason: "store_error" };
   }
 }

@@ -51,7 +51,7 @@ export async function createIdentityTestWorld(options?: {
     (options?.nodeEnv === "production"
       ? createUnconfiguredOtpProvider()
       : createTestOtpProvider());
-  const rateLimit = createMemoryRateLimiter();
+  const rateLimit = createMemoryRateLimiter({ now: () => nowMs });
   const base = {
     db,
     config,

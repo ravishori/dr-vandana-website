@@ -251,11 +251,11 @@ describe("phase 1c production gates", () => {
 
   it("keeps identity emails free of passwords, OTPs, and clinical content", () => {
     const verify = verificationEmailContent({
-      appBaseUrl: "https://drvandana.trinetra.net",
+      appBaseUrl: "https://drvandana.trinetralab.net",
       token: "opaque-verify-token",
     });
     const reset = passwordResetEmailContent({
-      appBaseUrl: "https://drvandana.trinetra.net",
+      appBaseUrl: "https://drvandana.trinetralab.net",
       token: "opaque-reset-token",
     });
     for (const message of [verify, reset]) {
@@ -277,7 +277,7 @@ describe("phase 1c production gates", () => {
   it("keeps private identity routes out of the public sitemap and robots allow-list", () => {
     const entries = sitemap();
     const urls = entries.map((entry) => entry.url);
-    assert.ok(urls.some((url) => url.endsWith("/about") || url.endsWith("drvandana.trinetra.net")));
+    assert.ok(urls.some((url) => url.endsWith("/about") || url.endsWith("drvandana.trinetralab.net")));
     assert.ok(urls.some((url) => url.includes("/book-appointment")));
     assert.ok(urls.some((url) => url.includes("/privacy-policy")));
     assert.ok(urls.some((url) => url.includes("/terms")));

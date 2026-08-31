@@ -57,6 +57,11 @@ export type OtpService = {
     mobileNormalized: string;
     ip: string;
   }) => Promise<OtpSendResult>;
+  sendPasswordResetSms: (input: {
+    userId: string;
+    mobileNormalized: string;
+    ip: string;
+  }) => Promise<OtpSendResult>;
   sendEmailOtp: (input: {
     userId: string;
     emailNormalized: string;
@@ -68,6 +73,12 @@ export type OtpService = {
     code: string;
     ip: string;
     expectedDestination?: string;
+  }) => Promise<OtpVerifyResult>;
+  verifyPasswordResetSms: (input: {
+    userId: string;
+    code: string;
+    ip: string;
+    expectedDestination: string;
   }) => Promise<OtpVerifyResult>;
   verifyEmailOtp: (input: {
     userId: string;
@@ -549,6 +560,17 @@ export function createOtpService(
       });
     },
 
+    async sendPasswordResetSms(input) {
+      const ctx = ctxBase as IdentityContext;
+      return issueOtpChallenge(ctx, provider, {
+        userId: input.userId,
+        destination: input.mobileNormalized,
+        purpose: "PASSWORD_RESET",
+        channel: "SMS",
+        ip: input.ip,
+      });
+    },
+
     async sendEmailOtp(input) {
       const ctx = ctxBase as IdentityContext;
       return issueOtpChallenge(ctx, provider, {
@@ -575,6 +597,30 @@ export function createOtpService(
         };
       }
       return consumeLatestPhoneOtp(ctx, input);
+    },
+
+    async verifyPasswordResetSms(input) {
+      const ctx = ctxBase as IdentityContext;
+      const ipLimit = await ctx.rateLimit.consume(
+        `otp-verify-ip:${input.ip}`,
+        IDENTITY_RATE_LIMITS.otpVerifyIp.max,
+        IDENTITY_RATE_LIMITS.otpVerifyIp.windowMs,
+      );
+      if (!ipLimit.allowed) {
+        return {
+          ok: false,
+          code: "RATE_LIMITED",
+          message: SAFE_MESSAGES.rateLimited,
+        };
+      }
+      return consumeLatestOtpChallenge(ctx, {
+        userId: input.userId,
+        code: input.code,
+        ip: input.ip,
+        purpose: "PASSWORD_RESET",
+        channel: "SMS",
+        expectedDestination: input.expectedDestination,
+      });
     },
 
     async verifyEmailOtp(input) {

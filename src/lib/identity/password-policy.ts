@@ -19,11 +19,18 @@ const COMMON_PASSWORDS = new Set([
 
 export const PASSWORD_MIN_LENGTH = 12;
 export const PASSWORD_MAX_LENGTH = 128;
+/** Provisional passwords are temporary and require must_change_password=true. */
+export const PROVISIONAL_PASSWORD_MIN_LENGTH = 1;
 
 export type PasswordPolicyResult =
   | { ok: true }
   | { ok: false; message: string };
 
+/**
+ * Full password policy for lasting credentials.
+ * Provisional temporary passwords must use evaluateProvisionalPasswordPolicy
+ * and set users.must_change_password = true.
+ */
 export function evaluatePasswordPolicy(
   password: string,
   email?: string,
@@ -59,6 +66,25 @@ export function evaluatePasswordPolicy(
       ok: false,
       message: "Passwords should not include your email address.",
     };
+  }
+  return { ok: true };
+}
+
+/**
+ * Allows a short temporary provisioning password only when the account
+ * will be forced to change it before portal use.
+ */
+export function evaluateProvisionalPasswordPolicy(
+  password: string,
+): PasswordPolicyResult {
+  if (password.length < PROVISIONAL_PASSWORD_MIN_LENGTH) {
+    return { ok: false, message: "A temporary password is required." };
+  }
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return { ok: false, message: "That password is too long." };
+  }
+  if (/\s/.test(password)) {
+    return { ok: false, message: "Passwords cannot contain spaces." };
   }
   return { ok: true };
 }
