@@ -1,0 +1,33 @@
+# Staging-only notification worker image for Azure Container Apps Jobs.
+# Executes: npm run notifications:process (batch-and-exit).
+# Secrets MUST be injected at runtime — never COPY .env.
+
+FROM node:24-bookworm-slim
+
+WORKDIR /app
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && groupadd --system --gid 1001 worker \
+  && useradd --system --uid 1001 --gid worker worker
+
+COPY package.json package-lock.json ./
+
+# tsx is a devDependency required by notifications:process; install full tree for staging worker.
+RUN npm ci \
+  && npm cache clean --force
+
+COPY tsconfig.json ./
+COPY scripts ./scripts
+COPY src ./src
+
+# Existing CLI refuses NODE_ENV=production. Staging Job must use non-production.
+ENV NODE_ENV=development \
+    PATIENT_REGISTRATION_ENABLED=false \
+    TWILIO_WHATSAPP_ENABLED=false \
+    EMAIL_PROVIDER=smtp
+
+USER worker
+
+CMD ["npm", "run", "notifications:process"]

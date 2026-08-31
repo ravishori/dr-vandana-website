@@ -1,0 +1,33 @@
+# Production-only notification worker image for Azure Container Apps Jobs.
+# Executes: npm run notifications:process:production (batch-and-exit).
+# Secrets MUST be injected at runtime via ACA + Key Vault — never COPY .env.
+
+FROM node:24-bookworm-slim
+
+WORKDIR /app
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && groupadd --system --gid 1001 worker \
+  && useradd --system --uid 1001 --gid worker worker
+
+COPY package.json package-lock.json ./
+
+# tsx is a devDependency required by the production worker entrypoint.
+RUN npm ci \
+  && npm cache clean --force
+
+COPY tsconfig.json ./
+COPY scripts ./scripts
+COPY src ./src
+
+ENV NODE_ENV=production \
+    NOTIFICATION_WORKER_EXECUTION_PROFILE=production-hosted-v1 \
+    PATIENT_REGISTRATION_ENABLED=false \
+    TWILIO_WHATSAPP_ENABLED=false \
+    EMAIL_PROVIDER=smtp
+
+USER worker
+
+CMD ["npm", "run", "notifications:process:production"]

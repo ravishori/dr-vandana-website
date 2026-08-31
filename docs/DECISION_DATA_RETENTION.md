@@ -52,3 +52,41 @@ Do not copy example periods from other products into this file.
 - Do not encode invented TTLs as “compliance”
 - Do not delete production-like data from this phase
 - Do not rewrite legal documents here
+
+---
+
+## Technical TTL ≠ retention policy (O-B-01)
+
+The following **exist in code** as operational security/reliability controls. They are **not** a governance retention policy and must **not** be treated as satisfying O10:
+
+| Technical control | Examples | Governance status |
+|---|---|---|
+| Session cookie / server session lifetime | Session TTL in identity config | **Policy lock UNSET** |
+| OTP expiry | `OTP_EXPIRY_SECONDS` (example default in `.env.example`) | Operational only — **not** O10 |
+| Email/phone verification token expiry | Verification row TTLs | Operational only — **not** O10 |
+| Password-reset token expiry | Reset token TTLs | Operational only — **not** O10 |
+| Booking idempotency `expires_at` | Replay safety | Operational only — **policy UNSET** |
+| Notification retry / lease windows | Dispatcher backoff / lease | Operational only — **not** O10 |
+
+```text
+RETENTION POLICY NOT YET DECIDED
+```
+
+Until counsel sets periods and deletion rules: production patient accounts remain **BLOCKED** on O10 (see `docs/OPTION_B_PRODUCTION_RELEASE_READINESS_AUDIT.md` RB-002).
+
+---
+
+## Option B vs Option C (retention)
+
+| Scope | In this inventory? | Status |
+|---|---|---|
+| Option B identity, appointments, notifications, audit/security, channel opt-in | **Yes** | Periods **UNSET** — LEGAL REVIEW REQUIRED |
+| Option C clinical notes, assessments, clinical documents, clinical messaging | **No** — out of scope / DEFERRED | Do not invent clinical retention here (F4-09) |
+
+---
+
+## O-B-01 remediation note
+
+O-B-01 (2026-08-30) **does not** invent retention or deletion periods, **does not** implement deletion workers, and **does not** close O10. Status remains:
+
+**LEGAL / PROFESSIONAL REVIEW REQUIRED** / **NOT YET DECIDED**

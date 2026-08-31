@@ -17,7 +17,7 @@ export const vandanaKnowledgeDocuments = [
     evidence_level: "verified-practice",
     source: "Approved Dr. Vandana educational website material",
     author: professionalProfile.name,
-    publication: "drvandana.trinetra.net — About",
+    publication: "drvandana.trinetralab.net — About",
     date: "2026-08-09",
     related_questions: [
       "Who is Dr. Vandana?",
@@ -43,7 +43,7 @@ export const vandanaKnowledgeDocuments = [
     evidence_level: "verified-practice",
     source: "Approved Dr. Vandana educational website material",
     author: professionalProfile.name,
-    publication: "drvandana.trinetra.net — About",
+    publication: "drvandana.trinetralab.net — About",
     date: "2026-08-09",
     related_questions: [
       "What methodology does Dr. Vandana use?",
@@ -68,7 +68,7 @@ export const vandanaKnowledgeDocuments = [
     evidence_level: "verified-practice",
     source: "Approved Dr. Vandana educational website material",
     author: professionalProfile.name,
-    publication: "drvandana.trinetra.net — About",
+    publication: "drvandana.trinetralab.net — About",
     date: "2026-08-09",
     related_questions: [
       "Does Dr. Vandana use naturopathy in counselling?",
@@ -86,7 +86,7 @@ export const vandanaKnowledgeDocuments = [
     evidence_level: "verified-practice",
     source: "Approved Dr. Vandana educational website material",
     author: professionalProfile.name,
-    publication: "drvandana.trinetra.net — About",
+    publication: "drvandana.trinetralab.net — About",
     date: "2026-08-09",
     related_questions: [
       "Is counselling confidential?",
