@@ -17,10 +17,7 @@ export const siteConfig: SiteConfig = {
     "Compassionate, confidential and evidence-informed psychological support with Dr. Vandana Rajiv Chaudhary, Psychologist.",
   locale: "en_IN",
   contact: {
-    email: {
-      isPlaceholder: true,
-      value: "[Email to be confirmed]",
-    },
+    email: practiceContact.emailDisplay,
     phone: practiceContact.whatsappDisplay,
     whatsapp: practiceContact.whatsappDisplay,
   },

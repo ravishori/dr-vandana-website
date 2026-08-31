@@ -42,6 +42,9 @@ export const practiceContact = {
   phoneDigits: "919322369829",
   phoneTelHref: "tel:+919322369829",
   whatsappUrl: "https://wa.me/919322369829",
+  /** Verified public practice email — display exactly as confirmed. */
+  emailDisplay: "Dr.VandanaRChaudhary@gmail.com",
+  emailMailtoHref: "mailto:Dr.VandanaRChaudhary@gmail.com",
   /** Primary instant booking CTA (Bitly). Do not silently replace. */
   bookingUrl: "https://bit.ly/4c2u9te",
   labels: {
@@ -53,10 +56,12 @@ export const practiceContact = {
     viewOnMaps: "View on Google Maps",
     call: "Call",
     whatsapp: "WhatsApp",
+    email: "Email",
     mapsAria:
       "Get directions to Dr. Vandana Rajiv Chaudhary’s practice",
     callAria: "Call Dr. Vandana at +91 93223 69829",
     whatsappAria: "Contact Dr. Vandana on WhatsApp",
+    emailAria: "Email Dr. Vandana at Dr.VandanaRChaudhary@gmail.com",
     bookingAria: "Book an appointment on WhatsApp",
     copyDigipin: "Copy practice DIGIPIN 4FK 29KJ F74",
     digipinCopied: "DIGIPIN copied",
@@ -83,7 +88,6 @@ export const contactPage = {
     "Please do not include detailed medical history, diagnosis information, therapy notes or other sensitive clinical information in a general website enquiry.",
   /** Still unverified — do not invent. */
   unverified: {
-    email: "[Email to be confirmed]",
     consultationHours: "[Consultation hours to be confirmed]",
   },
   primaryCta: {

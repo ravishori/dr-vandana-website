@@ -6,6 +6,7 @@ import { Section } from "@/components/ui/Section";
 import { contactPage, practiceContact } from "@/data/contact";
 import {
   getBookingHref,
+  getVerifiedEmailHref,
   getVerifiedPhoneHref,
   getVerifiedWhatsAppHref,
 } from "@/lib/contact-actions";
@@ -109,7 +110,16 @@ export function ContactPageView() {
           </aside>
 
           <div className="text-text-muted mt-6 space-y-2 text-sm">
-            <p>Email: {contactPage.unverified.email}</p>
+            <p>
+              Email:{" "}
+              <a
+                href={getVerifiedEmailHref()}
+                className="text-brand no-underline hover:underline"
+                aria-label={practiceContact.labels.emailAria}
+              >
+                {practiceContact.emailDisplay}
+              </a>
+            </p>
             <p>
               Consultation hours: {contactPage.unverified.consultationHours}
             </p>
