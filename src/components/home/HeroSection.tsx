@@ -14,8 +14,8 @@ export function HeroSection() {
         aria-hidden="true"
       />
 
-      <Container className="relative grid items-stretch gap-8 py-12 sm:py-14 md:gap-10 md:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20 xl:gap-16">
-        <div className="home-reveal flex max-w-xl flex-col justify-center lg:max-w-none lg:pr-4">
+      <Container className="relative grid items-stretch gap-8 py-12 sm:py-14 md:grid-cols-2 md:gap-8 md:py-16 lg:gap-12 lg:py-20 xl:gap-16">
+        <div className="home-reveal flex max-w-xl flex-col justify-center md:max-w-none md:pr-2 lg:pr-4">
           <p className="text-text-muted text-sm font-medium tracking-[0.18em] uppercase">
             {homeHero.eyebrow}
           </p>

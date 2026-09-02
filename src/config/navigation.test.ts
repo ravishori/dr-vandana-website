@@ -5,6 +5,7 @@ import {
   getDesktopCenterNavItems,
   getDrawerNavItems,
   getPrimaryNavItemsForPath,
+  getTabletCenterNavItems,
 } from "@/config/navigation";
 
 describe("adaptive navigation configuration", () => {
@@ -34,5 +35,14 @@ describe("adaptive navigation configuration", () => {
     const drawer = getDrawerNavItems("/about");
     assert.ok(drawer.some((item) => item.href === "/contact"));
     assert.ok(drawer.some((item) => item.href === "/"));
+  });
+
+  it("reuses the same center nav items for tablet compact chrome", () => {
+    const desktop = getDesktopCenterNavItems("/");
+    const tablet = getTabletCenterNavItems("/");
+    assert.deepEqual(
+      tablet.map((item) => item.href),
+      desktop.map((item) => item.href),
+    );
   });
 });

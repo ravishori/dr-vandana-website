@@ -14,27 +14,30 @@ import {
   getDesktopCenterNavItems,
   getDrawerNavItems,
   getNavCta,
+  getTabletCenterNavItems,
   loginNavItem,
 } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 
 /**
- * Adaptive header: CSS breakpoints drive mobile/tablet vs desktop chrome.
+ * Adaptive header: CSS breakpoints drive mobile / tablet / desktop chrome.
  * Shared navigation data — no duplicated business logic.
  */
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const desktopItems = getDesktopCenterNavItems(pathname);
+  const tabletItems = getTabletCenterNavItems(pathname);
   const drawerItems = getDrawerNavItems(pathname);
   const cta = getNavCta();
   const onLoginPage = pathname === "/login" || pathname.startsWith("/login/");
 
   return (
     <header className="bg-background/95 border-brand-muted/20 sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] backdrop-blur-md">
-      <Container className="grid min-h-16 grid-cols-[auto_1fr_auto] items-center gap-3 py-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-4">
+      <Container className="grid min-h-16 grid-cols-[auto_1fr_auto] items-center gap-2 py-3 md:gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-4">
         <BrandMark compact className="min-w-0 justify-self-start" />
 
+        {/* Desktop center nav */}
         <nav
           aria-label="Primary"
           className="hidden justify-self-center lg:block"
@@ -51,6 +54,24 @@ export function Navbar() {
           </ul>
         </nav>
 
+        {/* Tablet compact center nav — intentional mid-width layout */}
+        <nav
+          aria-label="Primary"
+          className="hidden min-w-0 justify-self-stretch overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] md:block lg:hidden [&::-webkit-scrollbar]:hidden"
+        >
+          <ul className="flex w-max max-w-full items-center gap-0.5 px-1">
+            {tabletItems.map((item) => (
+              <li key={item.href} className="shrink-0">
+                <NavLinkItem
+                  item={item}
+                  className="whitespace-nowrap px-2 py-2 text-[0.75rem]"
+                />
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Desktop actions */}
         <div className="hidden items-center justify-self-end gap-2 lg:flex">
           <ThemeSwitcher />
           {!onLoginPage ? (
@@ -74,13 +95,23 @@ export function Navbar() {
           ) : null}
         </div>
 
+        {/* Mobile + tablet actions */}
         <div className="flex items-center justify-self-end gap-1 lg:hidden">
           {!onLoginPage ? (
             <Link
               href={loginNavItem.href}
-              className="text-brand hover:bg-surface-soft inline-flex min-h-[var(--touch-target-min)] items-center justify-center rounded-[var(--radius-md)] px-3 text-sm font-medium no-underline"
+              className="text-brand hover:bg-surface-soft inline-flex min-h-[var(--touch-target-min)] items-center justify-center rounded-[var(--radius-md)] px-2.5 text-sm font-medium no-underline md:px-3"
             >
               Login
+            </Link>
+          ) : null}
+          {cta ? (
+            <Link
+              href={cta.href}
+              aria-label={cta.label}
+              className="bg-accent text-text hover:bg-accent/90 hidden min-h-[var(--touch-target-min)] items-center justify-center rounded-[var(--radius-md)] px-3 text-sm font-medium whitespace-nowrap no-underline shadow-sm md:inline-flex"
+            >
+              Book
             </Link>
           ) : null}
           <button

@@ -11,14 +11,15 @@ const actionClassName =
   "inline-flex min-h-[var(--touch-target-min)] flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium no-underline transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none";
 
 /**
- * Smartphone / compact viewport quick actions.
- * Hidden from lg+ via CSS — presentation only; shared appointment/Ask AI routes.
+ * Smartphone quick actions only (below md).
+ * Tablet uses header Book CTA + drawer Ask AI — not a stretched phone chrome.
+ * Presentation only; shared appointment/Ask AI routes.
  */
 export function MobileQuickBar() {
   const cta = getNavCta();
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 lg:hidden">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 md:hidden">
       <nav
         aria-label="Quick actions"
         className="border-brand-muted/25 bg-surface/95 pointer-events-auto border-t px-3 pt-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_rgba(43,51,44,0.08)] backdrop-blur-md"

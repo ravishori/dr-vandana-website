@@ -100,11 +100,18 @@ export function getPrimaryNavItemsForPath(pathname: string): NavItem[] {
   });
 }
 
-/** Desktop center strip — no Home, no Contact clutter. */
+/** Desktop / tablet center strip — no Home, no Contact clutter. */
 export function getDesktopCenterNavItems(pathname: string): NavItem[] {
   return getPrimaryNavItemsForPath(pathname).filter((item) =>
     DESKTOP_CENTER_HREFS.has(item.href),
   );
+}
+
+/**
+ * Tablet compact center nav — same shared items as desktop; presentation differs.
+ */
+export function getTabletCenterNavItems(pathname: string): NavItem[] {
+  return getDesktopCenterNavItems(pathname);
 }
 
 /**

@@ -178,11 +178,11 @@
   }
 
   /* Presentation hooks from AdaptiveExperience — never used for auth */
-  html[data-device-category="mobile"],
-  html[data-device-category="tablet"] {
+  html[data-device-category="mobile"] {
     --mobile-quick-bar-offset: 5.25rem;
   }
 
+  html[data-device-category="tablet"],
   html[data-device-category="desktop"] {
     --mobile-quick-bar-offset: 0rem;
   }
