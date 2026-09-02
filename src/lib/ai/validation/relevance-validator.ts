@@ -18,6 +18,35 @@ export type RelevanceValidation = {
   flags: RelevanceFlags;
 };
 
+const DOMAIN_ANSWER_MARKERS: Partial<Record<DomainIntent, readonly string[]>> = {
+  relationship: ["love", "romantic", "relationship", "feel", "partner", "attachment"],
+  emotional_wellbeing: ["emotion", "feeling", "well-being", "wellbeing"],
+  stress: ["stress", "pressure", "cope", "rest"],
+  anxiety: ["anxiety", "worry", "anxious"],
+  depression_awareness: ["depression", "low mood", "sadness"],
+  anger_management: ["anger", "irritab"],
+  parenting: ["parent", "child", "caregiver"],
+  child_psychology: ["child", "parent"],
+  adolescent_psychology: ["teen", "adolescent"],
+  women_wellbeing: ["women", "woman"],
+  workplace_mental_health: ["work", "workplace", "job"],
+  burnout: ["burnout", "exhaust"],
+  grief: ["grief", "loss", "bereavement"],
+  self_esteem: ["self-esteem", "self-worth", "confidence"],
+  confidence: ["confidence", "self-esteem"],
+  mindfulness: ["mindfulness", "meditation", "visuali"],
+  positive_psychology: ["growth", "resilience", "habit", "strength"],
+  general_psychology: ["psychology", "counsel"],
+  psychological_assessment: ["assess", "psychologist"],
+  professional_support: ["counsel", "session", "support"],
+};
+
+function domainMentioned(domain: DomainIntent, answer: string): boolean {
+  const markers = DOMAIN_ANSWER_MARKERS[domain] ?? [];
+  const lower = answer.toLowerCase();
+  return markers.some((marker) => lower.includes(marker));
+}
+
 const DIAGNOSIS_PATTERNS = [
   /you (definitely |clearly )?(have|are) (depression|anxiety|adhd|bipolar|ocd|ptsd)\b/i,
   /i diagnosed you/i,
@@ -118,7 +147,11 @@ export function scoreAnswerRelevance(input: {
   const topicToken = input.topic.replace(/-/g, " ");
   const topicMentioned =
     topicToken.length > 2 && answer.toLowerCase().includes(topicToken.split(" ")[0] ?? "");
-  const addressesQuestion = overlap >= 0.2 || topicMentioned || input.domain === "crisis_safety";
+  const addressesQuestion =
+    overlap >= 0.2 ||
+    topicMentioned ||
+    domainMentioned(input.domain, answer) ||
+    input.domain === "crisis_safety";
 
   const inScope =
     input.domain === "outside_scope" ||

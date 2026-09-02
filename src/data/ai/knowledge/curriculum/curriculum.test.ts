@@ -160,7 +160,7 @@ describe("ACADEMIC_CURRICULUM_REFERENCE corpus", () => {
 
   it("leaves legacy knowledge documents structurally compatible and published", () => {
     const legacy = allKnowledgeDocuments.filter((doc) => doc.corpus !== "ACADEMIC_CURRICULUM_REFERENCE");
-    assert.equal(legacy.length, 44);
+    assert.equal(legacy.length, 45);
     for (const doc of legacy) {
       assert.ok(doc.id);
       assert.ok(doc.title);

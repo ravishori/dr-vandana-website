@@ -11,16 +11,6 @@ export type GenerateResponseInput = {
   domainIntent?: DomainIntent;
 };
 
-export type GenerateResponseInput = {
-  question: string;
-  rewrittenQuery: string;
-  category: SafetyCategory;
-  retrieved: readonly RetrievedChunk[];
-  language: string;
-  intent?: AskIntent;
-  topic?: string;
-};
-
 export interface AIProvider {
   readonly name: string;
   generateResponse(input: GenerateResponseInput): Promise<string>;

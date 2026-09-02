@@ -61,6 +61,8 @@ export function validateAnswer(input: ValidationInput): ValidationResult {
     input.topic !== "general-education" &&
     input.topic !== "counselling" &&
     input.topic !== "first-session" &&
+    input.topic !== "relationships" &&
+    input.topic !== "romantic-love" &&
     !topicMentioned &&
     questionOverlap < 0.15 &&
     !answerLooksLikeKnowledgeGap(input.answer)

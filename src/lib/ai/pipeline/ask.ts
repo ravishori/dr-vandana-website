@@ -452,7 +452,12 @@ export async function runAskPipeline(
     candidates = lockChunksToDomain(candidates, domain, allowCaseStudies);
   }
 
-  let gated;
+  let gated: {
+    primary: RetrievedChunk | null;
+    secondary: RetrievedChunk[];
+    usable: RetrievedChunk[];
+    confidence: RelevanceConfidence;
+  };
   if (category === "DR_VANDANA_SPECIFIC") {
     const vandana = candidates
       .filter((chunk) => chunk.corpus === "DR_VANDANA_KNOWLEDGE")
@@ -493,7 +498,7 @@ export async function runAskPipeline(
           primary: null,
           secondary: [],
           usable: [],
-          confidence: "NO_MATCH",
+          confidence: "NO_MATCH" as const,
         };
       }
     }
@@ -524,7 +529,7 @@ export async function runAskPipeline(
       primary: candidates[0] ?? null,
       secondary: candidates.slice(1, 2),
       usable: candidates.slice(0, 2),
-      confidence: "MEDIUM_CONFIDENCE",
+      confidence: "MEDIUM_CONFIDENCE" as const,
     };
   }
 
@@ -595,6 +600,25 @@ export async function runAskPipeline(
     chunks: selectedChunks,
   });
 
+  if (validationResult.status === "SAFETY_REDIRECT") {
+    const response = buildGapResponse({
+      topic,
+      category,
+      conversationId,
+      question,
+      intent,
+      confidence: gated.confidence,
+      domain,
+      secondary: classification.secondary,
+      relevanceScore: relevance.score,
+      generic: true,
+    });
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic, domain);
+    rememberTurn(conversationId, { role: "assistant", text: response.answer });
+    logAsk(requestId, started, category, selectedChunks.length, "safety-validation");
+    return { ok: true, response, status: 200 };
+  }
+
   if (validationResult.status === "REGENERATE" || !relevance.pass) {
     answer = composeControlledAnswer({
       question,
@@ -622,11 +646,7 @@ export async function runAskPipeline(
     });
   }
 
-  if (
-    validationResult.status === "REGENERATE" ||
-    validationResult.status === "KNOWLEDGE_GAP" ||
-    !relevance.pass
-  ) {
+  if (!relevance.pass || validationResult.status === "SAFETY_REDIRECT") {
     const response = buildGapResponse({
       topic,
       category,
