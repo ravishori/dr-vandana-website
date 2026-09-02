@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -31,6 +31,13 @@ export function Navbar() {
   const drawerItems = getDrawerNavItems(pathname);
   const cta = getNavCta();
   const onLoginPage = pathname === "/login" || pathname.startsWith("/login/");
+
+  useEffect(() => {
+    document.documentElement.dataset.navDrawer = menuOpen ? "open" : "closed";
+    return () => {
+      delete document.documentElement.dataset.navDrawer;
+    };
+  }, [menuOpen]);
 
   return (
     <header className="bg-background/95 border-brand-muted/20 sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] backdrop-blur-md">
