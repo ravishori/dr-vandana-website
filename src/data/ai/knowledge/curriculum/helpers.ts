@@ -7,11 +7,13 @@ import {
   CURRICULUM_SOURCE_DOCUMENT,
   CURRICULUM_SOURCE_URL,
   CURRICULUM_VERSION,
+  CURRICULUM_VERSION_ID,
 } from "@/data/ai/knowledge/curriculum/constants";
 import { createKnowledgeDocument } from "@/data/ai/knowledge/helpers";
 import type {
   AcademicBibliographicReference,
   AcademicContentType,
+  SourcePageStatus,
   KnowledgeDocument,
 } from "@/types/ai";
 
@@ -26,6 +28,7 @@ export type AcademicCurriculumDraft = {
   unit_title: string;
   content_type: AcademicContentType;
   source_page?: string;
+  source_page_status?: SourcePageStatus;
   course_objectives?: readonly string[];
   course_outcomes?: readonly string[];
   content: string;
@@ -57,11 +60,14 @@ export function createAcademicCurriculumDocument(
     date: CURRICULUM_PUBLICATION_DATE,
     evidence_level: "academic-curriculum",
     corpus: "ACADEMIC_CURRICULUM_REFERENCE",
+    approved: false,
+    approval_state: "REVIEW",
     keywords: draft.keywords ?? buildCurriculumKeywords(draft),
     synonyms: draft.synonyms,
     institution: CURRICULUM_INSTITUTION,
     program: CURRICULUM_PROGRAM,
     curriculum_version: CURRICULUM_VERSION,
+    curriculum_version_id: CURRICULUM_VERSION_ID,
     academic_year: CURRICULUM_ACADEMIC_YEAR,
     semester: draft.semester,
     course_code: draft.course_code,
@@ -74,6 +80,7 @@ export function createAcademicCurriculumDocument(
     course_outcomes: draft.course_outcomes,
     content_type: draft.content_type,
     source_page: draft.source_page,
+    source_page_status: draft.source_page_status ?? "UNVERIFIED",
     source_document: CURRICULUM_SOURCE_DOCUMENT,
     source_url: CURRICULUM_SOURCE_URL,
     study_books: draft.study_books,

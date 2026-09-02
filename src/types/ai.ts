@@ -36,6 +36,13 @@ export type AcademicContentType =
   | "ojt-field-placement"
   | "research-project";
 
+export type SourcePageStatus = "UNVERIFIED" | "VERIFIED";
+
+export type CurriculumReviewStatus =
+  | "REVIEW_REQUIRED"
+  | "VERIFIED"
+  | "UNKNOWN";
+
 export type KnowledgeApprovalState =
   | "DRAFT"
   | "REVIEW"
@@ -151,8 +158,11 @@ export type KnowledgeDocument = {
   course_outcomes?: readonly string[];
   content_type?: AcademicContentType;
   source_page?: string;
+  source_page_status?: SourcePageStatus;
   source_document?: string;
   source_url?: string;
+  /** Stable id so future syllabus revisions can coexist (e.g. NEP 2020 / 2023-24). */
+  curriculum_version_id?: string;
   study_books?: readonly AcademicBibliographicReference[];
   reference_books?: readonly AcademicBibliographicReference[];
 };

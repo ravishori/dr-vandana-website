@@ -7,6 +7,7 @@ import type {
   KnowledgeCategory,
   KnowledgeCorpus,
   KnowledgeDocument,
+  SourcePageStatus,
   SupportedLanguage,
 } from "@/types/ai";
 
@@ -49,8 +50,10 @@ type KnowledgeDraft = {
   course_outcomes?: readonly string[];
   content_type?: AcademicContentType;
   source_page?: string;
+  source_page_status?: SourcePageStatus;
   source_document?: string;
   source_url?: string;
+  curriculum_version_id?: string;
   study_books?: readonly AcademicBibliographicReference[];
   reference_books?: readonly AcademicBibliographicReference[];
 };

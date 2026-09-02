@@ -105,6 +105,42 @@ Every curriculum document sets:
 
 **Phase 1 scope:** corpus creation and metadata only. The main ASK AI pipeline is unchanged; dedicated academic routing is Phase 2.
 
+### Phase 1.5 — Content QA and governance (current)
+
+Curriculum documents imported from the official syllabus PDFs are **derived data** and remain in governance review until a human approves them.
+
+**Authoritative source chain (do not invert):**
+
+```
+SOURCE PDF (docs/curriculum/source-pdfs/)
+  → extracted text (docs/curriculum/extracted/)
+  → parsed JSON (docs/curriculum/parsed-curriculum.json)
+  → generated TypeScript (src/data/ai/knowledge/curriculum/semester-*.ts)
+```
+
+The generated `.ts` files are **not** the authoritative source. Rebuild with `scripts/generate-curriculum-ts.py` only from PDF-derived extracts.
+
+**Governance (Phase 1.5):**
+
+| Field | Curriculum value |
+| --- | --- |
+| `approved` | `false` |
+| `approval_state` | `REVIEW` |
+| `source_page_status` | `UNVERIFIED` (until manually verified against PDF) |
+| `curriculum_version_id` | `university-of-mumbai-ma-psychology-nep-2020-2023-24` |
+
+Curriculum documents are **excluded from ASK AI retrieval** until explicitly transitioned to `APPROVED` / `PUBLISHED` after human QA. Legacy non-curriculum knowledge remains `PUBLISHED`.
+
+Run QA reports:
+
+```bash
+npm run curriculum:qa
+```
+
+Outputs land in `docs/curriculum/qa/` (inventory, artifact report, review manifest, governance summary).
+
+**Future Phase 2 boundary (not implemented):** Academic syllabus references to CBT, REBT, psychotherapy, assessment, and diagnostic concepts must remain distinguishable from questions such as “Does Dr. Vandana use CBT?” The academic corpus must never be interpreted as evidence of Dr. Vandana’s personal therapeutic methodology.
+
 If a visitor asks about Dr. Vandana's specific techniques and they are not in the approved corpus, the assistant must say:
 
 > I don't have enough verified information about Dr. Vandana's specific approach to answer that accurately.

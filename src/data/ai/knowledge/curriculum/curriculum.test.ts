@@ -8,7 +8,15 @@ import {
   CURRICULUM_PROGRAM,
   CURRICULUM_SOURCE,
   CURRICULUM_VERSION,
+  CURRICULUM_VERSION_ID,
 } from "@/data/ai/knowledge/curriculum/constants";
+import {
+  auditAllCurriculumDocuments,
+  buildCourseInventory,
+  buildGovernanceStatusSummary,
+  buildReviewManifest,
+  detectKnownArtifactCases,
+} from "@/data/ai/knowledge/curriculum/qa";
 import { knowledgeRepository } from "@/lib/ai/knowledge/repository";
 
 const LEGACY_CORPORA = [
@@ -54,6 +62,7 @@ describe("ACADEMIC_CURRICULUM_REFERENCE corpus", () => {
     assert.equal(sample?.institution, CURRICULUM_INSTITUTION);
     assert.equal(sample?.program, CURRICULUM_PROGRAM);
     assert.equal(sample?.curriculum_version, CURRICULUM_VERSION);
+    assert.equal(sample?.curriculum_version_id, CURRICULUM_VERSION_ID);
     assert.equal(sample?.semester, "I");
     assert.equal(sample?.course_title, "PERSONALITY PSYCHOLOGY");
     assert.equal(sample?.unit_title, "Science of Personality: Methods, Assessment and Historical Approaches");
@@ -113,6 +122,7 @@ describe("ACADEMIC_CURRICULUM_REFERENCE corpus", () => {
       assert.equal(doc.source, CURRICULUM_SOURCE);
       assert.match(doc.source, /University of Mumbai/i);
       assert.match(doc.author, /University of Mumbai/i);
+      assert.ok(!/dr\.?\s*vandana/i.test(doc.author), `${doc.id} must not attribute to Dr. Vandana`);
     }
   });
 
@@ -126,16 +136,31 @@ describe("ACADEMIC_CURRICULUM_REFERENCE corpus", () => {
     }
   });
 
-  it("indexes curriculum documents through the existing knowledge repository", () => {
+  it("excludes curriculum documents from default ASK AI retrieval until QA approval", () => {
     const indexed = knowledgeRepository.list();
     const curriculumIndexed = indexed.filter(
       (doc) => doc.corpus === "ACADEMIC_CURRICULUM_REFERENCE",
     );
-    assert.equal(curriculumIndexed.length, academicCurriculumDocuments.length);
+    assert.equal(curriculumIndexed.length, 0);
+
+    const allIncludingReview = knowledgeRepository.list({ includeUnpublished: true });
+    const curriculumLoaded = allIncludingReview.filter(
+      (doc) => doc.corpus === "ACADEMIC_CURRICULUM_REFERENCE",
+    );
+    assert.equal(curriculumLoaded.length, academicCurriculumDocuments.length);
   });
 
-  it("leaves legacy knowledge documents structurally compatible", () => {
+  it("holds curriculum documents in REVIEW governance state", () => {
+    for (const doc of academicCurriculumDocuments) {
+      assert.equal(doc.approval_state, "REVIEW");
+      assert.equal(doc.approved, false);
+      assert.equal(doc.source_page_status, "UNVERIFIED");
+    }
+  });
+
+  it("leaves legacy knowledge documents structurally compatible and published", () => {
     const legacy = allKnowledgeDocuments.filter((doc) => doc.corpus !== "ACADEMIC_CURRICULUM_REFERENCE");
+    assert.equal(legacy.length, 32);
     for (const doc of legacy) {
       assert.ok(doc.id);
       assert.ok(doc.title);
@@ -144,5 +169,51 @@ describe("ACADEMIC_CURRICULUM_REFERENCE corpus", () => {
       assert.equal(doc.approval_state, "PUBLISHED");
       assert.ok(!doc.semester, `${doc.id} legacy doc should not require semester metadata`);
     }
+  });
+});
+
+describe("Curriculum QA audit (Phase 1.5)", () => {
+  it("loads 159-document corpus and 42-course inventory", () => {
+    assert.equal(academicCurriculumDocuments.length, 159);
+    const inventory = buildCourseInventory();
+    assert.equal(inventory.filter((c) => c.inventory_status !== "MISSING").length, 42);
+  });
+
+  it("requires provenance on every curriculum document", () => {
+    for (const doc of academicCurriculumDocuments) {
+      assert.ok(doc.institution);
+      assert.ok(doc.program);
+      assert.ok(doc.semester);
+      assert.ok(doc.course_title);
+      assert.ok(doc.unit_number);
+      assert.ok(doc.unit_title);
+      assert.ok(doc.source_document);
+      assert.ok(doc.curriculum_version_id);
+    }
+  });
+
+  it("marks all source pages UNVERIFIED", () => {
+    for (const doc of academicCurriculumDocuments) {
+      assert.equal(doc.source_page_status, "UNVERIFIED");
+    }
+  });
+
+  it("detects known extraction-artifact cases", () => {
+    const artifacts = detectKnownArtifactCases();
+    assert.ok(artifacts.length > 0, "expected at least one known artifact flag");
+  });
+
+  it("produces a review manifest for every document", () => {
+    const report = auditAllCurriculumDocuments();
+    const manifest = buildReviewManifest(report.issues);
+    assert.equal(manifest.length, 159);
+    assert.ok(manifest.every((entry) => entry.status === "REVIEW_REQUIRED"));
+  });
+
+  it("reports zero indexable curriculum documents under governance", () => {
+    const governance = buildGovernanceStatusSummary();
+    assert.equal(governance.indexable_curriculum_documents, 0);
+    assert.equal(governance.curriculum_documents_total, 159);
+    assert.equal(governance.approval_state_counts.REVIEW, 159);
   });
 });
