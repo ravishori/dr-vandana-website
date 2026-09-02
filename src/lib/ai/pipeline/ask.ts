@@ -30,7 +30,10 @@ import { validateAskRequest, resolveLanguage } from "@/lib/ai/pipeline/validate"
 import { createAiProvider, type AIProvider } from "@/lib/ai/providers";
 import { extractCaseStudySlug, shouldShowSupportCta } from "@/lib/ai/providers/educational-fallback";
 import { INSUFFICIENT_VANDANA_METHODOLOGY } from "@/lib/ai/prompts/system";
-import { applyRelevanceGate } from "@/lib/ai/relevance/gate";
+import {
+  applyRelevanceGate,
+  type RelevanceGateResult,
+} from "@/lib/ai/relevance/gate";
 import { retrievalService, type RetrievalService } from "@/lib/ai/retrieval/service";
 import { contentTokens } from "@/lib/ai/retrieval/normalize-query";
 import {
@@ -109,6 +112,28 @@ function preferredCorpora(
     corpora.splice(2, 0, "CASE_STUDY_KNOWLEDGE");
   }
   return corpora;
+}
+
+function unmatchedGate(): RelevanceGateResult {
+  return {
+    primary: null,
+    secondary: [],
+    usable: [],
+    confidence: "NO_MATCH",
+  };
+}
+
+function selectedGate(
+  primary: RetrievedChunk,
+  secondary: RetrievedChunk[],
+  confidence: RelevanceConfidence,
+): RelevanceGateResult {
+  return {
+    primary,
+    secondary,
+    usable: [primary, ...secondary],
+    confidence,
+  };
 }
 
 function shouldHardFilterTopics(domain: DomainIntent): boolean {
@@ -452,12 +477,7 @@ export async function runAskPipeline(
     candidates = lockChunksToDomain(candidates, domain, allowCaseStudies);
   }
 
-  let gated: {
-    primary: RetrievedChunk | null;
-    secondary: RetrievedChunk[];
-    usable: RetrievedChunk[];
-    confidence: RelevanceConfidence;
-  };
+  let gated: RelevanceGateResult;
   if (category === "DR_VANDANA_SPECIFIC") {
     const vandana = candidates
       .filter((chunk) => chunk.corpus === "DR_VANDANA_KNOWLEDGE")
@@ -465,20 +485,13 @@ export async function runAskPipeline(
     const approach =
       vandana.find((chunk) => chunk.topic === "counselling-approach") ??
       vandana[0];
-    gated =
-      approach
-        ? {
-            primary: approach,
-            secondary: vandana.filter((chunk) => chunk.id !== approach.id).slice(0, 1),
-            usable: vandana.slice(0, 2),
-            confidence: "HIGH_CONFIDENCE" as const,
-          }
-        : {
-            primary: null,
-            secondary: [],
-            usable: [],
-            confidence: "NO_MATCH" as const,
-          };
+    gated = approach
+      ? selectedGate(
+          approach,
+          vandana.filter((chunk) => chunk.id !== approach.id).slice(0, 1),
+          "HIGH_CONFIDENCE",
+        )
+      : unmatchedGate();
   } else {
     gated = applyRelevanceGate(candidates, {
       question,
@@ -494,12 +507,7 @@ export async function runAskPipeline(
         (primary.relevance?.confidence !== "HIGH_CONFIDENCE" &&
           (primary.relevance?.topicMatch ?? 0) < 0.35)
       ) {
-        gated = {
-          primary: null,
-          secondary: [],
-          usable: [],
-          confidence: "NO_MATCH" as const,
-        };
+        gated = unmatchedGate();
       }
     }
   }
@@ -525,13 +533,13 @@ export async function runAskPipeline(
     candidates.length > 0 &&
     shouldHardFilterTopics(domain)
   ) {
-    gated = {
-      primary: candidates[0] ?? null,
-      secondary: candidates.slice(1, 2),
-      usable: candidates.slice(0, 2),
-      confidence: "MEDIUM_CONFIDENCE" as const,
-    };
+    const fallbackPrimary = candidates[0];
+    if (fallbackPrimary) {
+      gated = selectedGate(fallbackPrimary, candidates.slice(1, 2), "MEDIUM_CONFIDENCE");
+    }
   }
+
+  const relevanceConfidence: RelevanceConfidence = gated.confidence;
 
   if (gated.confidence === "NO_MATCH" || !gated.primary) {
     const response = buildGapResponse({
@@ -590,7 +598,7 @@ export async function runAskPipeline(
     intent,
     topic,
     chunks: selectedChunks,
-    confidence: gated.confidence,
+    confidence: relevanceConfidence,
   });
   let relevance = scoreAnswerRelevance({
     question,
@@ -607,7 +615,7 @@ export async function runAskPipeline(
       conversationId,
       question,
       intent,
-      confidence: gated.confidence,
+      confidence: relevanceConfidence,
       domain,
       secondary: classification.secondary,
       relevanceScore: relevance.score,
@@ -635,7 +643,7 @@ export async function runAskPipeline(
       intent,
       topic,
       chunks: selectedChunks,
-      confidence: gated.confidence,
+      confidence: relevanceConfidence,
     });
     relevance = scoreAnswerRelevance({
       question,
@@ -653,7 +661,7 @@ export async function runAskPipeline(
       conversationId,
       question,
       intent,
-      confidence: gated.confidence,
+      confidence: relevanceConfidence,
       domain,
       secondary: classification.secondary,
       relevanceScore: relevance.score,
@@ -699,7 +707,7 @@ export async function runAskPipeline(
     topic,
     quality: {
       status: validationResult.status,
-      confidence: gated.confidence,
+      confidence: relevanceConfidence,
     },
     domain_intent: domain,
     secondary_intent: classification.secondary,
