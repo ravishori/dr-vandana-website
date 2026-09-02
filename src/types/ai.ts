@@ -10,7 +10,31 @@ export type KnowledgeCorpus =
   | "DR_VANDANA_KNOWLEDGE"
   | "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE"
   | "CASE_STUDY_KNOWLEDGE"
-  | "SAFETY_AND_ETHICS_RULES";
+  | "SAFETY_AND_ETHICS_RULES"
+  | "ACADEMIC_CURRICULUM_REFERENCE";
+
+export type AcademicReferenceType =
+  | "STUDY_BOOK"
+  | "REFERENCE_BOOK"
+  | "JOURNAL_ARTICLE"
+  | "OTHER_ACADEMIC_REFERENCE";
+
+export type AcademicBibliographicReference = {
+  title: string;
+  reference_type: AcademicReferenceType;
+  author?: string;
+  edition?: string;
+  publisher?: string;
+  year?: string;
+  isbn?: string;
+};
+
+export type AcademicContentType =
+  | "syllabus"
+  | "elective"
+  | "practical"
+  | "ojt-field-placement"
+  | "research-project";
 
 export type KnowledgeApprovalState =
   | "DRAFT"
@@ -41,13 +65,15 @@ export type KnowledgeCategory =
   | "Safety & Ethics"
   | "Women's Mental Health"
   | "Anger Management"
-  | "Life Skills";
+  | "Life Skills"
+  | "Academic Curriculum";
 
 export type EvidenceLevel =
   | "verified-practice"
   | "educational"
   | "public-health-education"
-  | "ethics";
+  | "ethics"
+  | "academic-curriculum";
 
 export type AskIntent =
   | "DEFINITION"
@@ -109,6 +135,26 @@ export type KnowledgeDocument = {
   practical_steps?: readonly string[];
   examples?: readonly string[];
   cautions?: readonly string[];
+  /** Academic curriculum metadata — optional; only on ACADEMIC_CURRICULUM_REFERENCE documents. */
+  institution?: string;
+  program?: string;
+  curriculum_version?: string;
+  academic_year?: string;
+  semester?: string;
+  course_code?: string;
+  course_title?: string;
+  course_type?: string;
+  credits?: number;
+  unit_number?: string;
+  unit_title?: string;
+  course_objectives?: readonly string[];
+  course_outcomes?: readonly string[];
+  content_type?: AcademicContentType;
+  source_page?: string;
+  source_document?: string;
+  source_url?: string;
+  study_books?: readonly AcademicBibliographicReference[];
+  reference_books?: readonly AcademicBibliographicReference[];
 };
 
 export type PublicKnowledgeSource = {

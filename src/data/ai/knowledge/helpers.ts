@@ -1,4 +1,6 @@
 import type {
+  AcademicBibliographicReference,
+  AcademicContentType,
   AskIntent,
   EvidenceLevel,
   KnowledgeApprovalState,
@@ -32,6 +34,25 @@ type KnowledgeDraft = {
   practical_steps?: readonly string[];
   examples?: readonly string[];
   cautions?: readonly string[];
+  institution?: string;
+  program?: string;
+  curriculum_version?: string;
+  academic_year?: string;
+  semester?: string;
+  course_code?: string;
+  course_title?: string;
+  course_type?: string;
+  credits?: number;
+  unit_number?: string;
+  unit_title?: string;
+  course_objectives?: readonly string[];
+  course_outcomes?: readonly string[];
+  content_type?: AcademicContentType;
+  source_page?: string;
+  source_document?: string;
+  source_url?: string;
+  study_books?: readonly AcademicBibliographicReference[];
+  reference_books?: readonly AcademicBibliographicReference[];
 };
 
 export function createKnowledgeDocument(

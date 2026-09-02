@@ -73,7 +73,7 @@ Only documents with `approved: true` and `approval_state` of `APPROVED` or `PUBL
 
 ## Knowledge sources
 
-Four corpora:
+Five corpora:
 
 | Corpus | May be stated as |
 | --- | --- |
@@ -81,6 +81,29 @@ Four corpora:
 | `PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE` | General educational psychology |
 | `CASE_STUDY_KNOWLEDGE` | Fictional / anonymised teaching scenarios |
 | `SAFETY_AND_ETHICS_RULES` | Safety behaviour (not shown as public citations) |
+| `ACADEMIC_CURRICULUM_REFERENCE` | University of Mumbai M.A. Psychology (NEP 2020) official syllabus reference |
+
+### Academic curriculum corpus (Phase 1)
+
+Purpose: governed academic reference layer for the **University of Mumbai M.A. Psychology (NEP 2020)** syllabus. This corpus is **separate** from Dr. Vandana practice content and general educational psychology.
+
+- Location: `src/data/ai/knowledge/curriculum/` (one `KnowledgeDocument` per syllabus **unit**)
+- Source PDFs (provenance): `docs/curriculum/source-pdfs/` (Semesters I–IV uploads)
+- Official web source: [University of Mumbai NEP 2020 syllabus index](https://mu.ac.in/nep-2020-syllabus)
+- Generator script (maintainers): `scripts/generate-curriculum-ts.py` (rebuild from extracted text only; do not invent content)
+
+Every curriculum document sets:
+
+- `source`: `University of Mumbai — M.A. Psychology (NEP 2020) Official Syllabus`
+- `institution`, `program`, `curriculum_version`, `semester`, `course_code`, `course_title`, `unit_number`, `unit_title`
+- `course_objectives`, `course_outcomes`, `content_type`, `source_page`, `source_document`, `source_url`
+- `study_books` / `reference_books` as **bibliographic references only** (`STUDY_BOOK`, `REFERENCE_BOOK`)
+
+**Textbook policy:** syllabus-listed study and reference books are stored as title-level bibliographic metadata. Full copyrighted textbook text is **never** ingested, downloaded, or scraped.
+
+**Separation from Dr. Vandana content:** curriculum documents describe university programme requirements only. They must not be cited as Dr. Vandana's clinical methods. Named therapies appearing in syllabus units (for example CBT/REBT coursework) remain academic references — not practice claims.
+
+**Phase 1 scope:** corpus creation and metadata only. The main ASK AI pipeline is unchanged; dedicated academic routing is Phase 2.
 
 If a visitor asks about Dr. Vandana's specific techniques and they are not in the approved corpus, the assistant must say:
 

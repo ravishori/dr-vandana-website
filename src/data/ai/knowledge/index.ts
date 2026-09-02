@@ -1,3 +1,4 @@
+import { academicCurriculumDocuments } from "@/data/ai/knowledge/curriculum";
 import { caseStudyKnowledgeDocuments } from "@/data/ai/knowledge/case-studies";
 import { educationalKnowledgeDocuments } from "@/data/ai/knowledge/educational";
 import { safetyKnowledgeDocuments } from "@/data/ai/knowledge/safety";
@@ -9,4 +10,5 @@ export const allKnowledgeDocuments: readonly KnowledgeDocument[] = [
   ...educationalKnowledgeDocuments,
   ...caseStudyKnowledgeDocuments,
   ...safetyKnowledgeDocuments,
+  ...academicCurriculumDocuments,
 ];
