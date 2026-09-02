@@ -1,5 +1,10 @@
 /** Controlled topic synonym dictionary for retrieval and relevance. */
 export const TOPIC_SYNONYMS: Readonly<Record<string, readonly string[]>> = {
+  "cbt-concepts": [
+    "cbt",
+    "cognitive behavioural therapy",
+    "cognitive behavioral therapy",
+  ],
   visualization: ["visualisation", "mental imagery", "guided imagery", "imagery"],
   "self-esteem": ["self esteem", "self worth", "self-worth", "self confidence"],
   confidence: ["self confidence", "self-confidence"],

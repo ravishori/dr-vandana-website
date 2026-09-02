@@ -10,9 +10,16 @@ import {
   planAnswerStructure,
   practicalLines,
 } from "@/lib/ai/answers/planner";
+import { formatPublicSourceAttribution } from "@/lib/ai/knowledge/library/attribution";
+import { knowledgeRepository } from "@/lib/ai/knowledge/repository";
 import { isCounsellingTopic } from "@/lib/ai/relevance/gate";
 import type { AIProvider, GenerateResponseInput } from "@/lib/ai/providers/types";
-import type { AskIntent, RetrievedChunk, SafetyCategory } from "@/types/ai";
+import type {
+  AskIntent,
+  PublicKnowledgeSource,
+  RetrievedChunk,
+  SafetyCategory,
+} from "@/types/ai";
 
 function composeVandanaAnswer(input: {
   question: string;
@@ -240,22 +247,31 @@ export class ControlledAnswerProvider implements AIProvider {
 
 export function extractUsedSources(
   chunks: readonly RetrievedChunk[],
-): Array<{ title: string; attribution: string; category: string }> {
-  const sources: Array<{ title: string; attribution: string; category: string }> =
-    [];
+): PublicKnowledgeSource[] {
+  const sources: PublicKnowledgeSource[] = [];
+  const seen = new Set<string>();
+
   for (const chunk of chunks) {
     if (chunk.corpus === "SAFETY_AND_ETHICS_RULES") {
       continue;
     }
-    if (sources.some((item) => item.attribution === chunk.source)) {
+
+    const document = knowledgeRepository.getById(chunk.id);
+    const formatted = document
+      ? formatPublicSourceAttribution(document)
+      : {
+          title: chunk.title,
+          attribution: chunk.source,
+        };
+
+    const dedupeKey = document?.id ?? formatted.attribution;
+    if (seen.has(dedupeKey)) {
       continue;
     }
-    sources.push({
-      title: chunk.title,
-      attribution: chunk.source,
-      category: chunk.category,
-    });
+    seen.add(dedupeKey);
+    sources.push(formatted);
   }
+
   return sources.slice(0, 4);
 }
 

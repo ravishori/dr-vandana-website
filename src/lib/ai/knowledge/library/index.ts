@@ -1,7 +1,13 @@
 export {
+  isClearlyNonPsychologyQuery,
+  isPublicUniversityCurriculumQuery,
+  shouldBypassPsychologyRetrieval,
+} from "@/lib/ai/knowledge/library/query-boundaries";
+export {
   documentsToPublicSources,
   formatPublicSourceAttribution,
   isAttributableToDrVandanaViews,
+  isExternalEvidenceSource,
 } from "@/lib/ai/knowledge/library/attribution";
 export {
   evaluatePracticeBoundary,

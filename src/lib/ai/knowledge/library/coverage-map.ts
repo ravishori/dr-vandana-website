@@ -34,6 +34,7 @@ const TOPIC_ALIASES: Record<string, { topicId: string; subtopic?: string }> = {
   "when-to-seek-help": { topicId: "counselling-concepts", subtopic: "when-to-seek-help" },
   "visualization": { topicId: "mindfulness", subtopic: "visualization" },
   "emotional-intelligence": { topicId: "emotional-regulation", subtopic: "emotional-intelligence" },
+  "mental-wellbeing": { topicId: "mental-wellbeing" },
 };
 
 function mapTopicToTaxonomy(document: KnowledgeDocument): {

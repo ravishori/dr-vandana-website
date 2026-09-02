@@ -1,10 +1,8 @@
 # Psychology Knowledge & Evidence Library
 
-Architecture for the Ask Dr. Vandana AI **Psychology Knowledge & Evidence Library** — Phase 2.
+Architecture for the Ask Dr. Vandana AI **Psychology Knowledge & Evidence Library**.
 
-This document describes the data model, taxonomy, governance, and retrieval principles for a source-grounded psychology education and mental-wellness knowledge system. It does **not** describe a public university curriculum service.
-
-> **Important:** The University of Mumbai M.A. Psychology syllabus is an **internal coverage reference only**. Dr. Vandana's website does not represent the University of Mumbai and does not provide its courses or syllabus.
+> **Important:** The initial evidence library (Phase 3) is a **controlled pilot**, not an exhaustive psychology knowledge base. The University of Mumbai M.A. Psychology syllabus is an **internal coverage reference only**. Dr. Vandana's website does not represent the University of Mumbai and does not provide its courses or syllabus.
 
 ## Purpose
 
@@ -195,17 +193,71 @@ Phase 2 does **not** redesign retrieval. Existing behaviour is preserved:
 
 Future phases may add semantic/hybrid retrieval, source filtering, and richer attribution — the model supports this without forking the pipeline.
 
-## Source attribution (prepared)
+## Source attribution (live)
 
-`formatPublicSourceAttribution()` in `src/lib/ai/knowledge/library/attribution.ts` prepares public-facing citations:
+`formatPublicSourceAttribution()` in `src/lib/ai/knowledge/library/attribution.ts` is wired into `extractUsedSources()` in the live answer pipeline.
 
 - Author / organization
 - Title
 - Year (when known)
-- Source type
-- Link where appropriate
+- Optional public URL (`PublicKnowledgeSource.url`)
+- Only chunks that pass the relevance gate and are used in the answer are attributed
 
 Internal curriculum metadata is **not** exposed in default attribution.
+
+## Phase 3 — Controlled evidence source pilot
+
+### Purpose
+
+Prove that a small number of verified, provenance-complete external sources can improve Ask AI answers without hallucination, unrelated retrieval, false attribution, or curriculum exposure.
+
+### Source selection criteria
+
+1. Authoritative public-health or government source
+2. Publicly accessible with stable official URL
+3. Relevant to psychology / mental well-being education
+4. Clear reason for inclusion (not keyword matching alone)
+5. Suitable for paraphrased educational use with attribution
+
+### Pilot sources (4)
+
+| ID | Organization | Tier | Evidence | Scope | URL verified |
+| --- | --- | --- | --- | --- | --- |
+| `evidence-who-stress-qanda` | World Health Organization | TIER_1_AUTHORITATIVE | guideline | MENTAL_WELLBEING | Yes |
+| `evidence-who-depression-awareness` | World Health Organization | TIER_1_AUTHORITATIVE | guideline | MENTAL_WELLBEING | Yes |
+| `evidence-who-mental-health-wellbeing` | World Health Organization | TIER_1_AUTHORITATIVE | guideline | PROFESSIONAL_GUIDANCE | Yes |
+| `evidence-nimh-cbt-education` | NIMH (NIH) | TIER_1_AUTHORITATIVE | public-health-education | CLINICAL_EDUCATION | Yes |
+
+Internal review notes: `src/data/ai/knowledge/evidence-pilot/review-notes.ts` (maintainer-only).
+
+### Verification process
+
+1. Confirm official source page on organization domain
+2. Record only verifiable bibliographic fields
+3. Write paraphrased educational summary (no full-text copy)
+4. Set `verification_status: VERIFIED`, `approval_state: PUBLISHED`
+5. Automated URL fetch test in `evidence-pilot.test.ts`
+
+### Query boundaries
+
+`src/lib/ai/knowledge/library/query-boundaries.ts`:
+
+- Public university curriculum queries → knowledge gap (no retrieval)
+- Clearly non-psychology queries (e.g. geography trivia) → knowledge gap
+
+### Limitations
+
+- Only four external topics covered in the pilot
+- Self-esteem and many taxonomy topics still rely on site-authored educational content
+- No semantic/vector retrieval yet
+- No admin UI for source publishing
+
+### Future scaling plan (Phase 4+)
+
+- Add sources incrementally with the same verification workflow
+- Expand topic coverage using `buildKnowledgeCoverageMap()` gap analysis
+- Optional hybrid semantic retrieval behind existing interfaces
+- Periodic source review dates and version bumps
 
 ## Dr. Vandana content boundary
 

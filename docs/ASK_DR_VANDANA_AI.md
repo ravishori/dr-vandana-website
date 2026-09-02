@@ -73,12 +73,13 @@ Only documents with `approved: true`, `approval_state` of `APPROVED` or `PUBLISH
 
 ## Knowledge sources
 
-Five corpora:
+Six corpora:
 
 | Corpus | May be stated as |
 | --- | --- |
 | `DR_VANDANA_KNOWLEDGE` | Verified public practice facts from `src/data/professional.ts` and `src/data/about.ts` |
-| `PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE` | General educational psychology |
+| `PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE` | General educational psychology (site-authored) |
+| `PSYCHOLOGY_EVIDENCE_SOURCES` | Verified external public-health / government psychology evidence (Phase 3 pilot) |
 | `CASE_STUDY_KNOWLEDGE` | Fictional / anonymised teaching scenarios |
 | `SAFETY_AND_ETHICS_RULES` | Safety behaviour (not shown as public citations) |
 | `ACADEMIC_CURRICULUM_REFERENCE` | Internal University of Mumbai syllabus coverage reference (**not for public retrieval**) |
@@ -168,7 +169,33 @@ If a visitor asks about Dr. Vandana's specific techniques and they are not in th
 
 Named therapies (CBT, DBT, EMDR, and similar) are never inferred as her methods.
 
-Citations are taken only from retrieved approved `source` fields. The system does not invent journal articles.
+Citations are taken only from retrieved approved sources via `formatPublicSourceAttribution()`. The system does not invent journal articles.
+
+### Phase 3 — Controlled evidence source pilot (current)
+
+The initial evidence library is a **controlled pilot**, not an exhaustive psychology knowledge base.
+
+Four verified external sources in corpus `PSYCHOLOGY_EVIDENCE_SOURCES`:
+
+| Document | Organization | Topics |
+| --- | --- | --- |
+| WHO Stress Q&A | World Health Organization | stress, coping |
+| WHO Depression fact sheet | World Health Organization | depression awareness |
+| WHO Mental health fact sheet | World Health Organization | mental well-being |
+| NIMH Psychotherapies | U.S. National Institute of Mental Health | CBT / psychotherapy education |
+
+Location: `src/data/ai/knowledge/evidence-pilot/`
+
+**Pilot rules:**
+
+- Paraphrased educational summaries only — no full copyrighted reproduction
+- Every source has verified URL, tier, scope, evidence level, and `verification_status: VERIFIED`
+- All pilot documents are `PUBLISHED` and indexable
+- External sources use `knowledge_scope` other than `DR_VANDANA_PRACTICE`
+- `extractUsedSources()` uses `formatPublicSourceAttribution()` for organization-based citations and optional public URLs
+- University curriculum queries and clearly non-psychology queries bypass retrieval (`query-boundaries.ts`)
+
+**Testing:** `src/lib/ai/pipeline/ask-phase3.test.ts` and `src/data/ai/knowledge/evidence-pilot/evidence-pilot.test.ts`
 
 ## Safety rules
 

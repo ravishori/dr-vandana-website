@@ -4,6 +4,7 @@ import {
   extractUsedSources,
 } from "@/lib/ai/answers/controlled-composer";
 import { composeKnowledgeGapAnswer } from "@/lib/ai/answers/knowledge-gap";
+import { shouldBypassPsychologyRetrieval } from "@/lib/ai/knowledge/library/query-boundaries";
 import {
   createConversationId,
   getConversation,
@@ -88,19 +89,15 @@ function preferredCorpora(category: SafetyCategory): KnowledgeCorpus[] {
     return ["SAFETY_AND_ETHICS_RULES", "DR_VANDANA_KNOWLEDGE"];
   }
   return [
+    "PSYCHOLOGY_EVIDENCE_SOURCES",
     "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
     "CASE_STUDY_KNOWLEDGE",
     "SAFETY_AND_ETHICS_RULES",
   ];
 }
 
-function toPublicSources(
-  sources: Array<{ title: string; attribution: string }>,
-): PublicKnowledgeSource[] {
-  return sources.map((source) => ({
-    title: source.title,
-    attribution: source.attribution,
-  }));
+function toPublicSources(sources: PublicKnowledgeSource[]): PublicKnowledgeSource[] {
+  return sources;
 }
 
 function safetyNoticeFor(
@@ -234,6 +231,21 @@ export async function runAskPipeline(
       logAsk(requestId, started, category, 0, "cache");
       return { ok: true, response, status: 200 };
     }
+  }
+
+  if (shouldBypassPsychologyRetrieval(question)) {
+    const response = buildGapResponse({
+      topic,
+      category,
+      conversationId,
+      question,
+      intent,
+      confidence: "NO_MATCH",
+    });
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
+    rememberTurn(conversationId, { role: "assistant", text: response.answer });
+    logAsk(requestId, started, category, 0, "query-boundary");
+    return { ok: true, response, status: 200 };
   }
 
   const retrieval = dependencies.retrieval ?? retrievalService;

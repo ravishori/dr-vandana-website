@@ -9,6 +9,7 @@ export type SupportedLanguage = "en" | "hi" | "mr";
 export type KnowledgeCorpus =
   | "DR_VANDANA_KNOWLEDGE"
   | "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE"
+  | "PSYCHOLOGY_EVIDENCE_SOURCES"
   | "CASE_STUDY_KNOWLEDGE"
   | "SAFETY_AND_ETHICS_RULES"
   | "ACADEMIC_CURRICULUM_REFERENCE";
@@ -238,6 +239,8 @@ export type KnowledgeDocument = {
 export type PublicKnowledgeSource = {
   title: string;
   attribution: string;
+  /** Legitimate public source URL when verified and available. */
+  url?: string;
 };
 
 export type SafetyCategory =

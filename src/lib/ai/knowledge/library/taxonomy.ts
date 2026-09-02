@@ -57,6 +57,7 @@ export const PSYCHOLOGY_DOMAIN_TAXONOMY: readonly PsychologyDomain[] = [
       { id: "mindfulness", label: "Mindfulness" },
       { id: "positive-psychology", label: "Positive psychology" },
       { id: "life-skills", label: "Life skills" },
+      { id: "mental-wellbeing", label: "Mental health and well-being" },
       { id: "anger", label: "Anger" },
       { id: "relationships", label: "Relationships" },
       { id: "womens-mental-health", label: "Women's mental health" },

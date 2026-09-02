@@ -2,6 +2,7 @@ import { expandTopicTerms, normalizeTopicKey, TOPIC_SYNONYMS } from "@/lib/ai/in
 import { tokenize } from "@/lib/ai/embeddings/service";
 
 const TOPIC_PATTERNS: ReadonlyArray<{ topic: string; patterns: readonly RegExp[] }> = [
+  { topic: "cbt-concepts", patterns: [/\bwhat is cbt\b/i, /\bcbt\b/i, /\bcognitive behavioural therapy\b/i, /\bcognitive behavioral therapy\b/i] },
   { topic: "stress-vs-anxiety", patterns: [/\bdifference between stress and anxiety\b/i, /\bstress vs anxiety\b/i, /\bstress and anxiety\b/i] },
   { topic: "first-session", patterns: [/\bfirst (counselling|counceling)? session\b/i, /\bwhat happens in the first\b/i, /\bwhat should i expect in the first session\b/i] },
   { topic: "visualization", patterns: [/\bvisuali[sz]ation\b/i, /\bmental imagery\b/i, /\bguided imagery\b/i] },
@@ -67,6 +68,12 @@ function detectExplicitTopic(question: string): string | undefined {
     (token) => token.length > 2 && !/^(it|its|this|that|these|those)$/i.test(token),
   );
   for (const [canonical, aliases] of Object.entries(TOPIC_SYNONYMS)) {
+    if (
+      canonical === "cbt-concepts" &&
+      !/\b(cbt|cognitive)\b/i.test(question)
+    ) {
+      continue;
+    }
     const haystack = [canonical, ...aliases].map((item) => item.toLowerCase());
     if (tokens.some((token) => haystack.some((term) => term.includes(token) || token.includes(term)))) {
       return canonical;
