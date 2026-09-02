@@ -104,16 +104,36 @@ export type SourceVerificationStatus =
   | "DISPUTED";
 
 /**
+ * Publication/material type — distinct from source tier (authority) and evidence level (strength).
+ */
+export type SourceType =
+  | "PUBLIC_HEALTH_FACT_SHEET"
+  | "PUBLIC_HEALTH_Q_AND_A"
+  | "GOVERNMENT_HEALTH_EDUCATION"
+  | "CLINICAL_GUIDELINE"
+  | "SYSTEMATIC_REVIEW"
+  | "META_ANALYSIS"
+  | "PEER_REVIEWED_RESEARCH"
+  | "TEXTBOOK"
+  | "HANDBOOK"
+  | "UNIVERSITY_EDUCATIONAL_RESOURCE"
+  | "PRACTICE_EDUCATION"
+  | "INTERNAL_COVERAGE_REFERENCE"
+  | "UNKNOWN";
+
+/**
  * Extended provenance for psychology knowledge sources.
  * Bibliographic fields must remain null/omitted when unknown — never fabricated.
  */
 export type KnowledgeSourceMetadata = {
   source_id?: string;
   source_name?: string;
-  source_type?: string;
+  source_type?: SourceType;
   organization?: string;
   publication_date?: string;
   last_reviewed?: string;
+  /** Maintainer review due date — distinct from publication_date. */
+  next_review_due?: string;
   publisher?: string;
   journal?: string;
   volume?: string;

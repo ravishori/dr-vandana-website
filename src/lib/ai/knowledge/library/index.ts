@@ -34,6 +34,25 @@ export {
   sourceTierRank,
 } from "@/lib/ai/knowledge/library/semantics";
 export {
+  auditLegacyInferredMetadata,
+  buildKnowledgeGapReport,
+  PHASE4_PRIORITY_TOPICS,
+  summarizeReviewStatuses,
+  type KnowledgeCoverageReport,
+  type LegacyInferredMetadataEntry,
+  type PriorityTopicId,
+  type TopicGapReportEntry,
+} from "@/lib/ai/knowledge/library/gap-report";
+export {
+  computeNextReviewDue,
+  DEFAULT_SOURCE_REVIEW_INTERVAL_MONTHS,
+  evaluateSourceReview,
+  listOverduePublishedSources,
+  requiresPublishedReviewMetadata,
+  type SourceReviewEvaluation,
+  type SourceReviewStatus,
+} from "@/lib/ai/knowledge/library/review-governance";
+export {
   findDomainForTopic,
   listAllTaxonomyTopics,
   PSYCHOLOGY_DOMAIN_TAXONOMY,

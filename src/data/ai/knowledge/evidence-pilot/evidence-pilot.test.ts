@@ -4,8 +4,10 @@ import { describe, it } from "node:test";
 import { allKnowledgeDocuments } from "@/data/ai/knowledge";
 import { academicCurriculumDocuments } from "@/data/ai/knowledge/curriculum";
 import {
-  EVIDENCE_PILOT_REVIEW_NOTES,
+  ALL_EVIDENCE_REVIEW_NOTES,
+  allEvidenceDocuments,
   evidencePilotDocuments,
+  phase4EvidenceDocuments,
 } from "@/data/ai/knowledge/evidence-pilot";
 import { buildKnowledgeCoverageMap } from "@/lib/ai/knowledge/library/coverage-map";
 import {
@@ -31,17 +33,19 @@ function requiredPilotFields(doc: KnowledgeDocument) {
   assert.ok(doc.source_metadata?.copyright_status, `${doc.id} missing copyright_status`);
 }
 
-describe("Phase 3 evidence pilot sources", () => {
-  it("registers exactly four controlled external evidence sources", () => {
+describe("Phase 3–4 controlled evidence sources", () => {
+  it("registers twelve controlled external evidence sources", () => {
     assert.equal(evidencePilotDocuments.length, 4);
+    assert.equal(phase4EvidenceDocuments.length, 8);
+    assert.equal(allEvidenceDocuments.length, 12);
     assert.equal(
       allKnowledgeDocuments.filter((doc) => doc.corpus === "PSYCHOLOGY_EVIDENCE_SOURCES").length,
-      4,
+      12,
     );
   });
 
-  it("requires complete provenance on every pilot source", () => {
-    for (const doc of evidencePilotDocuments) {
+  it("requires complete provenance on every evidence source", () => {
+    for (const doc of allEvidenceDocuments) {
       requiredPilotFields(doc);
       assert.equal(doc.corpus, "PSYCHOLOGY_EVIDENCE_SOURCES");
       assert.notEqual(doc.knowledge_scope, "DR_VANDANA_PRACTICE");
@@ -55,7 +59,7 @@ describe("Phase 3 evidence pilot sources", () => {
   });
 
   it("does not fabricate bibliographic metadata", () => {
-    for (const doc of evidencePilotDocuments) {
+    for (const doc of allEvidenceDocuments) {
       assert.equal(doc.source_metadata?.doi, undefined);
       assert.equal(doc.source_metadata?.pages, undefined);
       assert.equal(doc.source_metadata?.volume, undefined);
@@ -65,7 +69,7 @@ describe("Phase 3 evidence pilot sources", () => {
   });
 
   it("stores paraphrased content without full copyrighted reproduction", () => {
-    for (const doc of evidencePilotDocuments) {
+    for (const doc of allEvidenceDocuments) {
       assert.ok(doc.content.length > 100);
       assert.ok(doc.content.length < 3_000, `${doc.id} content unexpectedly large`);
       assert.doesNotMatch(doc.content, /all rights reserved/i);
@@ -80,11 +84,11 @@ describe("Phase 3 evidence pilot sources", () => {
     assert.match(cbt!.content, /does not state that Dr\. Vandana/i);
   });
 
-  it("indexes only published pilot sources in production retrieval", () => {
+  it("indexes only published evidence sources in production retrieval", () => {
     const indexed = knowledgeRepository.list();
     const pilotIndexed = indexed.filter((doc) => doc.corpus === "PSYCHOLOGY_EVIDENCE_SOURCES");
-    assert.equal(pilotIndexed.length, 4);
-    for (const doc of evidencePilotDocuments) {
+    assert.equal(pilotIndexed.length, 12);
+    for (const doc of allEvidenceDocuments) {
       assert.equal(isProductionIndexable(doc), true);
     }
   });
@@ -98,11 +102,11 @@ describe("Phase 3 evidence pilot sources", () => {
     assert.equal(academicCurriculumDocuments.length, 159);
   });
 
-  it("has internal review notes for every pilot source", () => {
-    assert.equal(EVIDENCE_PILOT_REVIEW_NOTES.length, 4);
-    for (const doc of evidencePilotDocuments) {
+  it("has internal review notes for every evidence source", () => {
+    assert.equal(ALL_EVIDENCE_REVIEW_NOTES.length, 12);
+    for (const doc of allEvidenceDocuments) {
       assert.ok(
-        EVIDENCE_PILOT_REVIEW_NOTES.some((note) => note.source_id === doc.id),
+        ALL_EVIDENCE_REVIEW_NOTES.some((note) => note.source_id === doc.id),
         `missing review note for ${doc.id}`,
       );
     }

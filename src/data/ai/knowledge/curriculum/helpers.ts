@@ -65,7 +65,7 @@ export function createAcademicCurriculumDocument(
     source_metadata: {
       source_id: "internal-curriculum-reference",
       source_name: CURRICULUM_SOURCE,
-      source_type: "internal-coverage-reference",
+      source_type: "INTERNAL_COVERAGE_REFERENCE",
       organization: CURRICULUM_INSTITUTION,
       copyright_status: "METADATA_ONLY",
       verification_status: "UNVERIFIED",

@@ -52,6 +52,9 @@ const EVIDENCE_LEVEL_KNOWLEDGE_SCOPE: Partial<Record<EvidenceLevel, KnowledgeSco
 
 const MENTAL_WELLBEING_TOPICS = new Set([
   "anxiety-awareness",
+  "anxiety",
+  "resilience",
+  "emotional-regulation",
   "stress-management",
   "stress-vs-anxiety",
   "depression-awareness",

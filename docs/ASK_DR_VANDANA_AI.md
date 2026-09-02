@@ -171,11 +171,11 @@ Named therapies (CBT, DBT, EMDR, and similar) are never inferred as her methods.
 
 Citations are taken only from retrieved approved sources via `formatPublicSourceAttribution()`. The system does not invent journal articles.
 
-### Phase 3 — Controlled evidence source pilot (current)
+### Phase 3 — Controlled evidence source pilot
 
 The initial evidence library is a **controlled pilot**, not an exhaustive psychology knowledge base.
 
-Four verified external sources in corpus `PSYCHOLOGY_EVIDENCE_SOURCES`:
+Four verified external sources in corpus `PSYCHOLOGY_EVIDENCE_SOURCES` (expanded to twelve in Phase 4 — see `docs/ai/PSYCHOLOGY_KNOWLEDGE_LIBRARY.md`).
 
 | Document | Organization | Topics |
 | --- | --- | --- |
@@ -195,7 +195,20 @@ Location: `src/data/ai/knowledge/evidence-pilot/`
 - `extractUsedSources()` uses `formatPublicSourceAttribution()` for organization-based citations and optional public URLs
 - University curriculum queries and clearly non-psychology queries bypass retrieval (`query-boundaries.ts`)
 
-**Testing:** `src/lib/ai/pipeline/ask-phase3.test.ts` and `src/data/ai/knowledge/evidence-pilot/evidence-pilot.test.ts`
+**Testing:** `src/lib/ai/pipeline/ask-phase3.test.ts`, `src/lib/ai/pipeline/ask-phase4.test.ts`, and `src/data/ai/knowledge/evidence-pilot/evidence-pilot.test.ts`
+
+### Phase 4 — Controlled evidence library expansion (current)
+
+Twelve verified external sources in `PSYCHOLOGY_EVIDENCE_SOURCES` covering self-esteem, anxiety, resilience/coping, emotional regulation, and mindfulness — plus Phase 3 stress, depression, CBT education.
+
+- Location: `src/data/ai/knowledge/evidence-pilot/` (`sources.ts`, `phase4-sources.ts`, `review-notes.ts`)
+- Typed `SourceType` enum; review governance (`last_reviewed`, `next_review_due`)
+- Gap report: `docs/ai/knowledge-coverage-report.json` (`npm run knowledge:coverage-report`)
+- Corpus version: `2026-09-02-v4`
+
+**University boundary (unchanged):** The University of Mumbai syllabus is an internal psychology knowledge-coverage reference only. Dr. Vandana's website does not represent the University of Mumbai and does not provide or reproduce its courses or syllabus.
+
+**No regression:** Curriculum remains non-indexable; Dr. Vandana practice boundary intact; no vector DB or uncontrolled ingestion.
 
 ## Safety rules
 

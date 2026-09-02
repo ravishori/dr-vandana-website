@@ -1,5 +1,5 @@
 /** Bump when approved knowledge content changes to invalidate answer cache. */
-export const KNOWLEDGE_CORPUS_VERSION = "2026-09-02-v3";
+export const KNOWLEDGE_CORPUS_VERSION = "2026-09-02-v4";
 
 export function logAskAiDebug(payload: Record<string, unknown>): void {
   if (process.env.NODE_ENV !== "development" && process.env.ASK_AI_DEBUG !== "1") {

@@ -205,6 +205,98 @@ Future phases may add semantic/hybrid retrieval, source filtering, and richer at
 
 Internal curriculum metadata is **not** exposed in default attribution.
 
+## Source type (`source_type`)
+
+Source type describes the **publication/material form** — distinct from source tier (authority) and evidence level (strength).
+
+Typed values in `src/types/ai.ts` (`SourceType`):
+
+| Source type | Example |
+| --- | --- |
+| `PUBLIC_HEALTH_FACT_SHEET` | WHO depression fact sheet |
+| `PUBLIC_HEALTH_Q_AND_A` | WHO stress Q&A |
+| `GOVERNMENT_HEALTH_EDUCATION` | NIMH, CDC, MedlinePlus, NCCIH health topics |
+| `CLINICAL_GUIDELINE` | Formal clinical guideline documents only |
+| `SYSTEMATIC_REVIEW` / `META_ANALYSIS` / `PEER_REVIEWED_RESEARCH` | Scholarly evidence (metadata/summary only when full text not licensed) |
+| `TEXTBOOK` / `HANDBOOK` | Academic reference (metadata/permitted excerpts) |
+| `INTERNAL_COVERAGE_REFERENCE` | Internal curriculum reference (non-indexable) |
+
+Do not label a general fact sheet as `CLINICAL_GUIDELINE` unless the source is actually a guideline.
+
+## Review-date governance
+
+Published external sources (`PSYCHOLOGY_EVIDENCE_SOURCES`) include:
+
+- `last_reviewed` — actual repository maintainer review date (never fabricated)
+- `next_review_due` — default 12 months after `last_reviewed`
+- `publication_date` — source publication/update date when verifiable (unchanged by repository review)
+
+Implementation: `src/lib/ai/knowledge/library/review-governance.ts`
+
+Regenerate gap analysis: `npm run knowledge:coverage-report` → `docs/ai/knowledge-coverage-report.json`
+
+## Phase 4 — Controlled evidence library expansion (current)
+
+### Purpose
+
+Expand the Psychology Knowledge & Evidence Library across five priority domains in a **controlled, manually curated, source-governed** manner:
+
+1. Self-esteem
+2. Anxiety
+3. Resilience / coping
+4. Emotional regulation
+5. Mindfulness
+
+Quality over quantity. No web crawling, bulk ingestion, or vector database.
+
+### Phase 4 sources (8 new — 12 total with Phase 3)
+
+| ID | Organization | Topic | Source type | Tier | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| `evidence-nimh-anxiety-disorders` | NIMH | anxiety | GOVERNMENT_HEALTH_EDUCATION | TIER_1 | public-health-education |
+| `evidence-medlineplus-anxiety` | NIH MedlinePlus | anxiety | GOVERNMENT_HEALTH_EDUCATION | TIER_1 | public-health-education |
+| `evidence-cdc-emotional-wellbeing-self-esteem` | CDC | self-esteem | GOVERNMENT_HEALTH_EDUCATION | TIER_1 | public-health-education |
+| `evidence-nimh-caring-mental-health-self-esteem` | NIMH | self-esteem | GOVERNMENT_HEALTH_EDUCATION | TIER_1 | public-health-education |
+| `evidence-cdc-mental-health-resilience` | CDC | resilience | GOVERNMENT_HEALTH_EDUCATION | TIER_1 | public-health-education |
+| `evidence-nimh-coping-traumatic-events` | NIMH | resilience / coping | GOVERNMENT_HEALTH_EDUCATION | TIER_1 | public-health-education |
+| `evidence-cdc-emotional-wellbeing-regulation` | CDC | emotional-regulation | GOVERNMENT_HEALTH_EDUCATION | TIER_1 | public-health-education |
+| `evidence-nccih-mindfulness-meditation` | NCCIH | mindfulness | GOVERNMENT_HEALTH_EDUCATION | TIER_1 | public-health-education |
+
+Phase 3 WHO fact sheets reclassified from `guideline` to `public-health-education` evidence level (fact sheets are not clinical guidelines).
+
+### Source diversity (published evidence)
+
+Five organizations across 12 sources: WHO (3), NIMH (4), CDC (3), MedlinePlus (1), NCCIH (1).
+
+### Coverage gap report
+
+Machine-readable report generated from repository data:
+
+`docs/ai/knowledge-coverage-report.json` (via `npm run knowledge:coverage-report`)
+
+### Legacy metadata audit
+
+28 legacy published documents (site educational, Dr. Vandana, case studies) lack full `source_metadata` provenance. Tier/scope are resolved at document creation — flagged in gap report `legacy_inferred_metadata` for conservative future migration.
+
+### Testing
+
+- `src/lib/ai/pipeline/ask-phase4.test.ts` — regression A–O, negative retrieval, review dates, URL validation
+- `src/data/ai/knowledge/evidence-pilot/evidence-pilot.test.ts` — corpus provenance (12 sources)
+- Existing Phase 2–3 tests unchanged
+
+### Limitations
+
+- Coping is covered via resilience-mapped sources; no standalone taxonomy topic for `coping`
+- Emotional regulation has one dedicated external source (plus site educational content)
+- No semantic/vector retrieval; lexical relevance gate unchanged
+- No admin UI for source publishing
+
+### Future expansion (Phase 5+)
+
+- Optional TIER_2 systematic reviews with metadata-only ingestion
+- Hybrid semantic retrieval behind existing interfaces
+- Explicit metadata migration for legacy educational documents
+
 ## Phase 3 — Controlled evidence source pilot
 
 ### Purpose
@@ -223,9 +315,9 @@ Prove that a small number of verified, provenance-complete external sources can 
 
 | ID | Organization | Tier | Evidence | Scope | URL verified |
 | --- | --- | --- | --- | --- | --- |
-| `evidence-who-stress-qanda` | World Health Organization | TIER_1_AUTHORITATIVE | guideline | MENTAL_WELLBEING | Yes |
-| `evidence-who-depression-awareness` | World Health Organization | TIER_1_AUTHORITATIVE | guideline | MENTAL_WELLBEING | Yes |
-| `evidence-who-mental-health-wellbeing` | World Health Organization | TIER_1_AUTHORITATIVE | guideline | PROFESSIONAL_GUIDANCE | Yes |
+| `evidence-who-stress-qanda` | World Health Organization | TIER_1_AUTHORITATIVE | public-health-education | MENTAL_WELLBEING | Yes |
+| `evidence-who-depression-awareness` | World Health Organization | TIER_1_AUTHORITATIVE | public-health-education | MENTAL_WELLBEING | Yes |
+| `evidence-who-mental-health-wellbeing` | World Health Organization | TIER_1_AUTHORITATIVE | public-health-education | PROFESSIONAL_GUIDANCE | Yes |
 | `evidence-nimh-cbt-education` | NIMH (NIH) | TIER_1_AUTHORITATIVE | public-health-education | CLINICAL_EDUCATION | Yes |
 
 Internal review notes: `src/data/ai/knowledge/evidence-pilot/review-notes.ts` (maintainer-only).
