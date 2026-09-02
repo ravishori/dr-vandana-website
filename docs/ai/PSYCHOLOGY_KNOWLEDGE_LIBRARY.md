@@ -1,0 +1,236 @@
+# Psychology Knowledge & Evidence Library
+
+Architecture for the Ask Dr. Vandana AI **Psychology Knowledge & Evidence Library** — Phase 2.
+
+This document describes the data model, taxonomy, governance, and retrieval principles for a source-grounded psychology education and mental-wellness knowledge system. It does **not** describe a public university curriculum service.
+
+> **Important:** The University of Mumbai M.A. Psychology syllabus is an **internal coverage reference only**. Dr. Vandana's website does not represent the University of Mumbai and does not provide its courses or syllabus.
+
+## Purpose
+
+The library will eventually allow Ask Dr. Vandana AI to answer psychology education and mental-wellness questions using relevant, trustworthy sources such as:
+
+1. Authoritative public-health and professional guidance
+2. Peer-reviewed research
+3. Systematic reviews and meta-analyses
+4. Recognized psychology textbooks and handbooks (metadata and permitted excerpts only)
+5. Carefully reviewed educational resources
+6. Dr. Vandana's own approved educational and professional content
+
+Core principle:
+
+```
+QUESTION → RELEVANT PSYCHOLOGY KNOWLEDGE → GROUNDED ANSWER
+```
+
+Never:
+
+```
+QUESTION → UNRELATED DOCUMENT → GENERIC/FALLBACK ANSWER
+```
+
+## Architecture overview
+
+```
+src/types/ai.ts                          — KnowledgeDocument, source tiers, scopes, provenance
+src/data/ai/knowledge/                   — Approved knowledge corpora (file-based)
+src/lib/ai/knowledge/repository.ts       — Production index (published + approved only)
+src/lib/ai/knowledge/library/            — Taxonomy, semantics, coverage map, boundaries
+src/lib/ai/retrieval/service.ts          — Lexical retrieval (unchanged in Phase 2)
+src/lib/ai/relevance/gate.ts             — Relevance-first gate (unchanged in Phase 2)
+```
+
+Phase 2 adds **architecture only**. No large external corpus ingestion, no vector database, and no curriculum routing.
+
+## Source classification (`source_tier`)
+
+Source tier represents **authority/type**, not topical relevance. A Tier 1 source about depression must not outrank a highly relevant Tier 2 source about self-esteem merely because of tier.
+
+| Tier | Meaning | Examples |
+| --- | --- | --- |
+| `TIER_1_AUTHORITATIVE` | Established guidance | WHO, government/public-health authorities, professional bodies, clinical guidelines |
+| `TIER_2_RESEARCH` | Scholarly evidence | Peer-reviewed research, systematic reviews, meta-analyses |
+| `TIER_3_ACADEMIC` | Academic reference | Textbooks, handbooks, reference works (metadata/permitted excerpts) |
+| `TIER_4_EDUCATIONAL` | Reviewed education | Educational resources, reputable public educational material |
+| `TIER_5_DR_VANDANA` | Approved site content | Dr. Vandana's approved educational and professional information |
+
+Implementation: `src/lib/ai/knowledge/library/semantics.ts` — `resolveSourceTier()`.
+
+## Evidence level (`evidence_level`)
+
+Evidence level describes **evidence strength/type** and is distinct from source tier.
+
+| Evidence level | Typical source tier | Meaning |
+| --- | --- | --- |
+| `guideline` | TIER_1 | Official or professional guidance |
+| `systematic-review` | TIER_2 | Systematic review |
+| `meta-analysis` | TIER_2 | Meta-analysis |
+| `peer-reviewed` | TIER_2 | Peer-reviewed research |
+| `academic-reference` | TIER_3 | Textbook/handbook reference (metadata) |
+| `public-health-education` | TIER_1 | Public mental-health education |
+| `educational` | TIER_4 | General educational synthesis |
+| `verified-practice` | TIER_5 | Verified Dr. Vandana practice information |
+| `ethics` | TIER_1 | Safety and ethics rules |
+| `academic-curriculum` | TIER_3 | Internal curriculum reference (non-indexable) |
+
+Do not fabricate evidence levels. Use only values that match verifiable source types.
+
+## Knowledge scope (`knowledge_scope`)
+
+Knowledge scope separates **what is known about psychology** from **what Dr. Vandana personally does**.
+
+| Scope | Purpose |
+| --- | --- |
+| `GENERAL_PSYCHOLOGY` | Foundational psychology concepts |
+| `MENTAL_WELLBEING` | Stress, anxiety awareness, self-esteem, mindfulness, etc. |
+| `CLINICAL_EDUCATION` | Counselling/psychotherapy concepts, case-study teaching |
+| `RESEARCH_EVIDENCE` | Research-backed summaries |
+| `PROFESSIONAL_GUIDANCE` | Safety, ethics, when to seek help |
+| `DR_VANDANA_PRACTICE` | Verified information about Dr. Vandana only |
+
+### Clinical / professional boundary
+
+| Question | Allowed source |
+| --- | --- |
+| "What is CBT?" | General psychology / clinical education sources |
+| "Does Dr. Vandana use CBT?" | `DR_VANDANA_PRACTICE` only — never inferred from syllabus or textbooks |
+
+Knowledge about a therapy approach does **not** imply that Dr. Vandana personally practises that approach.
+
+Implementation: `src/lib/ai/knowledge/library/boundaries.ts`.
+
+## Source provenance (`source_metadata`)
+
+Extended bibliographic and rights metadata is stored in optional `source_metadata` on `KnowledgeDocument`:
+
+- `source_id`, `source_name`, `source_type`, `organization`
+- `publication_date`, `last_reviewed`, `publisher`, `journal`, `volume`, `issue`, `pages`
+- `doi`, `url`, `license`, `copyright_status`
+- `verification_status`, `notes`
+
+**Policy:** If a field is unknown, leave it `undefined`. Never invent DOI, ISBN, edition, authors, URLs, or page numbers.
+
+## Psychology domain taxonomy
+
+Internal taxonomy for organization and coverage planning — **not** a public University of Mumbai curriculum.
+
+Location: `src/lib/ai/knowledge/library/taxonomy.ts`
+
+Domains:
+
+1. **Foundational Psychology** — personality, cognition, emotion, learning, memory, motivation, etc.
+2. **Mental Health & Well-being** — stress, anxiety, depression awareness, self-esteem, grief, mindfulness, etc.
+3. **Child & Adolescent Psychology** — development, parenting, school mental health, etc.
+4. **Counselling & Psychotherapy Education** — counselling concepts, CBT/REBT concepts, therapeutic relationship, etc.
+
+## University syllabus — internal reference only
+
+The existing curriculum work remains in the repository:
+
+| Path | Role |
+| --- | --- |
+| `docs/curriculum/source-pdfs/` | Source PDF archive |
+| `docs/curriculum/extracted/` | Extracted text |
+| `docs/curriculum/parsed-curriculum.json` | Parsed structure |
+| `src/data/ai/knowledge/curriculum/` | Generated unit documents |
+| `docs/curriculum/qa/` | QA reports |
+
+Curriculum documents:
+
+- Corpus: `ACADEMIC_CURRICULUM_REFERENCE`
+- Governance: `approved: false`, `approval_state: REVIEW`
+- **Hard-excluded from production retrieval** even if accidentally marked published
+- Used only for internal coverage-gap analysis via `buildKnowledgeCoverageMap()`
+
+No curriculum routing, public syllabus browsing, or university representation in Ask Dr. Vandana AI.
+
+## Approval lifecycle
+
+```
+DRAFT → REVIEW → APPROVED → PUBLISHED → ARCHIVED
+```
+
+(`DRAFT` corresponds to newly imported material before human review.)
+
+Only `APPROVED` or `PUBLISHED` documents in **non-blocked corpora** enter production retrieval.
+
+Implementation:
+
+- `src/lib/ai/knowledge/workflow.ts` — transitions
+- `src/lib/ai/knowledge/library/semantics.ts` — `isProductionIndexable()`
+- `src/lib/ai/knowledge/repository.ts` — default list excludes non-indexable documents
+
+## Copyright policy
+
+**Mandatory:**
+
+- Do **not** ingest complete copyrighted textbooks, journal articles, paid courses, or publisher content without appropriate rights/licensing.
+- For copyrighted academic sources, store bibliographic metadata (title, author, publisher/journal, year, DOI/URL where legitimately available), topic classification, and notes.
+- Use legally available summaries, excerpts, or metadata where permitted.
+- Set `copyright_status: METADATA_ONLY` when full text is not stored.
+
+The system must not reproduce copyrighted books or journal articles.
+
+## Internal coverage map
+
+Machine-readable coverage analysis: `buildKnowledgeCoverageMap()` in `src/lib/ai/knowledge/library/coverage-map.ts`.
+
+Each entry includes:
+
+- `domain`, `topic`, optional `subtopic`
+- optional `curriculum_reference` (internal only)
+- `source_count`, `published_source_count` (from actual repository data)
+- `coverage_status`: `NOT_STARTED` | `PARTIAL` | `ADEQUATE` | `REVIEW_REQUIRED`
+
+Use this map to identify gaps (for example, topics with only one published source).
+
+## Retrieval principles
+
+Phase 2 does **not** redesign retrieval. Existing behaviour is preserved:
+
+1. Only production-indexable documents enter the BM25 index.
+2. Relevance gate filters unrelated documents before answer composition.
+3. Source tier is available for future filtering but does **not** override relevance scoring.
+4. Dr. Vandana-specific questions use only `DR_VANDANA_KNOWLEDGE`.
+
+Future phases may add semantic/hybrid retrieval, source filtering, and richer attribution — the model supports this without forking the pipeline.
+
+## Source attribution (prepared)
+
+`formatPublicSourceAttribution()` in `src/lib/ai/knowledge/library/attribution.ts` prepares public-facing citations:
+
+- Author / organization
+- Title
+- Year (when known)
+- Source type
+- Link where appropriate
+
+Internal curriculum metadata is **not** exposed in default attribution.
+
+## Dr. Vandana content boundary
+
+`DR_VANDANA_KNOWLEDGE` is authoritative **only** for:
+
+- Dr. Vandana's qualifications and professional profile
+- Approved services and practice information
+- Approved educational content explicitly attributed to her
+
+It must **not** become a general psychology evidence source merely because it belongs to the website.
+
+Conversely, external psychology sources must **not** be presented as Dr. Vandana's personal views unless explicitly approved as such.
+
+## Future semantic retrieval plan
+
+When ready (Phase 3+):
+
+- Add embedding model via existing `EmbeddingService` interface
+- Optional PostgreSQL + pgvector or external vector store via `VECTOR_DATABASE_URL`
+- Hybrid lexical + semantic ranking with relevance gate unchanged
+- Source tier / evidence / scope filters as optional retrieval constraints
+
+No Phase 2 code depends on these features.
+
+## Related documentation
+
+- `docs/ASK_DR_VANDANA_AI.md` — Ask Dr. Vandana AI implementation overview
+- `docs/curriculum/qa/` — Curriculum QA reports (Phase 1.5)

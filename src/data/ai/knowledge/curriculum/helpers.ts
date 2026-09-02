@@ -60,6 +60,18 @@ export function createAcademicCurriculumDocument(
     date: CURRICULUM_PUBLICATION_DATE,
     evidence_level: "academic-curriculum",
     corpus: "ACADEMIC_CURRICULUM_REFERENCE",
+    source_tier: "TIER_3_ACADEMIC",
+    knowledge_scope: "GENERAL_PSYCHOLOGY",
+    source_metadata: {
+      source_id: "internal-curriculum-reference",
+      source_name: CURRICULUM_SOURCE,
+      source_type: "internal-coverage-reference",
+      organization: CURRICULUM_INSTITUTION,
+      copyright_status: "METADATA_ONLY",
+      verification_status: "UNVERIFIED",
+      notes:
+        "Internal psychology knowledge coverage reference only. Not for public retrieval or Dr. Vandana practice inference.",
+    },
     approved: false,
     approval_state: "REVIEW",
     keywords: draft.keywords ?? buildCurriculumKeywords(draft),

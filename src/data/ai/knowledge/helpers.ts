@@ -7,9 +7,16 @@ import type {
   KnowledgeCategory,
   KnowledgeCorpus,
   KnowledgeDocument,
+  KnowledgeScope,
+  KnowledgeSourceMetadata,
   SourcePageStatus,
+  SourceTier,
   SupportedLanguage,
 } from "@/types/ai";
+import {
+  resolveKnowledgeScope,
+  resolveSourceTier,
+} from "@/lib/ai/knowledge/library/semantics";
 
 type KnowledgeDraft = {
   id: string;
@@ -56,12 +63,15 @@ type KnowledgeDraft = {
   curriculum_version_id?: string;
   study_books?: readonly AcademicBibliographicReference[];
   reference_books?: readonly AcademicBibliographicReference[];
+  source_tier?: SourceTier;
+  knowledge_scope?: KnowledgeScope;
+  source_metadata?: KnowledgeSourceMetadata;
 };
 
 export function createKnowledgeDocument(
   draft: KnowledgeDraft,
 ): KnowledgeDocument {
-  return {
+  const base: KnowledgeDocument = {
     ...draft,
     language: draft.language ?? "en",
     approved: draft.approved ?? true,
@@ -71,5 +81,12 @@ export function createKnowledgeDocument(
     version: draft.version ?? 1,
     related_questions: draft.related_questions ?? [],
     related_routes: draft.related_routes ?? [],
+  };
+
+  return {
+    ...base,
+    source_tier: draft.source_tier ?? resolveSourceTier(base),
+    knowledge_scope: draft.knowledge_scope ?? resolveKnowledgeScope(base),
+    source_metadata: draft.source_metadata,
   };
 }

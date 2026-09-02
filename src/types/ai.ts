@@ -75,12 +75,76 @@ export type KnowledgeCategory =
   | "Life Skills"
   | "Academic Curriculum";
 
+export type SourceTier =
+  | "TIER_1_AUTHORITATIVE"
+  | "TIER_2_RESEARCH"
+  | "TIER_3_ACADEMIC"
+  | "TIER_4_EDUCATIONAL"
+  | "TIER_5_DR_VANDANA";
+
+export type KnowledgeScope =
+  | "GENERAL_PSYCHOLOGY"
+  | "MENTAL_WELLBEING"
+  | "CLINICAL_EDUCATION"
+  | "RESEARCH_EVIDENCE"
+  | "PROFESSIONAL_GUIDANCE"
+  | "DR_VANDANA_PRACTICE";
+
+export type CopyrightStatus =
+  | "PUBLIC_DOMAIN"
+  | "LICENSED"
+  | "METADATA_ONLY"
+  | "RESTRICTED"
+  | "UNKNOWN";
+
+export type SourceVerificationStatus =
+  | "UNVERIFIED"
+  | "VERIFIED"
+  | "DISPUTED";
+
+/**
+ * Extended provenance for psychology knowledge sources.
+ * Bibliographic fields must remain null/omitted when unknown — never fabricated.
+ */
+export type KnowledgeSourceMetadata = {
+  source_id?: string;
+  source_name?: string;
+  source_type?: string;
+  organization?: string;
+  publication_date?: string;
+  last_reviewed?: string;
+  publisher?: string;
+  journal?: string;
+  volume?: string;
+  issue?: string;
+  pages?: string;
+  doi?: string;
+  url?: string;
+  license?: string;
+  copyright_status?: CopyrightStatus;
+  language?: SupportedLanguage;
+  country_or_region?: string;
+  verification_status?: SourceVerificationStatus;
+  notes?: string;
+};
+
 export type EvidenceLevel =
   | "verified-practice"
   | "educational"
   | "public-health-education"
   | "ethics"
-  | "academic-curriculum";
+  | "academic-curriculum"
+  | "guideline"
+  | "systematic-review"
+  | "meta-analysis"
+  | "peer-reviewed"
+  | "academic-reference";
+
+export type CoverageStatus =
+  | "NOT_STARTED"
+  | "PARTIAL"
+  | "ADEQUATE"
+  | "REVIEW_REQUIRED";
 
 export type AskIntent =
   | "DEFINITION"
@@ -142,6 +206,10 @@ export type KnowledgeDocument = {
   practical_steps?: readonly string[];
   examples?: readonly string[];
   cautions?: readonly string[];
+  /** Psychology knowledge library semantics — optional on legacy documents; inferred when absent. */
+  source_tier?: SourceTier;
+  knowledge_scope?: KnowledgeScope;
+  source_metadata?: KnowledgeSourceMetadata;
   /** Academic curriculum metadata — optional; only on ACADEMIC_CURRICULUM_REFERENCE documents. */
   institution?: string;
   program?: string;

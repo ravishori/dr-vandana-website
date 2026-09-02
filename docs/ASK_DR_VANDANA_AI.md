@@ -69,7 +69,7 @@ Later (no code rewrite required for callers):
 - `VECTOR_DATABASE_URL` for PostgreSQL + pgvector or another store
 - `EMBEDDING_MODEL` with the OpenAI-compatible embedding endpoint
 
-Only documents with `approved: true` and `approval_state` of `APPROVED` or `PUBLISHED` enter the index.
+Only documents with `approved: true`, `approval_state` of `APPROVED` or `PUBLISHED`, and a **non-blocked corpus** enter the index. `ACADEMIC_CURRICULUM_REFERENCE` is always excluded.
 
 ## Knowledge sources
 
@@ -81,7 +81,7 @@ Five corpora:
 | `PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE` | General educational psychology |
 | `CASE_STUDY_KNOWLEDGE` | Fictional / anonymised teaching scenarios |
 | `SAFETY_AND_ETHICS_RULES` | Safety behaviour (not shown as public citations) |
-| `ACADEMIC_CURRICULUM_REFERENCE` | University of Mumbai M.A. Psychology (NEP 2020) official syllabus reference |
+| `ACADEMIC_CURRICULUM_REFERENCE` | Internal University of Mumbai syllabus coverage reference (**not for public retrieval**) |
 
 ### Academic curriculum corpus (Phase 1)
 
@@ -103,9 +103,9 @@ Every curriculum document sets:
 
 **Separation from Dr. Vandana content:** curriculum documents describe university programme requirements only. They must not be cited as Dr. Vandana's clinical methods. Named therapies appearing in syllabus units (for example CBT/REBT coursework) remain academic references — not practice claims.
 
-**Phase 1 scope:** corpus creation and metadata only. The main ASK AI pipeline is unchanged; dedicated academic routing is Phase 2.
+**Phase 1 scope:** corpus creation and metadata only. The main ASK AI pipeline is unchanged; dedicated academic routing is **not** planned.
 
-### Phase 1.5 — Content QA and governance (current)
+### Phase 1.5 — Content QA and governance
 
 Curriculum documents imported from the official syllabus PDFs are **derived data** and remain in governance review until a human approves them.
 
@@ -139,7 +139,28 @@ npm run curriculum:qa
 
 Outputs land in `docs/curriculum/qa/` (inventory, artifact report, review manifest, governance summary).
 
-**Future Phase 2 boundary (not implemented):** Academic syllabus references to CBT, REBT, psychotherapy, assessment, and diagnostic concepts must remain distinguishable from questions such as “Does Dr. Vandana use CBT?” The academic corpus must never be interpreted as evidence of Dr. Vandana’s personal therapeutic methodology.
+**Internal reference policy:** The University of Mumbai syllabus is an **internal psychology knowledge coverage reference only**. It is not a public curriculum service. Dr. Vandana's website does not represent the University of Mumbai and does not provide its courses or syllabus. Curriculum documents remain `REVIEW`, non-indexable, and hard-excluded from production retrieval.
+
+### Phase 2 — Psychology Knowledge & Evidence Library (architecture)
+
+Phase 2 adds the architecture for a real psychology knowledge library without large-scale external ingestion.
+
+See **`docs/ai/PSYCHOLOGY_KNOWLEDGE_LIBRARY.md`** for the full specification. Summary:
+
+| Component | Location |
+| --- | --- |
+| Source tiers (`TIER_1` … `TIER_5`) | `src/types/ai.ts`, `src/lib/ai/knowledge/library/semantics.ts` |
+| Knowledge scope (general vs Dr. Vandana practice) | `src/types/ai.ts`, `src/lib/ai/knowledge/library/boundaries.ts` |
+| Evidence level (distinct from source tier) | `src/types/ai.ts` |
+| Source provenance metadata | `KnowledgeSourceMetadata` on `KnowledgeDocument` |
+| Psychology domain taxonomy | `src/lib/ai/knowledge/library/taxonomy.ts` |
+| Internal coverage map | `src/lib/ai/knowledge/library/coverage-map.ts` |
+| Production indexability | `isProductionIndexable()` — blocks `ACADEMIC_CURRICULUM_REFERENCE` always |
+| Public source attribution (prepared) | `src/lib/ai/knowledge/library/attribution.ts` |
+
+**Unchanged in Phase 2:** ASK AI routing, retrieval scoring, relevance gate, and public API behaviour.
+
+**Clinical boundary:** Questions such as “What is CBT?” may use general psychology sources. Questions such as “Does Dr. Vandana use CBT?” may use only `DR_VANDANA_KNOWLEDGE`. Syllabus, textbooks, and general sources must never be inferred as her personal therapeutic methodology.
 
 If a visitor asks about Dr. Vandana's specific techniques and they are not in the approved corpus, the assistant must say:
 
