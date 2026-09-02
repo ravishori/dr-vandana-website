@@ -17,14 +17,17 @@ The existing site is Next.js App Router (TypeScript) under `src/app/`. There is 
 ```
 USER QUESTION
   → INPUT VALIDATION
-  → SAFETY CLASSIFICATION
-  → QUERY REWRITING
-  → KNOWLEDGE RETRIEVAL (published + approved only)
-  → RELEVANCE FILTER
-  → LLM OR EDUCATIONAL COMPOSER
+  → CRISIS / SAFETY CLASSIFICATION (dedicated path; no generic RAG)
+  → DOMAIN INTENT CLASSIFICATION
+  → QUESTION CONTEXT LOCK
+  → TOPIC-BASED RETRIEVAL (no full syllabus dump; no unrelated case studies)
+  → ANSWER GENERATION
+  → RELEVANCE VALIDATION (0–100; regenerate once if < 75)
   → SAFETY POST-PROCESSING
-  → ANSWER + RELATED RESOURCES
+  → DISPLAY OR GENERIC FALLBACK
 ```
+
+Unrelated predefined case studies are never used as a fallback. If generation still fails relevance, the assistant returns a transparent generic message.
 
 ## Data flow
 

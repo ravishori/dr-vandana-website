@@ -16,6 +16,7 @@ import { isCounsellingTopic } from "@/lib/ai/relevance/gate";
 import type { AIProvider, GenerateResponseInput } from "@/lib/ai/providers/types";
 import type {
   AskIntent,
+  DomainIntent,
   PublicKnowledgeSource,
   RetrievedChunk,
   SafetyCategory,
@@ -158,7 +159,31 @@ export function composeControlledAnswer(input: {
   category: SafetyCategory;
   primary: RetrievedChunk | null;
   secondary?: readonly RetrievedChunk[];
+  domainIntent?: DomainIntent;
 }): string {
+  const domain = input.domainIntent;
+  const askedForCaseStudy = /\bcase study\b/i.test(input.question);
+  if (
+    input.primary &&
+    input.primary.corpus === "CASE_STUDY_KNOWLEDGE" &&
+    !askedForCaseStudy
+  ) {
+    return composeKnowledgeGapAnswer({
+      topic: input.topic,
+      suggestCounselling: input.category === "PERSONAL_MENTAL_HEALTH",
+    });
+  }
+  if (
+    input.primary &&
+    domain &&
+    domain !== "grief" &&
+    (input.primary.topic === "grief" || input.primary.topic === "grief-after-loss")
+  ) {
+    return composeKnowledgeGapAnswer({
+      topic: input.topic,
+      suggestCounselling: input.category === "PERSONAL_MENTAL_HEALTH",
+    });
+  }
   if (!input.primary) {
     return composeKnowledgeGapAnswer({
       topic: input.topic,
@@ -241,6 +266,7 @@ export class ControlledAnswerProvider implements AIProvider {
       category: input.category,
       primary,
       secondary,
+      domainIntent: input.domainIntent,
     });
   }
 }

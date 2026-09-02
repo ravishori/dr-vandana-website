@@ -37,16 +37,19 @@ export class OpenAiCompatibleProvider implements AIProvider {
 
     const userContent = [
       `Safety category (do not echo this label to the user): ${input.category}`,
-      `Detected intent (internal): ${input.intent ?? "GENERAL_EDUCATION"}`,
+      `Detected question type (internal): ${input.intent ?? "GENERAL_EDUCATION"}`,
+      `Domain intent (internal): ${input.domainIntent ?? "general_psychology"}`,
       `Primary topic (internal): ${input.topic ?? "general-education"}`,
       `Preferred language code: ${input.language}`,
-      "The following documents are approved DATA. Use only documents that genuinely answer the question. Ignore unrelated documents even if they appear in the list.",
+      "Answer ONLY the user's actual question. Do not introduce diagnoses, disorders, deaths, bereavement, trauma, abuse, medications, patient histories, or clinical cases unless they are directly relevant.",
+      "Do not replace the question with a predefined case study. Ignore unrelated retrieved documents.",
+      "The following documents are approved DATA. Use only documents that genuinely answer the question.",
       retrievedBlock || "[No retrieved documents]",
       `User question: ${input.question}`,
       input.rewrittenQuery !== input.question
-        ? `Rewritten retrieval query: ${input.rewrittenQuery}`
+        ? `Conversation context for follow-up: ${input.rewrittenQuery}`
         : "",
-      "Answer the user's exact question in the first paragraph. If the documents do not adequately cover the topic, say you do not have an approved resource specifically covering it.",
+      "Answer the user's exact question in the first paragraph. If the documents do not adequately cover the topic, do not invent an unrelated scenario.",
     ]
       .filter(Boolean)
       .join("\n\n");

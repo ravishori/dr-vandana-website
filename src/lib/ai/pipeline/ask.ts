@@ -5,16 +5,21 @@ import {
 } from "@/lib/ai/answers/controlled-composer";
 import { composeKnowledgeGapAnswer } from "@/lib/ai/answers/knowledge-gap";
 import { shouldBypassPsychologyRetrieval } from "@/lib/ai/knowledge/library/query-boundaries";
+import { classifyQuestion } from "@/lib/ai/intent/classify";
+import {
+  documentMatchesDomain,
+  topicsForDomain,
+} from "@/lib/ai/intent/domain";
 import {
   createConversationId,
   getConversation,
+  getConversationDomain,
   getConversationTopic,
   rememberTurn,
   rewriteQuery,
 } from "@/lib/ai/conversation/memory";
 import { expandTopicTerms } from "@/lib/ai/intent/synonyms";
-import { detectIntent } from "@/lib/ai/intent/detector";
-import { extractTopic } from "@/lib/ai/intent/topic";
+import { knowledgeRepository } from "@/lib/ai/knowledge/repository";
 import {
   getCachedEducationalAnswer,
   educationalCacheKey,
@@ -25,14 +30,19 @@ import { validateAskRequest, resolveLanguage } from "@/lib/ai/pipeline/validate"
 import { createAiProvider, type AIProvider } from "@/lib/ai/providers";
 import { extractCaseStudySlug, shouldShowSupportCta } from "@/lib/ai/providers/educational-fallback";
 import { INSUFFICIENT_VANDANA_METHODOLOGY } from "@/lib/ai/prompts/system";
-import { applyRelevanceGate } from "@/lib/ai/relevance/gate";
+import {
+  applyRelevanceGate,
+  type RelevanceGateResult,
+} from "@/lib/ai/relevance/gate";
 import { retrievalService, type RetrievalService } from "@/lib/ai/retrieval/service";
 import { contentTokens } from "@/lib/ai/retrieval/normalize-query";
 import {
+  AMBIGUOUS_ANSWER,
   CONFIDENTIALITY_ANSWER,
   CRISIS_ANSWER,
   DIAGNOSTIC_ANSWER,
   EDUCATIONAL_DISCLAIMER,
+  GENERIC_FALLBACK_ANSWER,
   INJECTION_ANSWER,
   LANGUAGE_NOT_READY_NOTICE,
   MEDICATION_ANSWER,
@@ -43,11 +53,13 @@ import {
 import { safetyService, type SafetyService } from "@/lib/ai/safety/classifier";
 import { postProcessAnswer, stripObviousPii } from "@/lib/ai/safety/post-process";
 import { validateAnswer } from "@/lib/ai/validation/answer-validator";
+import { scoreAnswerRelevance } from "@/lib/ai/validation/relevance-validator";
 import { logStructured } from "@/lib/observability/logger";
 import type {
   AskAiRequest,
   AskAiResponse,
   AskIntent,
+  DomainIntent,
   KnowledgeCorpus,
   PublicKnowledgeSource,
   RelevanceConfidence,
@@ -81,19 +93,152 @@ const CANNED: Partial<Record<SafetyCategory, string>> = {
   OUT_OF_SCOPE: OUT_OF_SCOPE_ANSWER,
 };
 
-function preferredCorpora(category: SafetyCategory): KnowledgeCorpus[] {
+function preferredCorpora(
+  category: SafetyCategory,
+  allowCaseStudies: boolean,
+): KnowledgeCorpus[] {
   if (category === "DR_VANDANA_SPECIFIC") {
     return ["DR_VANDANA_KNOWLEDGE", "SAFETY_AND_ETHICS_RULES"];
   }
   if (category === "CONFIDENTIALITY_REQUEST") {
     return ["SAFETY_AND_ETHICS_RULES", "DR_VANDANA_KNOWLEDGE"];
   }
-  return [
+  const corpora: KnowledgeCorpus[] = [
     "PSYCHOLOGY_EVIDENCE_SOURCES",
     "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
-    "CASE_STUDY_KNOWLEDGE",
     "SAFETY_AND_ETHICS_RULES",
   ];
+  if (allowCaseStudies) {
+    corpora.splice(2, 0, "CASE_STUDY_KNOWLEDGE");
+  }
+  return corpora;
+}
+
+function unmatchedGate(): RelevanceGateResult {
+  return {
+    primary: null,
+    secondary: [],
+    usable: [],
+    confidence: "NO_MATCH",
+  };
+}
+
+function selectedGate(
+  primary: RetrievedChunk,
+  secondary: RetrievedChunk[],
+  confidence: RelevanceConfidence,
+): RelevanceGateResult {
+  return {
+    primary,
+    secondary,
+    usable: [primary, ...secondary],
+    confidence,
+  };
+}
+
+function shouldHardFilterTopics(domain: DomainIntent): boolean {
+  return (
+    domain !== "general_psychology" &&
+    domain !== "professional_support" &&
+    domain !== "psychological_assessment" &&
+    domain !== "outside_scope" &&
+    domain !== "ambiguous" &&
+    domain !== "crisis_safety"
+  );
+}
+
+function excludedTopicsFor(domain: DomainIntent): string[] {
+  if (domain === "grief") {
+    return [];
+  }
+  return ["grief", "grief-after-loss"];
+}
+
+function documentToRetrievedChunk(
+  document: {
+    id: string;
+    title: string;
+    category: RetrievedChunk["category"];
+    topic: string;
+    corpus: RetrievedChunk["corpus"];
+    content: string;
+    source: string;
+    publication: string;
+    related_questions?: readonly string[];
+    related_routes?: readonly string[];
+    keywords?: readonly string[];
+    synonyms?: readonly string[];
+    intents?: RetrievedChunk["intents"];
+    practical_steps?: readonly string[];
+    examples?: readonly string[];
+    cautions?: readonly string[];
+  },
+  score: number,
+): RetrievedChunk {
+  return {
+    id: document.id,
+    title: document.title,
+    category: document.category,
+    topic: document.topic,
+    corpus: document.corpus,
+    content: document.content,
+    source: document.source,
+    publication: document.publication,
+    score,
+    related_questions: document.related_questions ?? [],
+    related_routes: document.related_routes ?? [],
+    keywords: document.keywords,
+    synonyms: document.synonyms,
+    intents: document.intents,
+    practical_steps: document.practical_steps,
+    examples: document.examples,
+    cautions: document.cautions,
+  };
+}
+
+function canonicalChunksForDomain(domain: DomainIntent): RetrievedChunk[] {
+  const allowed = topicsForDomain(domain);
+  if (allowed.length === 0) {
+    return [];
+  }
+  return knowledgeRepository
+    .list()
+    .filter(
+      (document) =>
+        document.corpus !== "CASE_STUDY_KNOWLEDGE" &&
+        documentMatchesDomain(document.topic, domain),
+    )
+    .slice(0, 4)
+    .map((document, index) => documentToRetrievedChunk(document, 4 - index));
+}
+
+function lockChunksToDomain(
+  chunks: readonly RetrievedChunk[],
+  domain: DomainIntent,
+  allowCaseStudies: boolean,
+): RetrievedChunk[] {
+  const filtered = chunks.filter((chunk) => {
+    if (chunk.corpus === "CASE_STUDY_KNOWLEDGE" && !allowCaseStudies) {
+      return false;
+    }
+    if (
+      domain !== "grief" &&
+      (chunk.topic === "grief" || chunk.topic === "grief-after-loss")
+    ) {
+      return false;
+    }
+    if (shouldHardFilterTopics(domain)) {
+      return documentMatchesDomain(chunk.topic, domain, { allowCaseStudies });
+    }
+    return true;
+  });
+  if (filtered.length > 0) {
+    return filtered;
+  }
+  if (shouldHardFilterTopics(domain)) {
+    return canonicalChunksForDomain(domain);
+  }
+  return [];
 }
 
 function toPublicSources(sources: PublicKnowledgeSource[]): PublicKnowledgeSource[] {
@@ -126,12 +271,18 @@ function buildGapResponse(input: {
   question: string;
   intent: AskIntent;
   confidence: RelevanceConfidence;
+  domain?: DomainIntent;
+  secondary?: DomainIntent;
+  relevanceScore?: number;
+  generic?: boolean;
 }): AskAiResponse {
   return {
-    answer: composeKnowledgeGapAnswer({
-      topic: input.topic,
-      suggestCounselling: input.category === "PERSONAL_MENTAL_HEALTH",
-    }),
+    answer: input.generic
+      ? GENERIC_FALLBACK_ANSWER
+      : composeKnowledgeGapAnswer({
+          topic: input.topic,
+          suggestCounselling: input.category === "PERSONAL_MENTAL_HEALTH",
+        }),
     category: input.category,
     sources: [],
     related_questions: [],
@@ -141,6 +292,9 @@ function buildGapResponse(input: {
     intent: input.intent,
     topic: input.topic,
     quality: { status: "KNOWLEDGE_GAP", confidence: input.confidence },
+    domain_intent: input.domain,
+    secondary_intent: input.secondary,
+    relevance_score: input.relevanceScore ?? 0,
   };
 }
 
@@ -177,20 +331,22 @@ export async function runAskPipeline(
   const priorTopic = request.conversation_id
     ? getConversationTopic(request.conversation_id)
     : undefined;
+  const priorDomain = request.conversation_id
+    ? getConversationDomain(request.conversation_id)
+    : undefined;
   const rewrittenQuery = rewriteQuery(question, history);
 
   const safety = (dependencies.safety ?? safetyService).classify(question);
   const category = safety.category;
-  const intentResolution = detectIntent(question, category);
-  const intent = intentResolution.intent;
-  const topicResolution = extractTopic(
+  const classification = classifyQuestion({
     question,
+    safetyCategory: category,
     priorTopic,
-    category === "DR_VANDANA_SPECIFIC"
-      ? { forceTopic: "counselling-approach" }
-      : undefined,
-  );
-  const topic = topicResolution.topic;
+    priorDomain,
+  });
+  const intent = classification.question_type;
+  const topic = classification.topic;
+  const domain = classification.domain;
   const queryTokens = contentTokens(rewrittenQuery);
 
   const canned = CANNED[category];
@@ -213,10 +369,39 @@ export async function runAskPipeline(
       intent,
       topic,
       quality: { status: "SAFETY_REDIRECT", confidence: "HIGH_CONFIDENCE" },
+      domain_intent: domain,
+      secondary_intent: classification.secondary,
+      relevance_score: 100,
     };
-    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic, domain);
     rememberTurn(conversationId, { role: "assistant", text: response.answer });
     logAsk(requestId, started, category, 0, dependencies.provider?.name);
+    return { ok: true, response, status: 200 };
+  }
+
+  if (domain === "ambiguous") {
+    const response: AskAiResponse = {
+      answer: AMBIGUOUS_ANSWER,
+      category,
+      sources: [],
+      related_questions: [
+        "How does counselling work?",
+        "How are anxiety concerns explored?",
+        "What happens in the first counselling session?",
+      ],
+      safety_notice: safetyNoticeFor(category, language),
+      conversation_id: conversationId,
+      show_support_cta: shouldShowSupportCta(category),
+      intent,
+      topic,
+      quality: { status: "KNOWLEDGE_GAP", confidence: "LOW_CONFIDENCE" },
+      domain_intent: domain,
+      secondary_intent: classification.secondary,
+      relevance_score: 80,
+    };
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic, domain);
+    rememberTurn(conversationId, { role: "assistant", text: response.answer });
+    logAsk(requestId, started, category, 0, "ambiguous");
     return { ok: true, response, status: 200 };
   }
 
@@ -226,7 +411,7 @@ export async function runAskPipeline(
     const cached = getCachedEducationalAnswer(cacheKey);
     if (cached) {
       const response = { ...cached, conversation_id: conversationId };
-      rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
+      rememberTurn(conversationId, { role: "user", text: question }, undefined, topic, domain);
       rememberTurn(conversationId, { role: "assistant", text: response.answer });
       logAsk(requestId, started, category, 0, "cache");
       return { ok: true, response, status: 200 };
@@ -241,8 +426,10 @@ export async function runAskPipeline(
       question,
       intent,
       confidence: "NO_MATCH",
+      domain: "outside_scope",
+      secondary: classification.secondary,
     });
-    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic, "outside_scope");
     rememberTurn(conversationId, { role: "assistant", text: response.answer });
     logAsk(requestId, started, category, 0, "query-boundary");
     return { ok: true, response, status: 200 };
@@ -250,13 +437,20 @@ export async function runAskPipeline(
 
   const retrieval = dependencies.retrieval ?? retrievalService;
   let candidates: RetrievedChunk[] = [];
+  const allowCaseStudies = classification.allow_case_studies;
+  const allowedTopics = shouldHardFilterTopics(domain)
+    ? topicsForDomain(domain)
+    : undefined;
   try {
     const retrieveInput = {
       text: rewrittenQuery,
       language: "en" as const,
-      preferredCorpora: preferredCorpora(category),
+      preferredCorpora: preferredCorpora(category, allowCaseStudies),
+      excludeCorpora: allowCaseStudies ? undefined : (["CASE_STUDY_KNOWLEDGE"] as const),
+      allowedTopics,
+      excludedTopics: excludedTopicsFor(domain),
       topic,
-      topicTerms: topicResolution.terms,
+      topicTerms: expandTopicTerms(topic),
       limit: category === "DR_VANDANA_SPECIFIC" ? 12 : 8,
     };
     if (category === "DR_VANDANA_SPECIFIC") {
@@ -279,9 +473,11 @@ export async function runAskPipeline(
         chunk.corpus === "DR_VANDANA_KNOWLEDGE" ||
         chunk.corpus === "SAFETY_AND_ETHICS_RULES",
     );
+  } else {
+    candidates = lockChunksToDomain(candidates, domain, allowCaseStudies);
   }
 
-  let gated;
+  let gated: RelevanceGateResult;
   if (category === "DR_VANDANA_SPECIFIC") {
     const vandana = candidates
       .filter((chunk) => chunk.corpus === "DR_VANDANA_KNOWLEDGE")
@@ -289,27 +485,20 @@ export async function runAskPipeline(
     const approach =
       vandana.find((chunk) => chunk.topic === "counselling-approach") ??
       vandana[0];
-    gated =
-      approach
-        ? {
-            primary: approach,
-            secondary: vandana.filter((chunk) => chunk.id !== approach.id).slice(0, 1),
-            usable: vandana.slice(0, 2),
-            confidence: "HIGH_CONFIDENCE" as const,
-          }
-        : {
-            primary: null,
-            secondary: [],
-            usable: [],
-            confidence: "NO_MATCH" as const,
-          };
+    gated = approach
+      ? selectedGate(
+          approach,
+          vandana.filter((chunk) => chunk.id !== approach.id).slice(0, 1),
+          "HIGH_CONFIDENCE",
+        )
+      : unmatchedGate();
   } else {
     gated = applyRelevanceGate(candidates, {
       question,
       queryTokens,
       topic,
       intent,
-      requireTopicMatch: topic === "general-education",
+      requireTopicMatch: topic === "general-education" && domain === "general_psychology",
     });
     if (topic === "general-education") {
       const primary = gated.primary;
@@ -318,12 +507,7 @@ export async function runAskPipeline(
         (primary.relevance?.confidence !== "HIGH_CONFIDENCE" &&
           (primary.relevance?.topicMatch ?? 0) < 0.35)
       ) {
-        gated = {
-          primary: null,
-          secondary: [],
-          usable: [],
-          confidence: "NO_MATCH",
-        };
+        gated = unmatchedGate();
       }
     }
   }
@@ -332,6 +516,7 @@ export async function runAskPipeline(
     question,
     intent,
     topic,
+    domain,
     normalizedQuery: rewrittenQuery,
     candidateDocuments: candidates.map((chunk) => ({
       id: chunk.id,
@@ -343,6 +528,19 @@ export async function runAskPipeline(
     selectedDocuments: gated.usable.map((chunk) => chunk.id),
   });
 
+  if (
+    (gated.confidence === "NO_MATCH" || !gated.primary) &&
+    candidates.length > 0 &&
+    shouldHardFilterTopics(domain)
+  ) {
+    const fallbackPrimary = candidates[0];
+    if (fallbackPrimary) {
+      gated = selectedGate(fallbackPrimary, candidates.slice(1, 2), "MEDIUM_CONFIDENCE");
+    }
+  }
+
+  const relevanceConfidence: RelevanceConfidence = gated.confidence;
+
   if (gated.confidence === "NO_MATCH" || !gated.primary) {
     const response = buildGapResponse({
       topic,
@@ -351,8 +549,10 @@ export async function runAskPipeline(
       question,
       intent,
       confidence: "NO_MATCH",
+      domain,
+      secondary: classification.secondary,
     });
-    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic, domain);
     rememberTurn(conversationId, { role: "assistant", text: response.answer });
     logAsk(requestId, started, category, 0, "knowledge-gap");
     return { ok: true, response, status: 200 };
@@ -371,6 +571,7 @@ export async function runAskPipeline(
       language,
       intent,
       topic,
+      domainIntent: domain,
     });
   } catch {
     logStructured("ERROR", {
@@ -387,6 +588,7 @@ export async function runAskPipeline(
       category,
       primary: gated.primary,
       secondary: gated.secondary,
+      domainIntent: domain,
     });
   }
 
@@ -396,10 +598,36 @@ export async function runAskPipeline(
     intent,
     topic,
     chunks: selectedChunks,
-    confidence: gated.confidence,
+    confidence: relevanceConfidence,
+  });
+  let relevance = scoreAnswerRelevance({
+    question,
+    answer,
+    domain,
+    topic,
+    chunks: selectedChunks,
   });
 
-  if (validationResult.status === "REGENERATE") {
+  if (validationResult.status === "SAFETY_REDIRECT") {
+    const response = buildGapResponse({
+      topic,
+      category,
+      conversationId,
+      question,
+      intent,
+      confidence: relevanceConfidence,
+      domain,
+      secondary: classification.secondary,
+      relevanceScore: relevance.score,
+      generic: true,
+    });
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic, domain);
+    rememberTurn(conversationId, { role: "assistant", text: response.answer });
+    logAsk(requestId, started, category, selectedChunks.length, "safety-validation");
+    return { ok: true, response, status: 200 };
+  }
+
+  if (validationResult.status === "REGENERATE" || !relevance.pass) {
     answer = composeControlledAnswer({
       question,
       intent,
@@ -407,6 +635,7 @@ export async function runAskPipeline(
       category,
       primary: gated.primary,
       secondary: gated.secondary,
+      domainIntent: domain,
     });
     validationResult = validateAnswer({
       question,
@@ -414,23 +643,31 @@ export async function runAskPipeline(
       intent,
       topic,
       chunks: selectedChunks,
-      confidence: gated.confidence,
+      confidence: relevanceConfidence,
+    });
+    relevance = scoreAnswerRelevance({
+      question,
+      answer,
+      domain,
+      topic,
+      chunks: selectedChunks,
     });
   }
 
-  if (
-    validationResult.status === "REGENERATE" ||
-    validationResult.status === "KNOWLEDGE_GAP"
-  ) {
+  if (!relevance.pass || validationResult.status === "SAFETY_REDIRECT") {
     const response = buildGapResponse({
       topic,
       category,
       conversationId,
       question,
       intent,
-      confidence: gated.confidence,
+      confidence: relevanceConfidence,
+      domain,
+      secondary: classification.secondary,
+      relevanceScore: relevance.score,
+      generic: true,
     });
-    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic, domain);
     rememberTurn(conversationId, { role: "assistant", text: response.answer });
     logAsk(requestId, started, category, selectedChunks.length, "validation-gap");
     return { ok: true, response, status: 200 };
@@ -463,16 +700,21 @@ export async function runAskPipeline(
     safety_notice: safetyNoticeFor(category, language),
     conversation_id: conversationId,
     show_support_cta: shouldShowSupportCta(category),
-    case_study_slug: extractCaseStudySlug(selectedChunks),
+    case_study_slug: allowCaseStudies
+      ? extractCaseStudySlug(selectedChunks)
+      : undefined,
     intent,
     topic,
     quality: {
       status: validationResult.status,
-      confidence: gated.confidence,
+      confidence: relevanceConfidence,
     },
+    domain_intent: domain,
+    secondary_intent: classification.secondary,
+    relevance_score: relevance.score,
   };
 
-  rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
+  rememberTurn(conversationId, { role: "user", text: question }, undefined, topic, domain);
   rememberTurn(conversationId, { role: "assistant", text: response.answer });
 
   if (cacheable) {

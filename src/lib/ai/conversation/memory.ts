@@ -1,11 +1,12 @@
 import { aiConfig } from "@/config/ai";
 import { stripObviousPii } from "@/lib/ai/safety/post-process";
-import type { ConversationTurn } from "@/types/ai";
+import type { ConversationTurn, DomainIntent } from "@/types/ai";
 
 type ConversationRecord = {
   id: string;
   turns: ConversationTurn[];
   topic?: string;
+  domain?: DomainIntent;
   expiresAt: number;
 };
 
@@ -37,11 +38,17 @@ export function getConversationTopic(id: string): string | undefined {
   return conversations.get(id)?.topic;
 }
 
+export function getConversationDomain(id: string): DomainIntent | undefined {
+  pruneExpired();
+  return conversations.get(id)?.domain;
+}
+
 export function rememberTurn(
   id: string,
   turn: ConversationTurn,
   now = Date.now(),
   topic?: string,
+  domain?: DomainIntent,
 ): void {
   pruneExpired(now);
   const existing = conversations.get(id);
@@ -55,6 +62,7 @@ export function rememberTurn(
       id,
       turns: [sanitized],
       topic,
+      domain,
       expiresAt: now + aiConfig.conversationTtlMs,
     });
     return;
@@ -65,6 +73,9 @@ export function rememberTurn(
   );
   if (topic) {
     existing.topic = topic;
+  }
+  if (domain) {
+    existing.domain = domain;
   }
   existing.expiresAt = now + aiConfig.conversationTtlMs;
 }
@@ -82,7 +93,7 @@ export function rewriteQuery(
 
   const looksLikeFollowUp =
     question.length < 80 ||
-    /^(what about|and |also |how about|then |the first session|can you (explain|tell)|what happens)/i.test(
+    /^(what about|and |also |how about|then |the first session|can you (explain|tell)|what happens|what should i do|what can i do)/i.test(
       question.trim(),
     ) ||
     /\b(it|that|this|those|these)\b/i.test(question);

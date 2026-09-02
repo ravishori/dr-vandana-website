@@ -20,6 +20,9 @@ export type RetrievalQuery = {
   text: string;
   language?: SupportedLanguage;
   preferredCorpora?: readonly KnowledgeCorpus[];
+  excludeCorpora?: readonly KnowledgeCorpus[];
+  allowedTopics?: readonly string[];
+  excludedTopics?: readonly string[];
   limit?: number;
   topic?: string;
   topicTerms?: readonly string[];
@@ -175,6 +178,28 @@ export class HybridRetrievalService implements RetrievalService {
         if (query.language && entry.document.language !== query.language) {
           return false;
         }
+        if (
+          query.preferredCorpora &&
+          query.preferredCorpora.length > 0 &&
+          !query.preferredCorpora.includes(entry.document.corpus)
+        ) {
+          return false;
+        }
+        if (query.excludeCorpora?.includes(entry.document.corpus)) {
+          return false;
+        }
+        if (query.excludedTopics?.includes(entry.document.topic)) {
+          return false;
+        }
+        if (query.allowedTopics && query.allowedTopics.length > 0) {
+          const topic = entry.document.topic;
+          return query.allowedTopics.some(
+            (allowed) =>
+              topic === allowed ||
+              topic.includes(allowed) ||
+              allowed.includes(topic),
+          );
+        }
         return true;
       })
       .map((entry) => {
@@ -190,8 +215,12 @@ export class HybridRetrievalService implements RetrievalService {
         const titleOverlap =
           queryTokens.filter((token) => titleTokens.includes(token)).length /
           Math.max(queryTokens.length, 1);
+        const allowedBoost =
+          query.allowedTopics && query.allowedTopics.includes(entry.document.topic)
+            ? 3
+            : 0;
 
-        const score = topic * 5 + lexical + titleOverlap * 2;
+        const score = topic * 5 + lexical + titleOverlap * 2 + allowedBoost;
         return { entry, score };
       })
       .filter((row) => row.score >= aiConfig.minRetrievalScore * 0.5)

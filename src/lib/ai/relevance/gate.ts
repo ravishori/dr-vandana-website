@@ -133,15 +133,17 @@ export function scoreChunkRelevance(
   };
 }
 
-export function applyRelevanceGate(
-  chunks: readonly RetrievedChunk[],
-  input: RelevanceInput & { requireTopicMatch?: boolean },
-): {
+export type RelevanceGateResult = {
   primary: RetrievedChunk | null;
   secondary: RetrievedChunk[];
   usable: RetrievedChunk[];
   confidence: RelevanceConfidence;
-} {
+};
+
+export function applyRelevanceGate(
+  chunks: readonly RetrievedChunk[],
+  input: RelevanceInput & { requireTopicMatch?: boolean },
+): RelevanceGateResult {
   const scored = chunks
     .map((chunk) => scoreChunkRelevance(chunk, input))
     .sort((left, right) => (right.relevance?.finalScore ?? 0) - (left.relevance?.finalScore ?? 0));

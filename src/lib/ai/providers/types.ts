@@ -1,4 +1,4 @@
-import type { AskIntent, RetrievedChunk, SafetyCategory } from "@/types/ai";
+import type { AskIntent, DomainIntent, RetrievedChunk, SafetyCategory } from "@/types/ai";
 
 export type GenerateResponseInput = {
   question: string;
@@ -8,6 +8,7 @@ export type GenerateResponseInput = {
   language: string;
   intent?: AskIntent;
   topic?: string;
+  domainIntent?: DomainIntent;
 };
 
 export interface AIProvider {
