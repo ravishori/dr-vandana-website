@@ -1,27 +1,32 @@
 import {
+  composeControlledAnswer,
+  extractRelatedQuestionsV2,
+  extractUsedSources,
+} from "@/lib/ai/answers/controlled-composer";
+import { composeKnowledgeGapAnswer } from "@/lib/ai/answers/knowledge-gap";
+import {
+  createConversationId,
+  getConversation,
+  getConversationTopic,
+  rememberTurn,
+  rewriteQuery,
+} from "@/lib/ai/conversation/memory";
+import { expandTopicTerms } from "@/lib/ai/intent/synonyms";
+import { detectIntent } from "@/lib/ai/intent/detector";
+import { extractTopic } from "@/lib/ai/intent/topic";
+import {
   getCachedEducationalAnswer,
   educationalCacheKey,
   setCachedEducationalAnswer,
 } from "@/lib/ai/pipeline/cache";
+import { logAskAiDebug } from "@/lib/ai/pipeline/debug";
 import { validateAskRequest, resolveLanguage } from "@/lib/ai/pipeline/validate";
-import {
-  createConversationId,
-  getConversation,
-  rememberTurn,
-  rewriteQuery,
-} from "@/lib/ai/conversation/memory";
 import { createAiProvider, type AIProvider } from "@/lib/ai/providers";
-import {
-  composeEducationalAnswer,
-  extractCaseStudySlug,
-  extractRelatedQuestions,
-  shouldShowSupportCta,
-} from "@/lib/ai/providers/educational-fallback";
-import {
-  filterRelevantChunks,
-  retrievalService,
-  type RetrievalService,
-} from "@/lib/ai/retrieval/service";
+import { extractCaseStudySlug, shouldShowSupportCta } from "@/lib/ai/providers/educational-fallback";
+import { INSUFFICIENT_VANDANA_METHODOLOGY } from "@/lib/ai/prompts/system";
+import { applyRelevanceGate } from "@/lib/ai/relevance/gate";
+import { retrievalService, type RetrievalService } from "@/lib/ai/retrieval/service";
+import { contentTokens } from "@/lib/ai/retrieval/normalize-query";
 import {
   CONFIDENTIALITY_ANSWER,
   CRISIS_ANSWER,
@@ -36,13 +41,15 @@ import {
 } from "@/lib/ai/safety/canned";
 import { safetyService, type SafetyService } from "@/lib/ai/safety/classifier";
 import { postProcessAnswer, stripObviousPii } from "@/lib/ai/safety/post-process";
-import { INSUFFICIENT_VANDANA_METHODOLOGY } from "@/lib/ai/prompts/system";
+import { validateAnswer } from "@/lib/ai/validation/answer-validator";
 import { logStructured } from "@/lib/observability/logger";
 import type {
   AskAiRequest,
   AskAiResponse,
+  AskIntent,
   KnowledgeCorpus,
   PublicKnowledgeSource,
+  RelevanceConfidence,
   RetrievedChunk,
   SafetyCategory,
 } from "@/types/ai";
@@ -83,26 +90,17 @@ function preferredCorpora(category: SafetyCategory): KnowledgeCorpus[] {
   return [
     "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
     "CASE_STUDY_KNOWLEDGE",
-    "DR_VANDANA_KNOWLEDGE",
     "SAFETY_AND_ETHICS_RULES",
   ];
 }
 
 function toPublicSources(
-  retrieved: readonly RetrievedChunk[],
+  sources: Array<{ title: string; attribution: string }>,
 ): PublicKnowledgeSource[] {
-  const sources: PublicKnowledgeSource[] = [];
-  for (const chunk of retrieved) {
-    const attribution = chunk.source;
-    if (sources.some((item) => item.attribution === attribution)) {
-      continue;
-    }
-    sources.push({
-      title: chunk.title,
-      attribution,
-    });
-  }
-  return sources.slice(0, 4);
+  return sources.map((source) => ({
+    title: source.title,
+    attribution: source.attribution,
+  }));
 }
 
 function safetyNoticeFor(
@@ -122,6 +120,31 @@ function safetyNoticeFor(
     );
   }
   return parts.join(" ");
+}
+
+function buildGapResponse(input: {
+  topic: string;
+  category: SafetyCategory;
+  conversationId: string;
+  question: string;
+  intent: AskIntent;
+  confidence: RelevanceConfidence;
+}): AskAiResponse {
+  return {
+    answer: composeKnowledgeGapAnswer({
+      topic: input.topic,
+      suggestCounselling: input.category === "PERSONAL_MENTAL_HEALTH",
+    }),
+    category: input.category,
+    sources: [],
+    related_questions: [],
+    safety_notice: safetyNoticeFor(input.category, "en"),
+    conversation_id: input.conversationId,
+    show_support_cta: shouldShowSupportCta(input.category),
+    intent: input.intent,
+    topic: input.topic,
+    quality: { status: "KNOWLEDGE_GAP", confidence: input.confidence },
+  };
 }
 
 export async function runAskPipeline(
@@ -154,10 +177,24 @@ export async function runAskPipeline(
   const history = request.conversation_id
     ? getConversation(request.conversation_id)
     : [];
+  const priorTopic = request.conversation_id
+    ? getConversationTopic(request.conversation_id)
+    : undefined;
   const rewrittenQuery = rewriteQuery(question, history);
 
   const safety = (dependencies.safety ?? safetyService).classify(question);
   const category = safety.category;
+  const intentResolution = detectIntent(question, category);
+  const intent = intentResolution.intent;
+  const topicResolution = extractTopic(
+    question,
+    priorTopic,
+    category === "DR_VANDANA_SPECIFIC"
+      ? { forceTopic: "counselling-approach" }
+      : undefined,
+  );
+  const topic = topicResolution.topic;
+  const queryTokens = contentTokens(rewrittenQuery);
 
   const canned = CANNED[category];
   if (canned) {
@@ -176,8 +213,11 @@ export async function runAskPipeline(
       safety_notice: safetyNoticeFor(category, language),
       conversation_id: conversationId,
       show_support_cta: shouldShowSupportCta(category),
+      intent,
+      topic,
+      quality: { status: "SAFETY_REDIRECT", confidence: "HIGH_CONFIDENCE" },
     };
-    rememberTurn(conversationId, { role: "user", text: question });
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
     rememberTurn(conversationId, { role: "assistant", text: response.answer });
     logAsk(requestId, started, category, 0, dependencies.provider?.name);
     return { ok: true, response, status: 200 };
@@ -189,7 +229,7 @@ export async function runAskPipeline(
     const cached = getCachedEducationalAnswer(cacheKey);
     if (cached) {
       const response = { ...cached, conversation_id: conversationId };
-      rememberTurn(conversationId, { role: "user", text: question });
+      rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
       rememberTurn(conversationId, { role: "assistant", text: response.answer });
       logAsk(requestId, started, category, 0, "cache");
       return { ok: true, response, status: 200 };
@@ -197,15 +237,21 @@ export async function runAskPipeline(
   }
 
   const retrieval = dependencies.retrieval ?? retrievalService;
-  let retrieved: RetrievedChunk[] = [];
+  let candidates: RetrievedChunk[] = [];
   try {
-    retrieved = filterRelevantChunks(
-      await retrieval.retrieve({
-        text: rewrittenQuery,
-        language: "en",
-        preferredCorpora: preferredCorpora(category),
-      }),
-    );
+    const retrieveInput = {
+      text: rewrittenQuery,
+      language: "en" as const,
+      preferredCorpora: preferredCorpora(category),
+      topic,
+      topicTerms: topicResolution.terms,
+      limit: category === "DR_VANDANA_SPECIFIC" ? 12 : 8,
+    };
+    if (category === "DR_VANDANA_SPECIFIC") {
+      retrieveInput.topic = "counselling-approach";
+      retrieveInput.topicTerms = expandTopicTerms("counselling-approach");
+    }
+    candidates = await retrieval.retrieve(retrieveInput);
   } catch {
     logStructured("ERROR", {
       requestId,
@@ -216,22 +262,103 @@ export async function runAskPipeline(
   }
 
   if (category === "DR_VANDANA_SPECIFIC") {
-    retrieved = retrieved.filter(
+    candidates = candidates.filter(
       (chunk) =>
         chunk.corpus === "DR_VANDANA_KNOWLEDGE" ||
         chunk.corpus === "SAFETY_AND_ETHICS_RULES",
     );
   }
 
+  let gated;
+  if (category === "DR_VANDANA_SPECIFIC") {
+    const vandana = candidates
+      .filter((chunk) => chunk.corpus === "DR_VANDANA_KNOWLEDGE")
+      .sort((left, right) => right.score - left.score);
+    const approach =
+      vandana.find((chunk) => chunk.topic === "counselling-approach") ??
+      vandana[0];
+    gated =
+      approach
+        ? {
+            primary: approach,
+            secondary: vandana.filter((chunk) => chunk.id !== approach.id).slice(0, 1),
+            usable: vandana.slice(0, 2),
+            confidence: "HIGH_CONFIDENCE" as const,
+          }
+        : {
+            primary: null,
+            secondary: [],
+            usable: [],
+            confidence: "NO_MATCH" as const,
+          };
+  } else {
+    gated = applyRelevanceGate(candidates, {
+      question,
+      queryTokens,
+      topic,
+      intent,
+      requireTopicMatch: topic === "general-education",
+    });
+    if (topic === "general-education") {
+      const primary = gated.primary;
+      if (
+        !primary ||
+        (primary.relevance?.confidence !== "HIGH_CONFIDENCE" &&
+          (primary.relevance?.topicMatch ?? 0) < 0.35)
+      ) {
+        gated = {
+          primary: null,
+          secondary: [],
+          usable: [],
+          confidence: "NO_MATCH",
+        };
+      }
+    }
+  }
+
+  logAskAiDebug({
+    question,
+    intent,
+    topic,
+    normalizedQuery: rewrittenQuery,
+    candidateDocuments: candidates.map((chunk) => ({
+      id: chunk.id,
+      title: chunk.title,
+      score: chunk.score,
+      confidence: chunk.relevance?.confidence,
+    })),
+    relevanceDecision: gated.confidence,
+    selectedDocuments: gated.usable.map((chunk) => chunk.id),
+  });
+
+  if (gated.confidence === "NO_MATCH" || !gated.primary) {
+    const response = buildGapResponse({
+      topic,
+      category,
+      conversationId,
+      question,
+      intent,
+      confidence: "NO_MATCH",
+    });
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
+    rememberTurn(conversationId, { role: "assistant", text: response.answer });
+    logAsk(requestId, started, category, 0, "knowledge-gap");
+    return { ok: true, response, status: 200 };
+  }
+
+  const selectedChunks = [gated.primary, ...gated.secondary];
   const provider = dependencies.provider ?? createAiProvider();
   let answer: string;
+
   try {
     answer = await provider.generateResponse({
       question,
       rewrittenQuery,
       category,
-      retrieved,
+      retrieved: selectedChunks,
       language,
+      intent,
+      topic,
     });
   } catch {
     logStructured("ERROR", {
@@ -241,18 +368,65 @@ export async function runAskPipeline(
       safetyCategory: category,
       model: provider.name,
     });
-    answer = composeEducationalAnswer({
+    answer = composeControlledAnswer({
       question,
-      rewrittenQuery,
+      intent,
+      topic,
       category,
-      retrieved,
-      language,
+      primary: gated.primary,
+      secondary: gated.secondary,
+    });
+  }
+
+  let validationResult = validateAnswer({
+    question,
+    answer,
+    intent,
+    topic,
+    chunks: selectedChunks,
+    confidence: gated.confidence,
+  });
+
+  if (validationResult.status === "REGENERATE") {
+    answer = composeControlledAnswer({
+      question,
+      intent,
+      topic,
+      category,
+      primary: gated.primary,
+      secondary: gated.secondary,
+    });
+    validationResult = validateAnswer({
+      question,
+      answer,
+      intent,
+      topic,
+      chunks: selectedChunks,
+      confidence: gated.confidence,
     });
   }
 
   if (
+    validationResult.status === "REGENERATE" ||
+    validationResult.status === "KNOWLEDGE_GAP"
+  ) {
+    const response = buildGapResponse({
+      topic,
+      category,
+      conversationId,
+      question,
+      intent,
+      confidence: gated.confidence,
+    });
+    rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
+    rememberTurn(conversationId, { role: "assistant", text: response.answer });
+    logAsk(requestId, started, category, selectedChunks.length, "validation-gap");
+    return { ok: true, response, status: 200 };
+  }
+
+  if (
     category === "DR_VANDANA_SPECIFIC" &&
-    !retrieved.some((chunk) => chunk.corpus === "DR_VANDANA_KNOWLEDGE") &&
+    !selectedChunks.some((chunk) => chunk.corpus === "DR_VANDANA_KNOWLEDGE") &&
     !answer.includes(INSUFFICIENT_VANDANA_METHODOLOGY)
   ) {
     answer = [
@@ -263,37 +437,47 @@ export async function runAskPipeline(
     ].join("\n\n");
   }
 
-  const sources = toPublicSources(
-    retrieved.filter((chunk) => chunk.corpus !== "SAFETY_AND_ETHICS_RULES"),
-  );
+  const usedSources = toPublicSources(extractUsedSources(selectedChunks));
   answer = postProcessAnswer(
     answer,
-    sources.map((source) => source.title),
+    usedSources.map((source) => source.title),
   );
 
   const response: AskAiResponse = {
     answer,
     category,
-    sources,
-    related_questions: extractRelatedQuestions(answer, retrieved),
+    sources: usedSources,
+    related_questions: extractRelatedQuestionsV2(answer, selectedChunks, topic),
     safety_notice: safetyNoticeFor(category, language),
     conversation_id: conversationId,
     show_support_cta: shouldShowSupportCta(category),
-    case_study_slug: extractCaseStudySlug(retrieved),
+    case_study_slug: extractCaseStudySlug(selectedChunks),
+    intent,
+    topic,
+    quality: {
+      status: validationResult.status,
+      confidence: gated.confidence,
+    },
   };
 
-  rememberTurn(conversationId, { role: "user", text: question });
+  rememberTurn(conversationId, { role: "user", text: question }, undefined, topic);
   rememberTurn(conversationId, { role: "assistant", text: response.answer });
 
   if (cacheable) {
     setCachedEducationalAnswer(cacheKey, response);
   }
 
+  logAskAiDebug({
+    provider: provider.name,
+    validation: validationResult.status,
+    confidence: gated.confidence,
+  });
+
   logAsk(
     requestId,
     started,
     category,
-    retrieved.length,
+    selectedChunks.length,
     provider.name,
   );
 

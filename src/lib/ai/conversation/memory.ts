@@ -5,6 +5,7 @@ import type { ConversationTurn } from "@/types/ai";
 type ConversationRecord = {
   id: string;
   turns: ConversationTurn[];
+  topic?: string;
   expiresAt: number;
 };
 
@@ -31,10 +32,16 @@ export function getConversation(id: string): ConversationTurn[] {
   return record.turns;
 }
 
+export function getConversationTopic(id: string): string | undefined {
+  pruneExpired();
+  return conversations.get(id)?.topic;
+}
+
 export function rememberTurn(
   id: string,
   turn: ConversationTurn,
   now = Date.now(),
+  topic?: string,
 ): void {
   pruneExpired(now);
   const existing = conversations.get(id);
@@ -47,6 +54,7 @@ export function rememberTurn(
     conversations.set(id, {
       id,
       turns: [sanitized],
+      topic,
       expiresAt: now + aiConfig.conversationTtlMs,
     });
     return;
@@ -55,6 +63,9 @@ export function rememberTurn(
   existing.turns = [...existing.turns, sanitized].slice(
     -aiConfig.maxConversationTurns,
   );
+  if (topic) {
+    existing.topic = topic;
+  }
   existing.expiresAt = now + aiConfig.conversationTtlMs;
 }
 

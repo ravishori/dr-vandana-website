@@ -1,4 +1,5 @@
 import type {
+  AskIntent,
   EvidenceLevel,
   KnowledgeApprovalState,
   KnowledgeCategory,
@@ -25,6 +26,12 @@ type KnowledgeDraft = {
   approved?: boolean;
   approval_state?: KnowledgeApprovalState;
   version?: number;
+  keywords?: readonly string[];
+  synonyms?: readonly string[];
+  intents?: readonly AskIntent[];
+  practical_steps?: readonly string[];
+  examples?: readonly string[];
+  cautions?: readonly string[];
 };
 
 export function createKnowledgeDocument(

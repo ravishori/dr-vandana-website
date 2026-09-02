@@ -1,5 +1,5 @@
 import { resolveAiProviderMode } from "@/config/ai";
-import { EducationalFallbackProvider } from "@/lib/ai/providers/educational-fallback";
+import { ControlledAnswerProvider } from "@/lib/ai/answers/controlled-composer";
 import { OpenAiCompatibleProvider } from "@/lib/ai/providers/openai-compatible";
 import type { AIProvider } from "@/lib/ai/providers/types";
 
@@ -8,7 +8,7 @@ export function createAiProvider(): AIProvider {
   if (mode === "openai-compatible") {
     return new OpenAiCompatibleProvider();
   }
-  return new EducationalFallbackProvider();
+  return new ControlledAnswerProvider();
 }
 
 export type { AIProvider } from "@/lib/ai/providers/types";

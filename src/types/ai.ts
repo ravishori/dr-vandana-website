@@ -49,6 +49,39 @@ export type EvidenceLevel =
   | "public-health-education"
   | "ethics";
 
+export type AskIntent =
+  | "DEFINITION"
+  | "HOW_TO"
+  | "TECHNIQUE"
+  | "BENEFITS"
+  | "CAUSES"
+  | "SYMPTOMS"
+  | "COMPARISON"
+  | "EXAMPLE"
+  | "SELF_HELP"
+  | "WHEN_TO_SEEK_HELP"
+  | "GENERAL_EDUCATION"
+  | "DR_VANDANA_SPECIFIC"
+  | "SAFETY"
+  | "OUT_OF_SCOPE";
+
+export type RelevanceConfidence =
+  | "HIGH_CONFIDENCE"
+  | "MEDIUM_CONFIDENCE"
+  | "LOW_CONFIDENCE"
+  | "NO_MATCH";
+
+export type ValidationStatus =
+  | "PASS"
+  | "REGENERATE"
+  | "KNOWLEDGE_GAP"
+  | "SAFETY_REDIRECT";
+
+export type AnswerQuality = {
+  status: ValidationStatus;
+  confidence: RelevanceConfidence;
+};
+
 export type KnowledgeDocument = {
   id: string;
   title: string;
@@ -69,6 +102,13 @@ export type KnowledgeDocument = {
   corpus: KnowledgeCorpus;
   related_questions?: readonly string[];
   related_routes?: readonly string[];
+  /** V2 metadata — optional on legacy documents. */
+  keywords?: readonly string[];
+  synonyms?: readonly string[];
+  intents?: readonly AskIntent[];
+  practical_steps?: readonly string[];
+  examples?: readonly string[];
+  cautions?: readonly string[];
 };
 
 export type PublicKnowledgeSource = {
@@ -104,12 +144,26 @@ export type AskAiResponse = {
   conversation_id: string;
   show_support_cta: boolean;
   case_study_slug?: string;
+  /** V2 fields — optional for backward compatibility. */
+  intent?: AskIntent;
+  topic?: string;
+  quality?: AnswerQuality;
+};
+
+export type RelevanceSignals = {
+  topicMatch: number;
+  intentMatch: number;
+  keywordOverlap: number;
+  titleMatch: number;
+  finalScore: number;
+  confidence: RelevanceConfidence;
 };
 
 export type RetrievedChunk = {
   id: string;
   title: string;
   category: KnowledgeCategory;
+  topic: string;
   corpus: KnowledgeCorpus;
   content: string;
   source: string;
@@ -117,6 +171,13 @@ export type RetrievedChunk = {
   score: number;
   related_questions: readonly string[];
   related_routes: readonly string[];
+  keywords?: readonly string[];
+  synonyms?: readonly string[];
+  intents?: readonly AskIntent[];
+  practical_steps?: readonly string[];
+  examples?: readonly string[];
+  cautions?: readonly string[];
+  relevance?: RelevanceSignals;
 };
 
 export type CaseStudyRecord = {
