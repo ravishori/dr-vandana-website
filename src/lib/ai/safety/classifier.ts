@@ -83,6 +83,8 @@ const DR_VANDANA_PATTERNS = [
 const PERSONAL_PATTERNS = [
   /\b(i (feel|am feeling|have been|can't sleep|cannot sleep)|my (anxiety|depression|panic|marriage|husband|wife|child))\b/i,
   /\b(help me with my|i am struggling|i've been crying)\b/i,
+  /\bhow can i (improve|manage|stop|reduce|build|control|cope|cope with)\b/i,
+  /\bwhy do i feel\b/i,
 ];
 
 const OUT_OF_SCOPE_PATTERNS = [

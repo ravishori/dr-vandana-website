@@ -1,14 +1,9 @@
 import { allKnowledgeDocuments } from "@/data/ai/knowledge";
+import { isProductionIndexable } from "@/lib/ai/knowledge/library/semantics";
 import type {
-  KnowledgeApprovalState,
   KnowledgeCorpus,
   KnowledgeDocument,
 } from "@/types/ai";
-
-const INDEXABLE_STATES: readonly KnowledgeApprovalState[] = [
-  "APPROVED",
-  "PUBLISHED",
-];
 
 export type KnowledgeFilter = {
   corpus?: KnowledgeCorpus;
@@ -22,9 +17,7 @@ export interface KnowledgeRepository {
 }
 
 function isIndexable(document: KnowledgeDocument): boolean {
-  return (
-    document.approved && INDEXABLE_STATES.includes(document.approval_state)
-  );
+  return isProductionIndexable(document);
 }
 
 export class InMemoryKnowledgeRepository implements KnowledgeRepository {

@@ -1,0 +1,9 @@
+{
+  "curriculum_documents_total": 159,
+  "approval_state_counts": {
+    "REVIEW": 159
+  },
+  "indexable_curriculum_documents": 0,
+  "legacy_published_documents": 32,
+  "governance_note": "Curriculum documents remain in REVIEW and are excluded from ASK AI retrieval until explicitly approved after human QA."
+}

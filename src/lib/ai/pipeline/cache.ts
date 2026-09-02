@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { aiConfig } from "@/config/ai";
+import { KNOWLEDGE_CORPUS_VERSION } from "@/lib/ai/pipeline/debug";
 import type { AskAiResponse } from "@/types/ai";
 
 type CacheEntry = {
@@ -13,7 +14,7 @@ const cache = new Map<string, CacheEntry>();
 export function educationalCacheKey(question: string, language: string): string {
   const normalized = question.trim().toLowerCase().replace(/\s+/g, " ");
   return createHash("sha256")
-    .update(`${language}:${normalized}`)
+    .update(`${KNOWLEDGE_CORPUS_VERSION}:${language}:${normalized}`)
     .digest("hex");
 }
 

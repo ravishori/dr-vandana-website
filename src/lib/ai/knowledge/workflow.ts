@@ -1,4 +1,5 @@
 import type { KnowledgeApprovalState, KnowledgeDocument } from "@/types/ai";
+import { isProductionIndexable } from "@/lib/ai/knowledge/library/semantics";
 
 const TRANSITIONS: Record<KnowledgeApprovalState, readonly KnowledgeApprovalState[]> =
   {
@@ -17,11 +18,7 @@ export function canTransitionApproval(
 }
 
 export function isRagIndexable(document: KnowledgeDocument): boolean {
-  return (
-    document.approved &&
-    (document.approval_state === "APPROVED" ||
-      document.approval_state === "PUBLISHED")
-  );
+  return isProductionIndexable(document);
 }
 
 /**

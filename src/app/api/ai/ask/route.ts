@@ -111,6 +111,9 @@ export async function POST(request: Request): Promise<Response> {
       conversation_id: result.response.conversation_id,
       show_support_cta: result.response.show_support_cta,
       case_study_slug: result.response.case_study_slug,
+      intent: result.response.intent,
+      topic: result.response.topic,
+      quality: result.response.quality,
     });
   } catch {
     logStructured("ERROR", {

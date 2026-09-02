@@ -1,9 +1,14 @@
 import { aiConfig } from "@/config/ai";
 import { tokenize } from "@/lib/ai/embeddings/service";
+import { expandTopicTerms } from "@/lib/ai/intent/synonyms";
 import {
+  KnowledgeRepository,
   knowledgeRepository,
-  type KnowledgeRepository,
 } from "@/lib/ai/knowledge/repository";
+import {
+  contentTokens,
+  normalizeQueryForRetrieval,
+} from "@/lib/ai/retrieval/normalize-query";
 import type {
   KnowledgeCorpus,
   KnowledgeDocument,
@@ -16,6 +21,8 @@ export type RetrievalQuery = {
   language?: SupportedLanguage;
   preferredCorpora?: readonly KnowledgeCorpus[];
   limit?: number;
+  topic?: string;
+  topicTerms?: readonly string[];
 };
 
 export interface RetrievalService {
@@ -56,15 +63,63 @@ function bm25Score(
       continue;
     }
     const df = documentFrequency.get(term) ?? 0;
-    const idf = Math.log(
-      1 + (documentCount - df + 0.5) / (df + 0.5),
-    );
+    const idf = Math.log(1 + (documentCount - df + 0.5) / (df + 0.5));
     score += idf * ((tf * (k1 + 1)) / (tf + lengthNorm));
   }
   return score;
 }
 
-export class LexicalRetrievalService implements RetrievalService {
+function documentToChunk(
+  document: KnowledgeDocument,
+  score: number,
+): RetrievedChunk {
+  return {
+    id: document.id,
+    title: document.title,
+    category: document.category,
+    topic: document.topic,
+    corpus: document.corpus,
+    content: document.content,
+    source: document.source,
+    publication: document.publication,
+    score,
+    related_questions: document.related_questions ?? [],
+    related_routes: document.related_routes ?? [],
+    keywords: document.keywords,
+    synonyms: document.synonyms,
+    intents: document.intents,
+    practical_steps: document.practical_steps,
+    examples: document.examples,
+    cautions: document.cautions,
+  };
+}
+
+function exactTopicScore(
+  document: KnowledgeDocument,
+  topicTerms: readonly string[],
+): number {
+  if (topicTerms.length === 0) {
+    return 0;
+  }
+  const haystack = [
+    document.topic,
+    document.title,
+    ...(document.keywords ?? []),
+    ...(document.synonyms ?? []),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  let hits = 0;
+  for (const term of topicTerms) {
+    if (haystack.includes(term.toLowerCase())) {
+      hits += 1;
+    }
+  }
+  return Math.min(1, hits / topicTerms.length);
+}
+
+export class HybridRetrievalService implements RetrievalService {
   private readonly index: IndexedDocument[];
   private readonly documentFrequency = new Map<string, number>();
   private readonly averageLength: number;
@@ -72,9 +127,15 @@ export class LexicalRetrievalService implements RetrievalService {
   constructor(repository: KnowledgeRepository = knowledgeRepository) {
     const published = repository.list();
     this.index = published.map((document) => {
-      const tokens = tokenize(
-        `${document.title} ${document.topic} ${document.category} ${document.content}`,
-      );
+      const searchable = [
+        document.title,
+        document.topic,
+        document.category,
+        ...(document.keywords ?? []),
+        ...(document.synonyms ?? []),
+        document.content,
+      ].join(" ");
+      const tokens = contentTokens(searchable);
       return {
         document,
         tokens,
@@ -98,13 +159,16 @@ export class LexicalRetrievalService implements RetrievalService {
   }
 
   async retrieve(query: RetrievalQuery): Promise<RetrievedChunk[]> {
-    const queryTokens = tokenize(query.text);
+    const normalizedText = normalizeQueryForRetrieval(query.text);
+    const queryTokens = tokenize(normalizedText);
     if (queryTokens.length === 0 || this.index.length === 0) {
       return [];
     }
 
     const limit = query.limit ?? aiConfig.retrievalLimit;
-    const preferred = new Set(query.preferredCorpora ?? []);
+    const topicTerms =
+      query.topicTerms ??
+      (query.topic ? expandTopicTerms(query.topic) : []);
 
     const ranked = this.index
       .filter((entry) => {
@@ -114,39 +178,33 @@ export class LexicalRetrievalService implements RetrievalService {
         return true;
       })
       .map((entry) => {
-        let score = bm25Score(
+        const lexical = bm25Score(
           queryTokens,
           entry,
           this.index.length,
           this.averageLength,
           this.documentFrequency,
         );
-        if (preferred.has(entry.document.corpus)) {
-          score *= 1.35;
-        }
+        const topic = exactTopicScore(entry.document, topicTerms);
+        const titleTokens = contentTokens(entry.document.title);
+        const titleOverlap =
+          queryTokens.filter((token) => titleTokens.includes(token)).length /
+          Math.max(queryTokens.length, 1);
+
+        const score = topic * 5 + lexical + titleOverlap * 2;
         return { entry, score };
       })
-      .filter((row) => row.score >= aiConfig.minRetrievalScore)
+      .filter((row) => row.score >= aiConfig.minRetrievalScore * 0.5)
       .sort((left, right) => right.score - left.score)
-      .slice(0, limit);
+      .slice(0, limit * 2);
 
-    return ranked.map(({ entry, score }) => ({
-      id: entry.document.id,
-      title: entry.document.title,
-      category: entry.document.category,
-      corpus: entry.document.corpus,
-      content: entry.document.content,
-      source: entry.document.source,
-      publication: entry.document.publication,
-      score,
-      related_questions: entry.document.related_questions ?? [],
-      related_routes: entry.document.related_routes ?? [],
-    }));
+    return ranked
+      .slice(0, limit)
+      .map(({ entry, score }) => documentToChunk(entry.document, score));
   }
 }
 
-export const retrievalService: RetrievalService = new LexicalRetrievalService();
-
+/** @deprecated Use relevance gate instead. Kept for transitional imports. */
 export function filterRelevantChunks(
   chunks: readonly RetrievedChunk[],
   minScore = aiConfig.minRetrievalScore,
@@ -155,5 +213,12 @@ export function filterRelevantChunks(
     return [];
   }
   const top = chunks[0]?.score ?? 0;
-  return chunks.filter((chunk) => chunk.score >= minScore && chunk.score >= top * 0.35);
+  return chunks.filter(
+    (chunk) => chunk.score >= minScore && chunk.score >= top * 0.55,
+  );
 }
+
+export const retrievalService: RetrievalService = new HybridRetrievalService();
+
+/** Backward-compatible alias. */
+export const LexicalRetrievalService = HybridRetrievalService;

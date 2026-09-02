@@ -9,8 +9,40 @@ export type SupportedLanguage = "en" | "hi" | "mr";
 export type KnowledgeCorpus =
   | "DR_VANDANA_KNOWLEDGE"
   | "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE"
+  | "PSYCHOLOGY_EVIDENCE_SOURCES"
   | "CASE_STUDY_KNOWLEDGE"
-  | "SAFETY_AND_ETHICS_RULES";
+  | "SAFETY_AND_ETHICS_RULES"
+  | "ACADEMIC_CURRICULUM_REFERENCE";
+
+export type AcademicReferenceType =
+  | "STUDY_BOOK"
+  | "REFERENCE_BOOK"
+  | "JOURNAL_ARTICLE"
+  | "OTHER_ACADEMIC_REFERENCE";
+
+export type AcademicBibliographicReference = {
+  title: string;
+  reference_type: AcademicReferenceType;
+  author?: string;
+  edition?: string;
+  publisher?: string;
+  year?: string;
+  isbn?: string;
+};
+
+export type AcademicContentType =
+  | "syllabus"
+  | "elective"
+  | "practical"
+  | "ojt-field-placement"
+  | "research-project";
+
+export type SourcePageStatus = "UNVERIFIED" | "VERIFIED";
+
+export type CurriculumReviewStatus =
+  | "REVIEW_REQUIRED"
+  | "VERIFIED"
+  | "UNKNOWN";
 
 export type KnowledgeApprovalState =
   | "DRAFT"
@@ -41,13 +73,132 @@ export type KnowledgeCategory =
   | "Safety & Ethics"
   | "Women's Mental Health"
   | "Anger Management"
-  | "Life Skills";
+  | "Life Skills"
+  | "Academic Curriculum";
+
+export type SourceTier =
+  | "TIER_1_AUTHORITATIVE"
+  | "TIER_2_RESEARCH"
+  | "TIER_3_ACADEMIC"
+  | "TIER_4_EDUCATIONAL"
+  | "TIER_5_DR_VANDANA";
+
+export type KnowledgeScope =
+  | "GENERAL_PSYCHOLOGY"
+  | "MENTAL_WELLBEING"
+  | "CLINICAL_EDUCATION"
+  | "RESEARCH_EVIDENCE"
+  | "PROFESSIONAL_GUIDANCE"
+  | "DR_VANDANA_PRACTICE";
+
+export type CopyrightStatus =
+  | "PUBLIC_DOMAIN"
+  | "LICENSED"
+  | "METADATA_ONLY"
+  | "RESTRICTED"
+  | "UNKNOWN";
+
+export type SourceVerificationStatus =
+  | "UNVERIFIED"
+  | "VERIFIED"
+  | "DISPUTED";
+
+/**
+ * Publication/material type — distinct from source tier (authority) and evidence level (strength).
+ */
+export type SourceType =
+  | "PUBLIC_HEALTH_FACT_SHEET"
+  | "PUBLIC_HEALTH_Q_AND_A"
+  | "GOVERNMENT_HEALTH_EDUCATION"
+  | "CLINICAL_GUIDELINE"
+  | "SYSTEMATIC_REVIEW"
+  | "META_ANALYSIS"
+  | "PEER_REVIEWED_RESEARCH"
+  | "TEXTBOOK"
+  | "HANDBOOK"
+  | "UNIVERSITY_EDUCATIONAL_RESOURCE"
+  | "PRACTICE_EDUCATION"
+  | "INTERNAL_COVERAGE_REFERENCE"
+  | "UNKNOWN";
+
+/**
+ * Extended provenance for psychology knowledge sources.
+ * Bibliographic fields must remain null/omitted when unknown — never fabricated.
+ */
+export type KnowledgeSourceMetadata = {
+  source_id?: string;
+  source_name?: string;
+  source_type?: SourceType;
+  organization?: string;
+  publication_date?: string;
+  last_reviewed?: string;
+  /** Maintainer review due date — distinct from publication_date. */
+  next_review_due?: string;
+  publisher?: string;
+  journal?: string;
+  volume?: string;
+  issue?: string;
+  pages?: string;
+  doi?: string;
+  url?: string;
+  license?: string;
+  copyright_status?: CopyrightStatus;
+  language?: SupportedLanguage;
+  country_or_region?: string;
+  verification_status?: SourceVerificationStatus;
+  notes?: string;
+};
 
 export type EvidenceLevel =
   | "verified-practice"
   | "educational"
   | "public-health-education"
-  | "ethics";
+  | "ethics"
+  | "academic-curriculum"
+  | "guideline"
+  | "systematic-review"
+  | "meta-analysis"
+  | "peer-reviewed"
+  | "academic-reference";
+
+export type CoverageStatus =
+  | "NOT_STARTED"
+  | "PARTIAL"
+  | "ADEQUATE"
+  | "REVIEW_REQUIRED";
+
+export type AskIntent =
+  | "DEFINITION"
+  | "HOW_TO"
+  | "TECHNIQUE"
+  | "BENEFITS"
+  | "CAUSES"
+  | "SYMPTOMS"
+  | "COMPARISON"
+  | "EXAMPLE"
+  | "SELF_HELP"
+  | "WHEN_TO_SEEK_HELP"
+  | "GENERAL_EDUCATION"
+  | "DR_VANDANA_SPECIFIC"
+  | "SAFETY"
+  | "OUT_OF_SCOPE";
+
+export type RelevanceConfidence =
+  | "HIGH_CONFIDENCE"
+  | "MEDIUM_CONFIDENCE"
+  | "LOW_CONFIDENCE"
+  | "NO_MATCH";
+
+export type ValidationStatus =
+  | "PASS"
+  | "REGENERATE"
+  | "KNOWLEDGE_GAP"
+  | "SAFETY_REDIRECT";
+
+export type AnswerQuality = {
+  status: ValidationStatus;
+  confidence: RelevanceConfidence;
+};
 
 export type KnowledgeDocument = {
   id: string;
@@ -69,11 +220,47 @@ export type KnowledgeDocument = {
   corpus: KnowledgeCorpus;
   related_questions?: readonly string[];
   related_routes?: readonly string[];
+  /** V2 metadata — optional on legacy documents. */
+  keywords?: readonly string[];
+  synonyms?: readonly string[];
+  intents?: readonly AskIntent[];
+  practical_steps?: readonly string[];
+  examples?: readonly string[];
+  cautions?: readonly string[];
+  /** Psychology knowledge library semantics — optional on legacy documents; inferred when absent. */
+  source_tier?: SourceTier;
+  knowledge_scope?: KnowledgeScope;
+  source_metadata?: KnowledgeSourceMetadata;
+  /** Academic curriculum metadata — optional; only on ACADEMIC_CURRICULUM_REFERENCE documents. */
+  institution?: string;
+  program?: string;
+  curriculum_version?: string;
+  academic_year?: string;
+  semester?: string;
+  course_code?: string;
+  course_title?: string;
+  course_type?: string;
+  credits?: number;
+  unit_number?: string;
+  unit_title?: string;
+  course_objectives?: readonly string[];
+  course_outcomes?: readonly string[];
+  content_type?: AcademicContentType;
+  source_page?: string;
+  source_page_status?: SourcePageStatus;
+  source_document?: string;
+  source_url?: string;
+  /** Stable id so future syllabus revisions can coexist (e.g. NEP 2020 / 2023-24). */
+  curriculum_version_id?: string;
+  study_books?: readonly AcademicBibliographicReference[];
+  reference_books?: readonly AcademicBibliographicReference[];
 };
 
 export type PublicKnowledgeSource = {
   title: string;
   attribution: string;
+  /** Legitimate public source URL when verified and available. */
+  url?: string;
 };
 
 export type SafetyCategory =
@@ -104,12 +291,26 @@ export type AskAiResponse = {
   conversation_id: string;
   show_support_cta: boolean;
   case_study_slug?: string;
+  /** V2 fields — optional for backward compatibility. */
+  intent?: AskIntent;
+  topic?: string;
+  quality?: AnswerQuality;
+};
+
+export type RelevanceSignals = {
+  topicMatch: number;
+  intentMatch: number;
+  keywordOverlap: number;
+  titleMatch: number;
+  finalScore: number;
+  confidence: RelevanceConfidence;
 };
 
 export type RetrievedChunk = {
   id: string;
   title: string;
   category: KnowledgeCategory;
+  topic: string;
   corpus: KnowledgeCorpus;
   content: string;
   source: string;
@@ -117,6 +318,13 @@ export type RetrievedChunk = {
   score: number;
   related_questions: readonly string[];
   related_routes: readonly string[];
+  keywords?: readonly string[];
+  synonyms?: readonly string[];
+  intents?: readonly AskIntent[];
+  practical_steps?: readonly string[];
+  examples?: readonly string[];
+  cautions?: readonly string[];
+  relevance?: RelevanceSignals;
 };
 
 export type CaseStudyRecord = {
