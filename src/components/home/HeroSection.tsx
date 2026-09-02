@@ -10,39 +10,43 @@ export function HeroSection() {
       className="relative overflow-hidden border-b border-brand-muted/20"
     >
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_srgb,var(--color-brand-muted)_22%,transparent),transparent_42%),linear-gradient(180deg,var(--color-background),color-mix(in_srgb,var(--color-brand-muted)_10%,var(--color-background)))]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,color-mix(in_srgb,var(--color-brand-muted)_20%,transparent),transparent_50%),linear-gradient(180deg,var(--color-background),color-mix(in_srgb,var(--color-surface-soft)_70%,var(--color-background)))]"
         aria-hidden="true"
       />
 
-      <Container className="relative grid items-center gap-10 py-14 md:py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14 lg:py-20">
-        <div className="home-reveal max-w-xl">
+      <Container className="relative grid items-stretch gap-8 py-12 sm:py-14 md:gap-10 md:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20 xl:gap-16">
+        <div className="home-reveal flex max-w-xl flex-col justify-center lg:max-w-none lg:pr-4">
           <p className="text-text-muted text-sm font-medium tracking-[0.18em] uppercase">
             {homeHero.eyebrow}
           </p>
           <h1
             id="home-hero-heading"
-            className="mt-4 text-[clamp(2.15rem,5vw,3.4rem)] leading-[1.12]"
+            className="mt-3 text-[clamp(2.1rem,6vw,3.5rem)] leading-[1.1] sm:mt-4"
           >
             {homeHero.heading}
           </h1>
-          <p className="text-text mt-5 text-base leading-relaxed md:text-lg">
+          <p className="text-text mt-4 text-base leading-relaxed sm:mt-5 sm:text-lg">
             {homeHero.supportingStatement}
           </p>
-          <p className="text-brand-muted mt-4 font-serif text-xl md:text-2xl">
+          <p className="text-brand-muted mt-4 font-serif text-xl leading-snug sm:text-2xl">
             {homeHero.tagline}
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <ButtonLink href={homeHero.primaryCta.href}>
+            <ButtonLink href={homeHero.primaryCta.href} className="w-full sm:w-auto">
               {homeHero.primaryCta.label}
             </ButtonLink>
-            <ButtonLink href={homeHero.secondaryCta.href} variant="secondary">
+            <ButtonLink
+              href={homeHero.secondaryCta.href}
+              variant="secondary"
+              className="w-full sm:w-auto"
+            >
               {homeHero.secondaryCta.label}
             </ButtonLink>
           </div>
         </div>
 
-        <div className="home-reveal home-reveal-delay min-h-[16rem] lg:min-h-[28rem]">
+        <div className="home-reveal home-reveal-delay min-h-[18rem] sm:min-h-[20rem] md:min-h-[24rem] lg:min-h-[28rem] xl:min-h-[32rem]">
           <HeroVisual />
         </div>
       </Container>

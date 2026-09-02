@@ -55,6 +55,7 @@ export const navigationConfig: NavigationConfig = {
       href: "/psychology/case-studies",
       enabled: true,
     },
+    { label: "Login", href: "/login", enabled: true },
     { label: "Book an Appointment", href: "/book-appointment", enabled: true },
   ],
   legal: [
@@ -77,6 +78,19 @@ export function getPrimaryNavItems(): NavItem[] {
   return getEnabledNavItems(navigationConfig.primary);
 }
 
+/**
+ * Landing page already has the brand linking to "/".
+ * Hide the redundant Home item when the user is on the homepage.
+ */
+export function getPrimaryNavItemsForPath(pathname: string): NavItem[] {
+  return getPrimaryNavItems().filter((item) => {
+    if (item.href === "/" && pathname === "/") {
+      return false;
+    }
+    return true;
+  });
+}
+
 export function getFooterNavItems(): NavItem[] {
   return getEnabledNavItems(navigationConfig.footer);
 }
@@ -88,3 +102,9 @@ export function getLegalNavItems(): NavItem[] {
 export function getNavCta(): NavCta | null {
   return navigationConfig.cta.enabled ? navigationConfig.cta : null;
 }
+
+export const loginNavItem: NavItem = {
+  label: "Login",
+  href: "/login",
+  enabled: true,
+};

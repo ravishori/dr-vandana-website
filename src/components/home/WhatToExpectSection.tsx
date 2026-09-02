@@ -33,16 +33,16 @@ export function WhatToExpectSection() {
           </p>
         </div>
 
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2">
+        <ul className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-4">
           {homeExpectations.map((item) => {
             const Icon = expectationIcons[item.icon];
 
             return (
               <li
                 key={item.id}
-                className="border-brand-muted/25 bg-background rounded-[var(--radius-xl)] border px-5 py-6"
+                className="border-brand-muted/20 bg-background rounded-[var(--radius-xl)] border px-4 py-5 shadow-[var(--shadow-sm)] sm:px-5 sm:py-6"
               >
-                <span className="text-brand inline-flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-brand-muted)_25%,white)]">
+                <span className="text-brand inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-brand-muted)_25%,white)]">
                   <Icon className="h-5 w-5" />
                 </span>
                 <h3 className="mt-4 font-serif text-xl text-[var(--color-brand)]">

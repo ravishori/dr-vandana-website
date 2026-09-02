@@ -179,3 +179,7 @@ export const CopyIcon = createStrokeIcon(
 export const CheckIcon = createStrokeIcon("M5 12.5l4.5 4.5L19 7.5");
 
 export const ChevronDownIcon = createStrokeIcon("M6 9l6 6 6-6");
+
+export const SparklesIcon = createStrokeIcon(
+  "M12 3.5l1.2 3.8L17 8.5l-3.8 1.2L12 13.5l-1.2-3.8L7 8.5l3.8-1.2L12 3.5zM18.5 13.5l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7.7-2.1zM5.5 14.5l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6.6-1.8z",
+);

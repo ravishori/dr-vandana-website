@@ -32,7 +32,7 @@ export function SupportAreasSection() {
           </p>
         </div>
 
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2">
+        <ul className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-4">
           {homeSupportAreas.map((area) => {
             const Icon = supportIcons[area.icon];
 
@@ -40,18 +40,18 @@ export function SupportAreasSection() {
               <li key={area.id}>
                 <Link
                   href={area.href}
-                  className="border-brand-muted/25 bg-surface hover:border-brand-muted group flex h-full flex-col rounded-[var(--radius-xl)] border p-5 no-underline transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none md:p-6"
+                  className="border-brand-muted/20 bg-surface hover:border-brand-muted hover:shadow-[var(--shadow-md)] group flex h-full min-h-[var(--touch-target-min)] flex-col rounded-[var(--radius-xl)] border p-4 no-underline shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-[var(--transition-fast)] motion-reduce:transition-none sm:p-5 md:p-6"
                 >
-                  <span className="bg-background text-brand inline-flex h-11 w-11 items-center justify-center rounded-full">
+                  <span className="bg-surface-soft text-brand inline-flex h-11 w-11 items-center justify-center rounded-full">
                     <Icon className="h-5 w-5" />
                   </span>
-                  <h3 className="text-brand mt-5 font-serif text-xl group-hover:text-[var(--color-brand)]">
+                  <h3 className="text-brand mt-4 font-serif text-xl sm:mt-5">
                     {area.title}
                   </h3>
                   <p className="text-text-muted mt-3 flex-1 text-sm leading-relaxed md:text-base">
                     {area.description}
                   </p>
-                  <span className="text-brand mt-5 text-sm font-medium">
+                  <span className="text-brand mt-4 text-sm font-medium sm:mt-5">
                     Explore this area
                   </span>
                 </Link>
