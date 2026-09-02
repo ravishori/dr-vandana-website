@@ -7,6 +7,7 @@ import { BrandMark } from "@/components/layout/BrandMark";
 import { NavLinkItem } from "@/components/navigation/NavLinkItem";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { CloseIcon } from "@/components/ui/icons";
+import { loginNavItem } from "@/config/navigation";
 import type { NavCta, NavItem } from "@/types/navigation";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ type MobileNavDrawerProps = {
   onClose: () => void;
   items: NavItem[];
   cta: NavCta | null;
+  showLogin?: boolean;
 };
 
 export function MobileNavDrawer({
@@ -22,6 +24,7 @@ export function MobileNavDrawer({
   onClose,
   items,
   cta,
+  showLogin = true,
 }: MobileNavDrawerProps) {
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -85,9 +88,13 @@ export function MobileNavDrawer({
     <div
       className={cn(
         "fixed inset-0 z-50 lg:hidden",
+        // Children do not inherit pointer-events. When closed, every
+        // descendant must also be non-interactive or the full-screen
+        // backdrop steals clicks from the hamburger, login cards, etc.
         open ? "pointer-events-auto" : "pointer-events-none",
       )}
       aria-hidden={!open}
+      inert={!open ? true : undefined}
     >
       <button
         type="button"
@@ -95,7 +102,7 @@ export function MobileNavDrawer({
         aria-label="Close navigation menu"
         className={cn(
           "absolute inset-0 bg-text/45 transition-opacity duration-[var(--transition-base)] motion-reduce:transition-none",
-          open ? "opacity-100" : "opacity-0",
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={onClose}
       />
@@ -106,11 +113,13 @@ export function MobileNavDrawer({
         aria-modal="true"
         aria-labelledby={titleId}
         className={cn(
-          "bg-surface absolute inset-y-0 right-0 flex w-[min(100%,20.5rem)] flex-col shadow-lg transition-transform duration-[var(--transition-base)] motion-reduce:transition-none",
-          open ? "translate-x-0" : "translate-x-full",
+          "bg-surface absolute inset-y-0 right-0 flex h-[100dvh] w-[min(100%,22rem)] flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-lg transition-transform duration-[var(--transition-base)] motion-reduce:transition-none",
+          open
+            ? "pointer-events-auto translate-x-0"
+            : "pointer-events-none translate-x-full",
         )}
       >
-        <div className="border-brand-muted/30 flex items-start justify-between gap-3 border-b px-4 py-4">
+        <div className="border-brand-muted/25 flex items-start justify-between gap-3 border-b px-4 py-4">
           <div id={titleId}>
             <BrandMark compact />
           </div>
@@ -125,17 +134,26 @@ export function MobileNavDrawer({
           </button>
         </div>
 
-        <nav aria-label="Mobile primary" className="flex-1 overflow-y-auto px-3 py-4">
+        <nav aria-label="Mobile primary" className="flex-1 overflow-y-auto overscroll-contain px-3 py-4">
           <ul className="flex flex-col gap-1">
             {items.map((item) => (
               <li key={item.href}>
                 <NavLinkItem
                   item={item}
                   onNavigate={onClose}
-                  className="block w-full px-3 py-3 text-base"
+                  className="block w-full px-3 py-3.5 text-base"
                 />
               </li>
             ))}
+            {showLogin ? (
+              <li>
+                <NavLinkItem
+                  item={loginNavItem}
+                  onNavigate={onClose}
+                  className="block w-full px-3 py-3.5 text-base"
+                />
+              </li>
+            ) : null}
           </ul>
 
           <div className="border-brand-muted/25 mt-6 border-t px-1 pt-5">
@@ -144,11 +162,11 @@ export function MobileNavDrawer({
         </nav>
 
         {cta ? (
-          <div className="border-brand-muted/30 border-t px-4 py-4">
+          <div className="border-brand-muted/25 border-t px-4 py-4">
             <Link
               href={cta.href}
               onClick={onClose}
-              className="bg-accent text-text hover:bg-accent/90 inline-flex min-h-[var(--touch-target-min)] w-full items-center justify-center rounded-[var(--radius-md)] px-4 text-sm font-medium no-underline"
+              className="bg-accent text-text hover:bg-accent/90 inline-flex min-h-[var(--touch-target-min)] w-full items-center justify-center rounded-[var(--radius-md)] px-4 text-sm font-medium no-underline shadow-sm"
             >
               {cta.label}
             </Link>

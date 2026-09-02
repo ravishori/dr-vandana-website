@@ -30,7 +30,7 @@ export function NavLinkItem({ item, className, onNavigate }: NavLinkItemProps) {
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "rounded-md px-2 py-2 text-sm no-underline transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none",
+        "rounded-md px-2 py-2.5 text-sm no-underline transition-colors duration-[var(--transition-fast)] motion-reduce:transition-none",
         active
           ? "text-brand font-medium"
           : "text-text-muted hover:text-brand",
