@@ -51,6 +51,18 @@ describe("safety classifier", () => {
       classifySafety("I want to kill myself.").category,
       "SELF_HARM_OR_SUICIDE",
     );
+    assert.equal(
+      classifySafety("I don't want to live anymore.").category,
+      "SELF_HARM_OR_SUICIDE",
+    );
+  });
+
+  it("does not treat being in love as a crisis", () => {
+    assert.equal(
+      classifySafety("is it tough to live life when you are in love with a person")
+        .category,
+      "SAFE_EDUCATIONAL",
+    );
   });
 
   it("marks unrelated topics out of scope", () => {

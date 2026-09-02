@@ -62,6 +62,7 @@ const MENTAL_WELLBEING_TOPICS = new Set([
   "mindfulness",
   "visualization",
   "self-esteem",
+  "romantic-love",
   "grief",
   "anger",
   "life-skills",

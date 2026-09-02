@@ -1,3 +1,7 @@
+import {
+  isRomanticRelationshipQuestion,
+  isSituationalLifeDifficultyQuestion,
+} from "@/lib/ai/intent/domain";
 import type { SafetyCategory } from "@/types/ai";
 
 export type SafetyClassification = {
@@ -45,11 +49,25 @@ const INJECTION_PATTERNS = [
 const CRISIS_PATTERNS = [
   /\b(emergency|call an ambulance|right now i('m| am) in danger)\b/i,
   /\b(someone is (going to|about to) (hurt|kill|harm))\b/i,
+  /\bimmediate danger\b/i,
+  /\b(overdose|took (too many|all my) (pills|tablets))\b/i,
 ];
 
 const SELF_HARM_PATTERNS = [
   /\b(suicid(e|al)|kill myself|end my life|want to die|self[- ]harm|cut myself|hang myself)\b/i,
   /\b(no reason to live|better off dead)\b/i,
+  /\b(don'?t|do not) want to (live|be alive)\b/i,
+  /\bnot wanting to live\b/i,
+  /\bhurting (myself|oneself)\b/i,
+];
+
+const EXPLICIT_CRISIS_OVERRIDE = [
+  /\bsuicid(e|al)\b/i,
+  /\bkill myself\b/i,
+  /\bend my life\b/i,
+  /\bwant to die\b/i,
+  /\bself[- ]harm\b/i,
+  /\boverdose\b/i,
 ];
 
 const VIOLENCE_PATTERNS = [
@@ -100,7 +118,12 @@ export function classifySafety(question: string): SafetyClassification {
     reasons.push("prompt-injection-pattern");
     return { category: "PROMPT_INJECTION", reasons };
   }
-  if (includesAny(text, SELF_HARM_PATTERNS)) {
+  const romanticLifeDifficulty =
+    isSituationalLifeDifficultyQuestion(text) &&
+    isRomanticRelationshipQuestion(text) &&
+    !includesAny(text, EXPLICIT_CRISIS_OVERRIDE);
+
+  if (includesAny(text, SELF_HARM_PATTERNS) && !romanticLifeDifficulty) {
     reasons.push("self-harm-language");
     return { category: "SELF_HARM_OR_SUICIDE", reasons };
   }
@@ -108,7 +131,7 @@ export function classifySafety(question: string): SafetyClassification {
     reasons.push("violence-language");
     return { category: "VIOLENCE_OR_HARM", reasons };
   }
-  if (includesAny(text, CRISIS_PATTERNS)) {
+  if (includesAny(text, CRISIS_PATTERNS) && !romanticLifeDifficulty) {
     reasons.push("crisis-language");
     return { category: "CRISIS_OR_EMERGENCY", reasons };
   }

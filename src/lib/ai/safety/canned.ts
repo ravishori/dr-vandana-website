@@ -1,5 +1,9 @@
 import { emergencyNotice } from "@/data/emergency";
 import { EDUCATIONAL_DISCLAIMER } from "@/data/ai/disclaimer";
+import {
+  AMBIGUOUS_CLARIFICATION,
+  GENERIC_GENERATION_FALLBACK,
+} from "@/lib/ai/prompts/system";
 
 export { EDUCATIONAL_DISCLAIMER };
 
@@ -60,3 +64,13 @@ export const OUT_OF_SCOPE_ANSWER = [
 
 export const LANGUAGE_NOT_READY_NOTICE =
   "This assistant currently answers in English. Hindi and Marathi support is planned and will be reviewed carefully so psychological terms stay accurate.";
+
+export const GENERIC_FALLBACK_ANSWER = [
+  "### Short Answer",
+  GENERIC_GENERATION_FALLBACK,
+].join("\n\n");
+
+export const AMBIGUOUS_ANSWER = [
+  "### Short Answer",
+  AMBIGUOUS_CLARIFICATION,
+].join("\n\n");

@@ -183,6 +183,42 @@ export type AskIntent =
   | "SAFETY"
   | "OUT_OF_SCOPE";
 
+/** Domain classification used to lock retrieval and answers to the user's question. */
+export type DomainIntent =
+  | "relationship"
+  | "emotional_wellbeing"
+  | "stress"
+  | "anxiety"
+  | "depression_awareness"
+  | "anger_management"
+  | "parenting"
+  | "child_psychology"
+  | "adolescent_psychology"
+  | "women_wellbeing"
+  | "workplace_mental_health"
+  | "burnout"
+  | "grief"
+  | "self_esteem"
+  | "confidence"
+  | "mindfulness"
+  | "positive_psychology"
+  | "general_psychology"
+  | "psychological_assessment"
+  | "professional_support"
+  | "crisis_safety"
+  | "outside_scope"
+  | "ambiguous";
+
+export type IntentClassification = {
+  domain: DomainIntent;
+  secondary?: DomainIntent;
+  question_type: AskIntent;
+  topic: string;
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  reasons: string[];
+  allow_case_studies: boolean;
+};
+
 export type RelevanceConfidence =
   | "HIGH_CONFIDENCE"
   | "MEDIUM_CONFIDENCE"
@@ -295,6 +331,10 @@ export type AskAiResponse = {
   intent?: AskIntent;
   topic?: string;
   quality?: AnswerQuality;
+  /** Structured internal classification metadata. */
+  domain_intent?: DomainIntent;
+  secondary_intent?: DomainIntent;
+  relevance_score?: number;
 };
 
 export type RelevanceSignals = {

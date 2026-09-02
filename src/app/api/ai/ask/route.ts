@@ -110,11 +110,14 @@ export async function POST(request: Request): Promise<Response> {
       safety_notice: result.response.safety_notice,
       conversation_id: result.response.conversation_id,
       show_support_cta: result.response.show_support_cta,
-      case_study_slug: result.response.case_study_slug,
-      intent: result.response.intent,
-      topic: result.response.topic,
-      quality: result.response.quality,
-    });
+          case_study_slug: result.response.case_study_slug,
+          intent: result.response.intent,
+          topic: result.response.topic,
+          quality: result.response.quality,
+          domain_intent: result.response.domain_intent,
+          secondary_intent: result.response.secondary_intent,
+          relevance_score: result.response.relevance_score,
+        });
   } catch {
     logStructured("ERROR", {
       requestId,

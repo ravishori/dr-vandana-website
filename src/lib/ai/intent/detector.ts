@@ -9,6 +9,7 @@ const HOW_TO_PATTERNS = [
   /\bhow (can|do|should|to) i\b/i,
   /\bhow to\b/i,
   /\bwhat can i do\b/i,
+  /\bwhat should i do\b/i,
   /\bways to\b/i,
   /\bsteps to\b/i,
   /\bpractise\b/i,

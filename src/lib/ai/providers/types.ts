@@ -1,4 +1,15 @@
-import type { AskIntent, RetrievedChunk, SafetyCategory } from "@/types/ai";
+import type { AskIntent, DomainIntent, RetrievedChunk, SafetyCategory } from "@/types/ai";
+
+export type GenerateResponseInput = {
+  question: string;
+  rewrittenQuery: string;
+  category: SafetyCategory;
+  retrieved: readonly RetrievedChunk[];
+  language: string;
+  intent?: AskIntent;
+  topic?: string;
+  domainIntent?: DomainIntent;
+};
 
 export type GenerateResponseInput = {
   question: string;

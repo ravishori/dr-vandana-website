@@ -17,7 +17,9 @@ const TOPIC_PATTERNS: ReadonlyArray<{ topic: string; patterns: readonly RegExp[]
   { topic: "stress", patterns: [/\bstress\b/i, /\bstressed\b/i] },
   { topic: "depression-awareness", patterns: [/\bdepression\b/i, /\blow mood\b/i] },
   { topic: "anger", patterns: [/\bang(er|ry)\b/i, /\bang(er|ry) management\b/i] },
-  { topic: "grief", patterns: [/\bgrief\b/i, /\bloss\b/i, /\bbereavement\b/i] },
+  { topic: "romantic-love", patterns: [/\bin love\b/i, /\blove with (a |the )?(person|someone|somebody)\b/i, /\bromantic (love|relationship|feelings)\b/i] },
+  { topic: "relationships", patterns: [/\brelationship(s)?\b/i, /\b(boyfriend|girlfriend|partner|spouse)\b/i, /\bwhether they love me\b/i] },
+  { topic: "grief", patterns: [/\bgrief\b/i, /\bbereavement\b/i, /\b(passed away|died|death of)\b/i, /\bloss of (a |my )?(parent|mother|father|child|spouse|loved one)\b/i] },
   { topic: "workplace-burnout", patterns: [/\bburnout\b/i, /\bworkplace stress\b/i] },
   { topic: "relationship-counselling", patterns: [/\brelationship counselling\b/i, /\brelationship counseling\b/i] },
   { topic: "how-counselling-works", patterns: [/\bhow does counselling work\b/i, /\bhow counselling works\b/i] },
@@ -46,7 +48,7 @@ function resolvePronounFollowUp(
   const lower = question.toLowerCase();
   const refersBack =
     /\b(it|that|this|them|those|these)\b/i.test(lower) ||
-    /^(how can i improve|how do i improve|tell me more|what about)\b/i.test(
+    /^(how can i improve|how do i improve|tell me more|what about|what should i do|what can i do)\b/i.test(
       lower.trim(),
     );
   if (!refersBack) {
@@ -77,7 +79,14 @@ function detectExplicitTopic(question: string): string | undefined {
       continue;
     }
     const haystack = [canonical, ...aliases].map((item) => item.toLowerCase());
-    if (tokens.some((token) => haystack.some((term) => term.includes(token) || token.includes(term)))) {
+    if (
+      tokens.some((token) =>
+        haystack.some((term) => {
+          const parts = term.split(/[\s-]+/).filter((part) => part.length > 2);
+          return parts.includes(token) || term === token;
+        }),
+      )
+    ) {
       return canonical;
     }
   }
