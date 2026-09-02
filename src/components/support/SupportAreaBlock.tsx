@@ -48,12 +48,12 @@ export function SupportAreaBlock({
           </div>
         </div>
 
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+        <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
           {area.topics.map((topic) => (
             <li
               key={topic.id}
               className={cn(
-                "border-brand-muted/25 rounded-[var(--radius-lg)] border px-4 py-5 md:px-5",
+                "border-brand-muted/20 rounded-[var(--radius-lg)] border px-4 py-5 shadow-[var(--shadow-sm)] md:px-5",
                 tone === "muted" ? "bg-background" : "bg-surface",
               )}
             >

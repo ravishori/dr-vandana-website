@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AdaptiveExperience } from "@/components/adaptive/AdaptiveExperience";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { MobileQuickBar } from "@/components/layout/MobileQuickBar";
 import { Navbar } from "@/components/navigation/Navbar";
@@ -11,6 +12,7 @@ type SiteShellProps = {
 export function SiteShell({ children }: SiteShellProps) {
   return (
     <>
+      <AdaptiveExperience />
       <Navbar />
       <main
         id="main-content"

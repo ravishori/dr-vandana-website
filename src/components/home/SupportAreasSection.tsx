@@ -32,7 +32,7 @@ export function SupportAreasSection() {
           </p>
         </div>
 
-        <ul className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-4">
+        <ul className="mt-8 grid grid-cols-1 gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           {homeSupportAreas.map((area) => {
             const Icon = supportIcons[area.icon];
 

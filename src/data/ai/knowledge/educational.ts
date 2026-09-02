@@ -20,7 +20,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — Areas of Support",
+    publication: "drvandana.trinetralab.net — Areas of Support",
     date: "2026-08-09",
     related_questions: [
       "How does counselling work?",
@@ -44,7 +44,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — educational counselling material",
+    publication: "drvandana.trinetralab.net — educational counselling material",
     date: "2026-08-13",
     keywords: ["first session", "counselling session", "first counselling session"],
     synonyms: ["initial session", "first appointment"],
@@ -99,7 +99,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — Stress & Wellness",
+    publication: "drvandana.trinetralab.net — Stress & Wellness",
     date: "2026-08-09",
     related_questions: [
       "How are anxiety concerns explored?",
@@ -152,7 +152,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — Stress & Wellness",
+    publication: "drvandana.trinetralab.net — Stress & Wellness",
     date: "2026-08-09",
     related_questions: [
       "What is depression?",
@@ -176,7 +176,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — Stress & Wellness",
+    publication: "drvandana.trinetralab.net — Stress & Wellness",
     date: "2026-08-09",
     related_questions: [
       "How might a psychologist approach burnout?",
@@ -200,7 +200,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — Stress & Wellness",
+    publication: "drvandana.trinetralab.net — Stress & Wellness",
     date: "2026-08-09",
     related_questions: [
       "What is mindfulness?",
@@ -246,7 +246,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — Areas of Support",
+    publication: "drvandana.trinetralab.net — Areas of Support",
     date: "2026-09-02",
     keywords: ["self-esteem", "confidence", "self-worth", "self-criticism"],
     synonyms: ["self esteem", "self worth", "self-confidence"],
@@ -369,7 +369,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — Areas of Support",
+    publication: "drvandana.trinetralab.net — Areas of Support",
     date: "2026-08-09",
     related_questions: [
       "How does relationship counselling work?",
@@ -392,7 +392,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — Child & Adolescent",
+    publication: "drvandana.trinetralab.net — Child & Adolescent",
     date: "2026-08-09",
     related_questions: [
       "How can parents support a child's emotions?",
@@ -415,7 +415,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — Child & Adolescent",
+    publication: "drvandana.trinetralab.net — Child & Adolescent",
     date: "2026-08-09",
     related_questions: [
       "How can I support a teenager's mental health?",
@@ -528,7 +528,7 @@ export const educationalKnowledgeDocuments = [
     evidence_level: "educational",
     source: PRACTICE_SOURCE,
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — educational pages",
+    publication: "drvandana.trinetralab.net — educational pages",
     date: "2026-08-09",
     related_questions: [
       "When should I see a psychologist?",

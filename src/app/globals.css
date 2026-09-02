@@ -177,6 +177,16 @@
     overflow-x: clip;
   }
 
+  /* Presentation hooks from AdaptiveExperience — never used for auth */
+  html[data-device-category="mobile"],
+  html[data-device-category="tablet"] {
+    --mobile-quick-bar-offset: 5.25rem;
+  }
+
+  html[data-device-category="desktop"] {
+    --mobile-quick-bar-offset: 0rem;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     html,
     body,

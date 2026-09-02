@@ -11,16 +11,22 @@ import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { Container } from "@/components/ui/Container";
 import { MenuIcon } from "@/components/ui/icons";
 import {
+  getDesktopCenterNavItems,
+  getDrawerNavItems,
   getNavCta,
-  getPrimaryNavItemsForPath,
   loginNavItem,
 } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 
+/**
+ * Adaptive header: CSS breakpoints drive mobile/tablet vs desktop chrome.
+ * Shared navigation data — no duplicated business logic.
+ */
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-  const items = getPrimaryNavItemsForPath(pathname);
+  const desktopItems = getDesktopCenterNavItems(pathname);
+  const drawerItems = getDrawerNavItems(pathname);
   const cta = getNavCta();
   const onLoginPage = pathname === "/login" || pathname.startsWith("/login/");
 
@@ -34,7 +40,7 @@ export function Navbar() {
           className="hidden justify-self-center lg:block"
         >
           <ul className="flex items-center gap-0.5 xl:gap-1">
-            {items.map((item) => (
+            {desktopItems.map((item) => (
               <li key={item.href}>
                 <NavLinkItem
                   item={item}
@@ -94,7 +100,7 @@ export function Navbar() {
         <MobileNavDrawer
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
-          items={items}
+          items={drawerItems}
           cta={cta}
           showLogin={!onLoginPage}
         />
