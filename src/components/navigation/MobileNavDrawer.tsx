@@ -88,9 +88,13 @@ export function MobileNavDrawer({
     <div
       className={cn(
         "fixed inset-0 z-50 lg:hidden",
+        // Children do not inherit pointer-events. When closed, every
+        // descendant must also be non-interactive or the full-screen
+        // backdrop steals clicks from the hamburger, login cards, etc.
         open ? "pointer-events-auto" : "pointer-events-none",
       )}
       aria-hidden={!open}
+      inert={!open ? true : undefined}
     >
       <button
         type="button"
@@ -98,7 +102,7 @@ export function MobileNavDrawer({
         aria-label="Close navigation menu"
         className={cn(
           "absolute inset-0 bg-text/45 transition-opacity duration-[var(--transition-base)] motion-reduce:transition-none",
-          open ? "opacity-100" : "opacity-0",
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={onClose}
       />
@@ -110,7 +114,9 @@ export function MobileNavDrawer({
         aria-labelledby={titleId}
         className={cn(
           "bg-surface absolute inset-y-0 right-0 flex h-[100dvh] w-[min(100%,22rem)] flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-lg transition-transform duration-[var(--transition-base)] motion-reduce:transition-none",
-          open ? "translate-x-0" : "translate-x-full",
+          open
+            ? "pointer-events-auto translate-x-0"
+            : "pointer-events-none translate-x-full",
         )}
       >
         <div className="border-brand-muted/25 flex items-start justify-between gap-3 border-b px-4 py-4">

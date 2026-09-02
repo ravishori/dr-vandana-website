@@ -21,7 +21,7 @@ export const aboutHero = {
 export const aboutIntroduction = {
   heading: "Professional introduction",
   paragraphs: [
-    `${professionalProfile.name} is a ${professionalProfile.profession.toLowerCase()} who provides ${professionalProfile.positioning.toLowerCase()}.`,
+    `${professionalProfile.name} is a ${professionalProfile.profession.toLowerCase()} who provides ${professionalProfile.positioning.replace(/\.$/, "").toLowerCase()}.`,
     "Her work centres on listening carefully, understanding each person's circumstances and creating a respectful space where emotional well-being can be explored with care.",
     "Psychological counselling is approached with professional boundaries, warmth and regard for the individuality of each person's experience — without pressure, judgment or promises about outcomes.",
   ],
