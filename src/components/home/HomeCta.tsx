@@ -1,35 +1,37 @@
-import { ButtonLink } from "@/components/ui/ButtonLink";
-import { Container } from "@/components/ui/Container";
-import { Section } from "@/components/ui/Section";
+import {
+  WellnessButton,
+  WellnessSection,
+} from "@/components/design-system";
 import { homeFinalCta } from "@/data/home";
 
 export function HomeCta() {
   return (
-    <Section aria-labelledby="home-final-cta-heading" className="pb-16 md:pb-20">
-      <Container>
-        <div className="bg-[linear-gradient(160deg,color-mix(in_srgb,var(--color-brand-muted)_18%,var(--color-background)),var(--color-background))] border-brand-muted/30 rounded-[var(--radius-xl)] border px-5 py-10 text-center md:px-10 md:py-14">
-          <h2
-            id="home-final-cta-heading"
-            className="mx-auto max-w-2xl text-[clamp(1.6rem,3vw,2.25rem)]"
+    <WellnessSection
+      aria-labelledby="home-final-cta-heading"
+      className="pb-16 md:pb-20"
+    >
+      <div className="rounded-[var(--radius-xl)] border border-[color-mix(in_srgb,var(--color-brand-muted)_30%,transparent)] bg-[linear-gradient(160deg,color-mix(in_srgb,var(--color-brand-muted)_18%,var(--color-background)),var(--color-background))] px-5 py-10 text-center md:px-10 md:py-14">
+        <h2
+          id="home-final-cta-heading"
+          className="mx-auto max-w-2xl font-serif text-[clamp(1.6rem,3vw,2.25rem)] font-semibold tracking-tight text-[var(--color-brand)]"
+        >
+          {homeFinalCta.heading}
+        </h2>
+        <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[var(--color-text-muted)] md:text-lg">
+          {homeFinalCta.description}
+        </p>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <WellnessButton href={homeFinalCta.primaryCta.href} variant="primary">
+            {homeFinalCta.primaryCta.label}
+          </WellnessButton>
+          <WellnessButton
+            href={homeFinalCta.secondaryCta.href}
+            variant="secondary"
           >
-            {homeFinalCta.heading}
-          </h2>
-          <p className="text-text-muted mx-auto mt-5 max-w-2xl text-base leading-relaxed md:text-lg">
-            {homeFinalCta.description}
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <ButtonLink href={homeFinalCta.primaryCta.href}>
-              {homeFinalCta.primaryCta.label}
-            </ButtonLink>
-            <ButtonLink
-              href={homeFinalCta.secondaryCta.href}
-              variant="secondary"
-            >
-              {homeFinalCta.secondaryCta.label}
-            </ButtonLink>
-          </div>
+            {homeFinalCta.secondaryCta.label}
+          </WellnessButton>
         </div>
-      </Container>
-    </Section>
+      </div>
+    </WellnessSection>
   );
 }

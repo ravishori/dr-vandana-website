@@ -1,11 +1,14 @@
-import { Container } from "@/components/ui/Container";
+import {
+  SectionHeading,
+  WellnessCard,
+  WellnessSection,
+} from "@/components/design-system";
 import {
   BookIcon,
   ListenIcon,
   PersonIcon,
   ShieldIcon,
 } from "@/components/ui/icons";
-import { Section } from "@/components/ui/Section";
 import { homeExpectations, homeExpectationsIntro } from "@/data/home";
 import type { ExpectationItem } from "@/types/home";
 
@@ -21,41 +24,44 @@ const expectationIcons: Record<
 
 export function WhatToExpectSection() {
   return (
-    <Section
+    <WellnessSection
       aria-labelledby="home-expect-heading"
-      className="bg-surface/70"
+      tone="soft"
     >
-      <Container>
-        <div className="max-w-2xl">
-          <h2 id="home-expect-heading">{homeExpectationsIntro.heading}</h2>
-          <p className="text-text-muted mt-4 text-base leading-relaxed md:text-lg">
-            {homeExpectationsIntro.description}
-          </p>
-        </div>
+      <SectionHeading
+        title={homeExpectationsIntro.heading}
+        titleId="home-expect-heading"
+        description={homeExpectationsIntro.description}
+        className="max-w-2xl"
+      />
 
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2">
-          {homeExpectations.map((item) => {
-            const Icon = expectationIcons[item.icon];
+      <ul className="grid gap-4 sm:grid-cols-2">
+        {homeExpectations.map((item) => {
+          const Icon = expectationIcons[item.icon];
 
-            return (
-              <li
-                key={item.id}
-                className="border-brand-muted/25 bg-background rounded-[var(--radius-xl)] border px-5 py-6"
+          return (
+            <WellnessCard
+              key={item.id}
+              as="li"
+              padding="md"
+              className="shadow-none bg-[var(--color-background)]"
+            >
+              <span
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-brand-muted)_25%,white)] text-[var(--color-brand)]"
+                aria-hidden="true"
               >
-                <span className="text-brand inline-flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-brand-muted)_25%,white)]">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <h3 className="mt-4 font-serif text-xl text-[var(--color-brand)]">
-                  {item.title}
-                </h3>
-                <p className="text-text-muted mt-3 text-sm leading-relaxed md:text-base">
-                  {item.description}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-      </Container>
-    </Section>
+                <Icon className="h-5 w-5" />
+              </span>
+              <h3 className="mt-4 font-serif text-xl font-semibold text-[var(--color-brand)]">
+                {item.title}
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)] md:text-base">
+                {item.description}
+              </p>
+            </WellnessCard>
+          );
+        })}
+      </ul>
+    </WellnessSection>
   );
 }
