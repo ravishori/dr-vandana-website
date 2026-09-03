@@ -1,34 +1,35 @@
-import { Container } from "@/components/ui/Container";
-import { Section } from "@/components/ui/Section";
+import {
+  SectionHeading,
+  WellnessCard,
+  WellnessSection,
+} from "@/components/design-system";
 import { counsellingBenefits } from "@/data/support";
 
 export function CounsellingBenefits() {
   return (
-    <Section
+    <WellnessSection
       aria-labelledby="counselling-benefits-heading"
-      className="bg-surface/70"
+      tone="soft"
     >
-      <Container>
-        <div className="max-w-2xl">
-          <h2 id="counselling-benefits-heading">
-            {counsellingBenefits.heading}
-          </h2>
-          <p className="text-text mt-4 text-base leading-relaxed md:text-lg">
-            {counsellingBenefits.introduction}
-          </p>
-        </div>
+      <SectionHeading
+        title={counsellingBenefits.heading}
+        titleId="counselling-benefits-heading"
+        description={counsellingBenefits.introduction}
+        className="mb-8"
+      />
 
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-          {counsellingBenefits.offerings.map((item) => (
-            <li
-              key={item}
-              className="border-brand-muted/30 text-text rounded-[var(--radius-md)] border border-dashed px-4 py-3 text-sm md:text-base"
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
-      </Container>
-    </Section>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {counsellingBenefits.offerings.map((item) => (
+          <WellnessCard
+            key={item}
+            as="li"
+            padding="sm"
+            className="border-dashed shadow-none"
+          >
+            <p className="text-sm text-[var(--color-text)] md:text-base">{item}</p>
+          </WellnessCard>
+        ))}
+      </ul>
+    </WellnessSection>
   );
 }
