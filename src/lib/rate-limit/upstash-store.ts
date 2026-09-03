@@ -7,6 +7,8 @@ let redisClient: Redis | null = null;
 let appointmentBurst: Ratelimit | null = null;
 let appointmentWindow: Ratelimit | null = null;
 let errorReportLimit: Ratelimit | null = null;
+let aiAskLimit: Ratelimit | null = null;
+let aiAskLimitPerMinute = 12;
 
 function getRedis(): Redis {
   if (!redisClient) {
@@ -112,6 +114,35 @@ export async function enforceUpstashAppointmentLimit(
   }
 }
 
+export async function enforceUpstashAiAskLimit(
+  clientIp: string,
+  requestsPerMinute: number,
+): Promise<UpstashLimitResult> {
+  try {
+    if (!aiAskLimit || aiAskLimitPerMinute !== requestsPerMinute) {
+      aiAskLimitPerMinute = requestsPerMinute;
+      aiAskLimit = new Ratelimit({
+        redis: getRedis(),
+        limiter: Ratelimit.slidingWindow(requestsPerMinute, "60 s"),
+        prefix: "drvandana:rl:ai:ask",
+        analytics: false,
+      });
+    }
+
+    const result = await aiAskLimit.limit(`ip:${clientIp}`);
+    if (!result.success) {
+      return {
+        ok: true,
+        allowed: false,
+        retryAfterSeconds: retryAfterSeconds(result.reset),
+      };
+    }
+    return { ok: true, allowed: true };
+  } catch {
+    return { ok: false, reason: "store_error" };
+  }
+}
+
 export async function enforceUpstashErrorReportLimit(
   clientIp: string,
 ): Promise<UpstashLimitResult> {
@@ -139,4 +170,5 @@ export function resetUpstashClientsForTests(): void {
   appointmentBurst = null;
   appointmentWindow = null;
   errorReportLimit = null;
+  aiAskLimit = null;
 }

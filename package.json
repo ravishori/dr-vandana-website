@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test src/lib/ai/**/*.test.ts src/lib/ai/knowledge/**/*.test.ts src/data/ai/knowledge/**/*.test.ts",
+    "curriculum:qa": "tsx scripts/run-curriculum-qa.ts",
+    "knowledge:coverage-report": "tsx scripts/generate-knowledge-coverage-report.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2.0.8",

@@ -7,6 +7,7 @@ import {
   hasUpstashCredentials,
   resolveAppointmentRateLimitStoreMode,
 } from "@/config/appointment-submission";
+import { isAiLlmConfigured } from "@/config/ai";
 import { logStructured } from "@/lib/observability/logger";
 
 /**
@@ -64,6 +65,16 @@ export function validateServerConfigAtStartup(): void {
         source: "CONFIGURATION",
         message:
           "APPOINTMENT_RATE_LIMIT_STORE=upstash but Upstash credentials are missing.",
+        operation: "validateServerConfigAtStartup",
+      });
+    }
+
+    if (!isAiLlmConfigured()) {
+      logStructured("INFO", {
+        code: "AI_PROVIDER_FALLBACK",
+        source: "CONFIGURATION",
+        message:
+          "Ask Dr. Vandana AI is using the educational retrieval fallback because AI_API_KEY is not configured.",
         operation: "validateServerConfigAtStartup",
       });
     }
