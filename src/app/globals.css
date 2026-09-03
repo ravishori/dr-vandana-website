@@ -397,3 +397,25 @@
     }
   }
 }
+
+/* Smart Wellness Navigation — subtle hub card entrance */
+@keyframes wellness-hub-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wellness-hub-enter {
+  animation: wellness-hub-enter 280ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wellness-hub-enter {
+    animation: none;
+  }
+}
