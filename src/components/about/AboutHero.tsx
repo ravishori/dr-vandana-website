@@ -2,6 +2,11 @@ import { AboutNatureVisual } from "@/components/about/AboutNatureVisual";
 import { Container } from "@/components/ui/Container";
 import { aboutHero } from "@/data/about";
 
+/**
+ * About hero — high-risk surface.
+ * Preserves layout, nature visual, wording, and H1 while aligning
+ * typography with Design System tokens. No hero CTA exists.
+ */
 export function AboutHero() {
   return (
     <section
@@ -15,16 +20,16 @@ export function AboutHero() {
 
       <Container className="relative grid items-center gap-10 py-14 md:py-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12 lg:py-20">
         <div className="home-reveal max-w-2xl">
-          <p className="text-text-muted text-sm font-medium tracking-[0.18em] uppercase">
+          <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-text-muted)] uppercase">
             {aboutHero.subheading}
           </p>
           <h1
             id="about-hero-heading"
-            className="mt-4 text-[clamp(2rem,4.5vw,3.1rem)] leading-[1.15]"
+            className="mt-3 font-serif text-[clamp(2rem,4.5vw,3.1rem)] leading-[1.15] font-semibold tracking-tight text-[var(--color-brand)]"
           >
             {aboutHero.heading}
           </h1>
-          <p className="text-text mt-5 max-w-xl text-base leading-relaxed md:text-lg">
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-text)] md:text-lg">
             {aboutHero.supportingMessage}
           </p>
         </div>

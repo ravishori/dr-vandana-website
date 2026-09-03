@@ -1,34 +1,38 @@
-import { Container } from "@/components/ui/Container";
-import { Section } from "@/components/ui/Section";
+import {
+  SectionHeading,
+  WellnessSection,
+} from "@/components/design-system";
 import { aboutApproach } from "@/data/about";
 
+/**
+ * Professional approach — open theme grid without cards
+ * to avoid a card-heavy, promotional feel.
+ */
 export function ProfessionalApproach() {
   return (
-    <Section
+    <WellnessSection
       aria-labelledby="about-approach-heading"
-      className="bg-surface/70"
+      tone="soft"
     >
-      <Container>
-        <div className="max-w-2xl">
-          <h2 id="about-approach-heading">{aboutApproach.heading}</h2>
-          <p className="text-text mt-4 text-base leading-relaxed md:text-lg">
-            {aboutApproach.lead}
-          </p>
-        </div>
+      <SectionHeading
+        title={aboutApproach.heading}
+        titleId="about-approach-heading"
+        description={aboutApproach.lead}
+        className="max-w-2xl"
+      />
 
-        <ul className="mt-10 grid gap-x-8 gap-y-8 sm:grid-cols-2">
-          {aboutApproach.themes.map((theme) => (
-            <li key={theme.id} className="max-w-md">
-              <h3 className="font-serif text-xl text-[var(--color-brand)]">
-                {theme.title}
-              </h3>
-              <p className="text-text-muted mt-2 text-sm leading-relaxed md:text-base">
-                {theme.description}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </Container>
-    </Section>
+      <ul className="grid gap-x-8 gap-y-8 sm:grid-cols-2">
+        {aboutApproach.themes.map((theme) => (
+          <li key={theme.id} className="max-w-md">
+            <h3 className="font-serif text-xl font-semibold text-[var(--color-brand)]">
+              {theme.title}
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-muted)] md:text-base">
+              {theme.description}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </WellnessSection>
   );
 }

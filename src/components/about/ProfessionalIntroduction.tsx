@@ -1,23 +1,34 @@
-import { Container } from "@/components/ui/Container";
-import { Section } from "@/components/ui/Section";
+import {
+  SectionHeading,
+  WellnessSection,
+} from "@/components/design-system";
 import { aboutIntroduction } from "@/data/about";
 
+/**
+ * Professional introduction — prose-first.
+ * Uses WellnessSection + SectionHeading; paragraphs stay uncarded for readability.
+ */
 export function ProfessionalIntroduction() {
   return (
-    <Section aria-labelledby="about-introduction-heading">
-      <Container className="max-w-3xl">
-        <h2 id="about-introduction-heading">{aboutIntroduction.heading}</h2>
-        <div className="mt-6 space-y-5">
-          {aboutIntroduction.paragraphs.map((paragraph) => (
-            <p
-              key={paragraph}
-              className="text-text text-base leading-relaxed md:text-lg"
-            >
-              {paragraph}
-            </p>
-          ))}
-        </div>
-      </Container>
-    </Section>
+    <WellnessSection
+      aria-labelledby="about-introduction-heading"
+      containerClassName="max-w-3xl"
+    >
+      <SectionHeading
+        title={aboutIntroduction.heading}
+        titleId="about-introduction-heading"
+        className="mb-6"
+      />
+      <div className="space-y-5">
+        {aboutIntroduction.paragraphs.map((paragraph) => (
+          <p
+            key={paragraph}
+            className="text-base leading-relaxed text-[var(--color-text)] md:text-lg"
+          >
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    </WellnessSection>
   );
 }
