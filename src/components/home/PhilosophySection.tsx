@@ -1,36 +1,42 @@
-import { Container } from "@/components/ui/Container";
-import { Section } from "@/components/ui/Section";
+import {
+  SectionHeading,
+  WellnessCard,
+  WellnessSection,
+} from "@/components/design-system";
 import { homePhilosophy } from "@/data/home";
 
 export function PhilosophySection() {
   return (
-    <Section
+    <WellnessSection
       aria-labelledby="home-philosophy-heading"
-      className="bg-surface/70"
+      tone="soft"
+      containerClassName="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-start lg:gap-14"
     >
-      <Container className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-start lg:gap-14">
-        <div className="max-w-2xl">
-          <h2 id="home-philosophy-heading">{homePhilosophy.heading}</h2>
-          <p className="text-text mt-5 text-base leading-relaxed md:text-lg">
-            {homePhilosophy.lead}
-          </p>
-        </div>
+      <SectionHeading
+        title={homePhilosophy.heading}
+        titleId="home-philosophy-heading"
+        description={homePhilosophy.lead}
+        className="mb-0 max-w-2xl"
+      />
 
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-          {homePhilosophy.principles.map((principle) => (
-            <li
-              key={principle}
-              className="border-brand-muted/30 text-text flex items-center gap-3 rounded-[var(--radius-md)] border border-dashed px-4 py-3 text-sm md:text-base"
-            >
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+        {homePhilosophy.principles.map((principle) => (
+          <WellnessCard
+            key={principle}
+            as="li"
+            padding="sm"
+            className="border-dashed shadow-none"
+          >
+            <p className="flex items-center gap-3 text-sm text-[var(--color-text)] md:text-base">
               <span
-                className="bg-brand-muted/40 h-2 w-2 shrink-0 rounded-full"
+                className="h-2 w-2 shrink-0 rounded-full bg-[color-mix(in_srgb,var(--color-brand-muted)_40%,transparent)]"
                 aria-hidden="true"
               />
               {principle}
-            </li>
-          ))}
-        </ul>
-      </Container>
-    </Section>
+            </p>
+          </WellnessCard>
+        ))}
+      </ul>
+    </WellnessSection>
   );
 }
