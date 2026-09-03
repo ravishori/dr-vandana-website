@@ -7,16 +7,20 @@ type BrandMarkProps = {
   className?: string;
   compact?: boolean;
   showTagline?: boolean;
+  /** Optional callback when the brand link is activated (e.g. close a drawer). */
+  onNavigate?: () => void;
 };
 
 export function BrandMark({
   className,
   compact = false,
   showTagline = false,
+  onNavigate,
 }: BrandMarkProps) {
   return (
     <Link
       href="/"
+      onClick={onNavigate}
       className={cn(
         "text-brand hover:text-brand focus-visible:outline-brand block no-underline",
         className,

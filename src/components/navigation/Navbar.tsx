@@ -54,7 +54,7 @@ export function Navbar() {
               className="text-text hover:bg-surface inline-flex min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2"
               aria-label="Open wellness navigation"
               aria-expanded={menuOpen}
-              aria-controls="mobile-navigation"
+              aria-controls="mobile-navigation-dialog"
               onClick={() => setMenuOpen(true)}
             >
               <MenuIcon className="h-5 w-5" />
@@ -67,9 +67,7 @@ export function Navbar() {
         Keep the drawer outside the sticky/backdrop-blur header so
         position:fixed covers the viewport rather than the header box.
       */}
-      <div id="mobile-navigation">
-        <MobileNavDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
-      </div>
+      <MobileNavDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
     </>
   );
 }

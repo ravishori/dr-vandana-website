@@ -21,6 +21,8 @@ type MobileNavDrawerProps = {
 
 type PanelId = "root" | "support" | "resources";
 
+const DRAWER_TRANSITION_MS = 300;
+
 /**
  * Smart Wellness Navigation V2 — premium mobile drawer with nested panels.
  * Desktop navigation remains unchanged in Navbar.
@@ -28,9 +30,11 @@ type PanelId = "root" | "support" | "resources";
 export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const backButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const panelRefState = useRef<PanelId>("root");
+  const scrollLockY = useRef(0);
   const [panel, setPanel] = useState<PanelId>("root");
   const config = wellnessNavigationConfig;
 
@@ -44,13 +48,32 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
       const resetTimer = window.setTimeout(() => {
         panelRefState.current = "root";
         setPanel("root");
-      }, 320);
+      }, DRAWER_TRANSITION_MS);
       return () => window.clearTimeout(resetTimer);
     }
 
     previouslyFocused.current = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+
+    // iOS-safe body scroll lock that preserves page position.
+    scrollLockY.current = window.scrollY;
+    const { body, documentElement } = document;
+    const previousBody = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+    };
+    const previousHtmlOverflow = documentElement.style.overflow;
+
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollLockY.current}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    documentElement.style.overflow = "hidden";
 
     const focusTimer = window.setTimeout(() => {
       closeButtonRef.current?.focus();
@@ -61,6 +84,7 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
         event.preventDefault();
         if (panelRefState.current !== "root") {
           updatePanel("root");
+          window.setTimeout(() => closeButtonRef.current?.focus(), 0);
           return;
         }
         onClose();
@@ -71,8 +95,15 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
         return;
       }
 
-      const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      const focusable = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter(
+        (el) =>
+          !el.hasAttribute("disabled") &&
+          el.tabIndex !== -1 &&
+          !el.closest("[inert]"),
       );
       if (focusable.length === 0) {
         return;
@@ -94,16 +125,36 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
 
     return () => {
       window.clearTimeout(focusTimer);
-      document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
+
+      body.style.overflow = previousBody.overflow;
+      body.style.position = previousBody.position;
+      body.style.top = previousBody.top;
+      body.style.left = previousBody.left;
+      body.style.right = previousBody.right;
+      body.style.width = previousBody.width;
+      documentElement.style.overflow = previousHtmlOverflow;
+      window.scrollTo(0, scrollLockY.current);
+
       previouslyFocused.current?.focus();
     };
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open || panel === "root") {
+      return;
+    }
+    const focusTimer = window.setTimeout(() => {
+      backButtonRef.current?.focus();
+    }, DRAWER_TRANSITION_MS);
+    return () => window.clearTimeout(focusTimer);
+  }, [open, panel]);
 
   const activeNested =
     panel === "support" || panel === "resources"
       ? config.panels[panel]
       : null;
+  const isRoot = panel === "root";
 
   return (
     <div
@@ -112,10 +163,11 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
         open ? "pointer-events-auto" : "pointer-events-none",
       )}
       aria-hidden={!open}
+      inert={!open ? true : undefined}
     >
       <button
         type="button"
-        tabIndex={open ? 0 : -1}
+        tabIndex={-1}
         aria-label="Close wellness navigation"
         className={cn(
           "absolute inset-0 bg-[color-mix(in_srgb,var(--color-text)_42%,transparent)] transition-opacity duration-[280ms] ease-out motion-reduce:transition-none",
@@ -126,19 +178,20 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
 
       <div
         ref={panelRef}
+        id="mobile-navigation-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         className={cn(
-          "bg-surface absolute inset-y-0 right-0 flex w-[min(100%,22.5rem)] flex-col shadow-[0_8px_40px_rgba(43,51,44,0.14)] transition-transform duration-[300ms] ease-out motion-reduce:transition-none",
-          "pt-[env(safe-area-inset-top)] pb-[max(0.5rem,env(safe-area-inset-bottom))]",
+          "bg-surface absolute inset-y-0 right-0 flex w-[min(100%,22.5rem)] flex-col overscroll-contain shadow-[0_8px_40px_rgba(43,51,44,0.14)] transition-transform duration-[300ms] ease-out motion-reduce:transition-none",
+          "pt-[env(safe-area-inset-top)]",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
-        <div className="border-brand-muted/25 flex items-start justify-between gap-3 border-b px-4 pt-4 pb-3">
+        <div className="border-brand-muted/25 flex shrink-0 items-start justify-between gap-3 border-b px-4 pt-4 pb-3">
           <div className="min-w-0">
             <div id={titleId}>
-              <BrandMark compact />
+              <BrandMark compact onNavigate={onClose} />
             </div>
             <p className="text-text-muted mt-1.5 text-xs leading-relaxed">
               {siteConfig.tagline}
@@ -159,10 +212,15 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
           <div
             className={cn(
               "flex h-full w-[200%] transition-transform duration-[280ms] ease-out motion-reduce:transition-none",
-              panel === "root" ? "translate-x-0" : "-translate-x-1/2",
+              isRoot ? "translate-x-0" : "-translate-x-1/2",
             )}
           >
-            <div className="flex h-full w-1/2 flex-col overflow-y-auto overscroll-contain px-4 py-4">
+            {/* ROOT HUB */}
+            <div
+              className="flex h-full w-1/2 flex-col overflow-y-auto overscroll-contain px-4 pt-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))]"
+              inert={open && !isRoot ? true : undefined}
+              aria-hidden={!isRoot}
+            >
               <div className="mb-4">
                 <p className="text-brand font-serif text-lg leading-snug font-semibold tracking-tight">
                   {config.greeting}
@@ -182,7 +240,7 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
                     emphasis={action.emphasis}
                     ctaLabel={action.ctaLabel}
                     href={action.kind === "link" ? action.href : undefined}
-                    delayMs={open && panel === "root" ? index * 40 : 0}
+                    delayMs={open && isRoot ? index * 40 : 0}
                     onActivate={() => {
                       if (action.kind === "panel" && action.panelId) {
                         updatePanel(action.panelId);
@@ -221,8 +279,14 @@ export function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
               </div>
             </div>
 
-            <div className="flex h-full w-1/2 flex-col overflow-y-auto overscroll-contain px-4 py-4">
+            {/* NESTED PANEL */}
+            <div
+              className="flex h-full w-1/2 flex-col overflow-y-auto overscroll-contain px-4 pt-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))]"
+              inert={open && isRoot ? true : undefined}
+              aria-hidden={isRoot}
+            >
               <button
+                ref={backButtonRef}
                 type="button"
                 onClick={() => updatePanel("root")}
                 className="text-brand hover:bg-background mb-3 inline-flex min-h-11 items-center gap-1.5 self-start rounded-md px-1.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2"
