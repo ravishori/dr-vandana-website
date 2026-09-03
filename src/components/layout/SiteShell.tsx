@@ -14,7 +14,7 @@ export function SiteShell({ children }: SiteShellProps) {
       <Navbar />
       <main
         id="main-content"
-        className="flex flex-1 flex-col pb-[calc(var(--mobile-quick-bar-offset)+env(safe-area-inset-bottom))] lg:pb-0"
+        className="flex flex-1 flex-col pb-[calc(var(--mobile-quick-bar-offset)+env(safe-area-inset-bottom))] xl:pb-0"
       >
         {children}
       </main>

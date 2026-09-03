@@ -22,7 +22,7 @@ export function MobileQuickBar() {
   const whatsappHref = getVerifiedWhatsAppHref();
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 lg:hidden">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 xl:hidden">
       <nav
         aria-label="Quick actions"
         className="border-brand-muted/30 bg-surface/95 pointer-events-auto border-t px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(43,51,44,0.08)] backdrop-blur-sm"
@@ -34,7 +34,7 @@ export function MobileQuickBar() {
                 href={cta.href}
                 className={cn(
                   actionClassName,
-                  "bg-accent/20 text-text hover:bg-accent/30",
+                  "bg-brand text-white hover:bg-[color-mix(in_srgb,var(--palette-brand)_88%,black)]",
                 )}
               >
                 <CalendarIcon className="h-4 w-4" />
