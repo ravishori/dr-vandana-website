@@ -183,3 +183,12 @@ export const CopyIcon = createStrokeIcon(
 export const CheckIcon = createStrokeIcon("M5 12.5l4.5 4.5L19 7.5");
 
 export const ChevronDownIcon = createStrokeIcon("M6 9l6 6 6-6");
+
+export const ChevronLeftIcon = createStrokeIcon("M15 6l-6 6 6 6");
+
+export const ChevronRightIcon = createStrokeIcon("M9 6l6 6-6 6");
+
+/** Subtle sparkle mark for the educational AI assistant card. */
+export const SparkleIcon = createStrokeIcon(
+  "M12 3.5l1.2 4.2L17.5 9 13.2 10.3 12 14.5l-1.2-4.2L6.5 9l4.3-1.3L12 3.5zM18.5 14.5l.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3zM5.5 15.5l.55 1.7 1.7.55-1.7.55-.55 1.7-.55-1.7-1.7-.55 1.7-.55.55-1.7z",
+);

@@ -1,0 +1,242 @@
+[
+  {
+    "document_id": "curriculum-sem-i-501-11-unit-1",
+    "course": "PERSONALITY PSYCHOLOGY",
+    "unit": "1",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (REFERENCE_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-i-501-11-unit-2",
+    "course": "PERSONALITY PSYCHOLOGY",
+    "unit": "2",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (REFERENCE_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-i-501-11-unit-3",
+    "course": "PERSONALITY PSYCHOLOGY",
+    "unit": "3",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (REFERENCE_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-i-501-11-unit-4",
+    "course": "PERSONALITY PSYCHOLOGY",
+    "unit": "4",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (REFERENCE_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-i-505-12-unit-1",
+    "course": "Counselling Across the Lifespan",
+    "unit": "1",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (STUDY_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-i-505-12-unit-2",
+    "course": "Counselling Across the Lifespan",
+    "unit": "2",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (STUDY_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-i-505-12-unit-3",
+    "course": "Counselling Across the Lifespan",
+    "unit": "3",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (STUDY_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-i-505-12-unit-4",
+    "course": "Counselling Across the Lifespan",
+    "unit": "4",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (STUDY_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iii-practicum-in-clinical-psychology-psychopatholog-unit-1",
+    "course": "Practicum In Clinical Psychology: Psychopathology And Neuropsychological",
+    "unit": "1",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Incomplete bibliographic title (STUDY_BOOK): . NY: Wiley.",
+    "severity": "MEDIUM",
+    "recommended_correction": "Join lines from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iii-practicum-in-clinical-psychology-psychopatholog-unit-2",
+    "course": "Practicum In Clinical Psychology: Psychopathology And Neuropsychological",
+    "unit": "2",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Incomplete bibliographic title (STUDY_BOOK): . NY: Wiley.",
+    "severity": "MEDIUM",
+    "recommended_correction": "Join lines from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iii-practicum-in-clinical-psychology-psychopatholog-unit-3",
+    "course": "Practicum In Clinical Psychology: Psychopathology And Neuropsychological",
+    "unit": "3",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Incomplete bibliographic title (STUDY_BOOK): . NY: Wiley.",
+    "severity": "MEDIUM",
+    "recommended_correction": "Join lines from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iii-practicum-in-clinical-psychology-psychopatholog-unit-4",
+    "course": "Practicum In Clinical Psychology: Psychopathology And Neuropsychological",
+    "unit": "4",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Incomplete bibliographic title (STUDY_BOOK): . NY: Wiley.",
+    "severity": "MEDIUM",
+    "recommended_correction": "Join lines from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-human-resource-management-unit-1",
+    "course": "HUMAN RESOURCE MANAGEMENT",
+    "unit": "1",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (REFERENCE_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-human-resource-management-unit-2",
+    "course": "HUMAN RESOURCE MANAGEMENT",
+    "unit": "2",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (REFERENCE_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-human-resource-management-unit-3",
+    "course": "HUMAN RESOURCE MANAGEMENT",
+    "unit": "3",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (REFERENCE_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-human-resource-management-unit-4",
+    "course": "HUMAN RESOURCE MANAGEMENT",
+    "unit": "4",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (REFERENCE_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-career-counselling-and-world-of-work-unit-1",
+    "course": "Career Counselling and World of Work",
+    "unit": "1",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (STUDY_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-career-counselling-and-world-of-work-unit-1",
+    "course": "Career Counselling and World of Work",
+    "unit": "1",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Incomplete bibliographic title (STUDY_BOOK): 1 – 5.22.",
+    "severity": "MEDIUM",
+    "recommended_correction": "Join lines from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-career-counselling-and-world-of-work-unit-2",
+    "course": "Career Counselling and World of Work",
+    "unit": "2",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (STUDY_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-career-counselling-and-world-of-work-unit-2",
+    "course": "Career Counselling and World of Work",
+    "unit": "2",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Incomplete bibliographic title (STUDY_BOOK): 1 – 5.22.",
+    "severity": "MEDIUM",
+    "recommended_correction": "Join lines from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-career-counselling-and-world-of-work-unit-3",
+    "course": "Career Counselling and World of Work",
+    "unit": "3",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (STUDY_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-career-counselling-and-world-of-work-unit-3",
+    "course": "Career Counselling and World of Work",
+    "unit": "3",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Incomplete bibliographic title (STUDY_BOOK): 1 – 5.22.",
+    "severity": "MEDIUM",
+    "recommended_correction": "Join lines from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-career-counselling-and-world-of-work-unit-4",
+    "course": "Career Counselling and World of Work",
+    "unit": "4",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Truncated bibliographic title (STUDY_BOOK)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Complete title from source PDF"
+  },
+  {
+    "document_id": "curriculum-sem-iv-career-counselling-and-world-of-work-unit-4",
+    "course": "Career Counselling and World of Work",
+    "unit": "4",
+    "reference_type": "UNKNOWN",
+    "title": "",
+    "problem": "Incomplete bibliographic title (STUDY_BOOK): 1 – 5.22.",
+    "severity": "MEDIUM",
+    "recommended_correction": "Join lines from source PDF"
+  }
+]

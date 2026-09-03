@@ -1,0 +1,520 @@
+{
+  "generated_at": "2026-09-02T06:42:05.776Z",
+  "corpus_version_note": "Generated from repository data — not manually edited.",
+  "priority_topics": [
+    {
+      "topic": "self-esteem",
+      "source_count": 3,
+      "published_source_count": 3,
+      "source_tier_distribution": {
+        "TIER_4_EDUCATIONAL": 1,
+        "TIER_1_AUTHORITATIVE": 2
+      },
+      "evidence_level_distribution": {
+        "educational": 1,
+        "public-health-education": 2
+      },
+      "coverage_status": "ADEQUATE",
+      "last_reviewed": "2026-09-02",
+      "gaps": [],
+      "recommendation": "Maintain self-esteem sources with 12-month review cycles."
+    },
+    {
+      "topic": "anxiety",
+      "source_count": 2,
+      "published_source_count": 2,
+      "source_tier_distribution": {
+        "TIER_1_AUTHORITATIVE": 2
+      },
+      "evidence_level_distribution": {
+        "public-health-education": 2
+      },
+      "coverage_status": "ADEQUATE",
+      "last_reviewed": "2026-09-02",
+      "gaps": [],
+      "recommendation": "Maintain anxiety sources with 12-month review cycles."
+    },
+    {
+      "topic": "resilience",
+      "source_count": 4,
+      "published_source_count": 4,
+      "source_tier_distribution": {
+        "TIER_4_EDUCATIONAL": 1,
+        "TIER_1_AUTHORITATIVE": 3
+      },
+      "evidence_level_distribution": {
+        "educational": 1,
+        "public-health-education": 3
+      },
+      "coverage_status": "ADEQUATE",
+      "last_reviewed": "2026-09-02",
+      "gaps": [],
+      "recommendation": "Maintain resilience sources with 12-month review cycles."
+    },
+    {
+      "topic": "coping",
+      "source_count": 5,
+      "published_source_count": 5,
+      "source_tier_distribution": {
+        "TIER_1_AUTHORITATIVE": 4,
+        "TIER_4_EDUCATIONAL": 1
+      },
+      "evidence_level_distribution": {
+        "public-health-education": 4,
+        "educational": 1
+      },
+      "coverage_status": "ADEQUATE",
+      "last_reviewed": "2026-09-02",
+      "gaps": [],
+      "recommendation": "Identify and manually verify authoritative sources for coping before ingestion."
+    },
+    {
+      "topic": "emotional-regulation",
+      "source_count": 2,
+      "published_source_count": 2,
+      "source_tier_distribution": {
+        "TIER_4_EDUCATIONAL": 1,
+        "TIER_1_AUTHORITATIVE": 1
+      },
+      "evidence_level_distribution": {
+        "educational": 1,
+        "public-health-education": 1
+      },
+      "coverage_status": "ADEQUATE",
+      "last_reviewed": "2026-09-02",
+      "gaps": [],
+      "recommendation": "Maintain emotional-regulation sources with 12-month review cycles."
+    },
+    {
+      "topic": "mindfulness",
+      "source_count": 2,
+      "published_source_count": 2,
+      "source_tier_distribution": {
+        "TIER_4_EDUCATIONAL": 1,
+        "TIER_1_AUTHORITATIVE": 1
+      },
+      "evidence_level_distribution": {
+        "educational": 1,
+        "public-health-education": 1
+      },
+      "coverage_status": "ADEQUATE",
+      "last_reviewed": "2026-09-02",
+      "gaps": [],
+      "recommendation": "Maintain mindfulness sources with 12-month review cycles."
+    }
+  ],
+  "source_diversity": {
+    "organizations": {
+      "World Health Organization": 3,
+      "National Institute of Mental Health (NIMH)": 4,
+      "National Library of Medicine (NIH MedlinePlus)": 1,
+      "Centers for Disease Control and Prevention (CDC)": 3,
+      "National Center for Complementary and Integrative Health (NCCIH)": 1
+    },
+    "source_types": {
+      "PUBLIC_HEALTH_Q_AND_A": 1,
+      "PUBLIC_HEALTH_FACT_SHEET": 2,
+      "GOVERNMENT_HEALTH_EDUCATION": 9
+    },
+    "source_tiers": {
+      "TIER_1_AUTHORITATIVE": 12
+    }
+  },
+  "legacy_inferred_metadata": {
+    "document_count": 28,
+    "documents": [
+      {
+        "id": "vandana-verified-profile",
+        "corpus": "DR_VANDANA_KNOWLEDGE",
+        "topic": "professional-identity",
+        "inferred_source_tier": "TIER_5_DR_VANDANA",
+        "inferred_knowledge_scope": "DR_VANDANA_PRACTICE",
+        "evidence_level": "verified-practice",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "vandana-verified-approach",
+        "corpus": "DR_VANDANA_KNOWLEDGE",
+        "topic": "counselling-approach",
+        "inferred_source_tier": "TIER_5_DR_VANDANA",
+        "inferred_knowledge_scope": "DR_VANDANA_PRACTICE",
+        "evidence_level": "verified-practice",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "vandana-holistic-wellness-boundary",
+        "corpus": "DR_VANDANA_KNOWLEDGE",
+        "topic": "holistic-wellness",
+        "inferred_source_tier": "TIER_5_DR_VANDANA",
+        "inferred_knowledge_scope": "DR_VANDANA_PRACTICE",
+        "evidence_level": "verified-practice",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "vandana-confidentiality-public",
+        "corpus": "DR_VANDANA_KNOWLEDGE",
+        "topic": "confidentiality",
+        "inferred_source_tier": "TIER_5_DR_VANDANA",
+        "inferred_knowledge_scope": "DR_VANDANA_PRACTICE",
+        "evidence_level": "verified-practice",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-counselling-how-it-works",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "how-counselling-works",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "GENERAL_PSYCHOLOGY",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-first-session",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "first-session",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "GENERAL_PSYCHOLOGY",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-how-psychologist-approaches-a-case",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "case-approach-framework",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "GENERAL_PSYCHOLOGY",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-anxiety-awareness",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "anxiety-awareness",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-stress-management",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "stress-management",
+        "inferred_source_tier": "TIER_1_AUTHORITATIVE",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "public-health-education",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-depression-awareness",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "depression-awareness",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-burnout-workplace",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "workplace-burnout",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-mindfulness-meditation",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "mindfulness",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-emotional-intelligence",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "emotional-intelligence",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-self-esteem-confidence",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "self-esteem",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-visualization-technique",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "visualization",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-stress-vs-anxiety",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "stress-vs-anxiety",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-relationships",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "relationship-counselling",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "GENERAL_PSYCHOLOGY",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-parenting-child-psychology",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "parenting-and-children",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "GENERAL_PSYCHOLOGY",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-adolescents",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "adolescent-mental-health",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "GENERAL_PSYCHOLOGY",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-womens-mental-health",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "womens-mental-health",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-anger-management",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "anger",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-grief",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "grief",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-life-skills-habits",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "life-skills",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "edu-faq-professional-support",
+        "corpus": "PSYCHOLOGY_EDUCATIONAL_KNOWLEDGE",
+        "topic": "when-to-seek-help",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "GENERAL_PSYCHOLOGY",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "case-workplace-burnout",
+        "corpus": "CASE_STUDY_KNOWLEDGE",
+        "topic": "workplace-burnout",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "MENTAL_WELLBEING",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "case-adolescent-academic-pressure",
+        "corpus": "CASE_STUDY_KNOWLEDGE",
+        "topic": "adolescent-academic-pressure",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "CLINICAL_EDUCATION",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "case-relationship-communication",
+        "corpus": "CASE_STUDY_KNOWLEDGE",
+        "topic": "relationship-communication",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "CLINICAL_EDUCATION",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      },
+      {
+        "id": "case-grief-after-loss",
+        "corpus": "CASE_STUDY_KNOWLEDGE",
+        "topic": "grief-after-loss",
+        "inferred_source_tier": "TIER_4_EDUCATIONAL",
+        "inferred_knowledge_scope": "CLINICAL_EDUCATION",
+        "evidence_level": "educational",
+        "explicit_source_tier": false,
+        "explicit_knowledge_scope": false,
+        "ambiguous_classifications": [
+          "source_metadata not recorded; tier/scope inferred from corpus",
+          "source_type not explicitly recorded"
+        ]
+      }
+    ]
+  }
+}

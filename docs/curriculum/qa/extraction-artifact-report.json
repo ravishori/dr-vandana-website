@@ -1,0 +1,46 @@
+[
+  {
+    "document_id": "curriculum-sem-i-501-11-unit-1",
+    "semester": "I",
+    "course": "PERSONALITY PSYCHOLOGY",
+    "unit": "1",
+    "file": "src/data/ai/knowledge/curriculum/semester-i.ts",
+    "problem": "Broken bullet marker (PDF artifact: 'b .')",
+    "severity": "MEDIUM",
+    "recommended_correction": "Review against source PDF and fix bullet formatting manually",
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "document_id": "curriculum-sem-i-506-11-unit-1",
+    "semester": "I",
+    "course": "Research Methodology for Psychology",
+    "unit": "1",
+    "file": "src/data/ai/knowledge/curriculum/semester-i.ts",
+    "problem": "Split word from PDF line join (missing space)",
+    "severity": "MEDIUM",
+    "recommended_correction": "Join words per source PDF; do not guess missing letters",
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "document_id": "curriculum-sem-iv-cbt-and-rebt-basics-and-applications-unit-1",
+    "semester": "IV",
+    "course": "CBT and REBT: Basics and Applications",
+    "unit": "1",
+    "file": "src/data/ai/knowledge/curriculum/semester-iv.ts",
+    "problem": "Replacement or invalid Unicode character",
+    "severity": "HIGH",
+    "recommended_correction": "Restore text from source PDF for garbled segment",
+    "status": "REVIEW_REQUIRED"
+  },
+  {
+    "document_id": "curriculum-sem-iv-cbt-and-rebt-basics-and-applications-unit-3",
+    "semester": "IV",
+    "course": "CBT and REBT: Basics and Applications",
+    "unit": "3",
+    "file": "src/data/ai/knowledge/curriculum/semester-iv.ts",
+    "problem": "Replacement or invalid Unicode character",
+    "severity": "HIGH",
+    "recommended_correction": "Restore text from source PDF for garbled segment",
+    "status": "REVIEW_REQUIRED"
+  }
+]

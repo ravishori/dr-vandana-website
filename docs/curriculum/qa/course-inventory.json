@@ -1,0 +1,380 @@
+[
+  {
+    "semester": "I",
+    "course_code": "505 14",
+    "course_title": "Community and Social Psychology",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "I",
+    "course_code": "505 12",
+    "course_title": "Counselling Across the Lifespan",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "I",
+    "course_code": "504 11",
+    "course_title": "EXPERIMENTAL PSYCHOLOGY PRACTICAL",
+    "course_type": "Mandatory",
+    "credits": 2,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "II",
+    "course_code": "515 12",
+    "course_title": "Assessment in Counselling Psychology",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "II",
+    "course_code": "515 14",
+    "course_title": "Assessment in Social Psychology",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "II",
+    "course_code": "515 13",
+    "course_title": "Competency Based Assessment in Organization",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "II",
+    "course_code": "511 11",
+    "course_title": "EVOLUTIONARY PSYCHOLOGY",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Advanced Skills and Processes of Counselling and Psychotherapy",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Behavioral Economics",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Biological Basis of Human Behaviour",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Data Analytics and Machine Learning Applications to Psychology",
+    "course_type": "Mandatory",
+    "credits": 2,
+    "unit_count": 2,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Intervention systems and Skills of Psychology",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Legal Perspectives in Psychology and Praxis",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 5,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Political Psychology",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Practicum In Clinical Psychology: Psychopathology And Neuropsychological",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Practicum in Counseling Psychology",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "PRACTICUM IN INDUSTRIAL PSYCHOLOGY",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 5,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Practicum In Social Psychology",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "III",
+    "course_code": null,
+    "course_title": "Research Project in Psychology I: Preparing Research Proposal",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 1,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "II",
+    "course_code": "516 11",
+    "course_title": "On the Job training in Different Psychology related Work Sectors",
+    "course_type": "On the Job Training/ Field Project (OJT/FP)",
+    "credits": 4,
+    "unit_count": 1,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "II",
+    "course_code": "513 11",
+    "course_title": "Positive Psychology",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "II",
+    "course_code": "515 11",
+    "course_title": "Psychodiagnostics",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "II",
+    "course_code": "514 11",
+    "course_title": "PSYCHOLOGICAL TESTING AND PSYCHOMETRICS PRACTICALS",
+    "course_type": "Mandatory",
+    "credits": 2,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "II",
+    "course_code": "512 11",
+    "course_title": "Social Foundations of Human Behaviour",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "I",
+    "course_code": "505 13",
+    "course_title": "Organizational Behaviour (OB)",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "I",
+    "course_code": "501 11",
+    "course_title": "PERSONALITY PSYCHOLOGY",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "I",
+    "course_code": "502 11",
+    "course_title": "PSYCHOLOGY OF COGNITION AND EMOTION",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "I",
+    "course_code": "505 11",
+    "course_title": "Psychopathology across lifespan",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "I",
+    "course_code": "506 11",
+    "course_title": "Research Methodology for Psychology",
+    "course_type": "Research Methodology",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "I",
+    "course_code": "503 11",
+    "course_title": "STATISTICS FOR PSYCHOLOGY",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "IMPORTED"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Career Counselling and World of Work",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "CBT and REBT: Basics and Applications",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Consumer Psychology",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Critical and Theoretical Psychology",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Cultural Psychology",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "HUMAN RESOURCE MANAGEMENT",
+    "course_type": "Mandatory",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Organizational Development",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Peace Psychology",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Psychology for Conservation and Climate Change",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Psychotherapy for Clinical Psychology",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Research Project in Psychology II: Research Dissertation",
+    "course_type": "Research Project",
+    "credits": 6,
+    "unit_count": 1,
+    "inventory_status": "UNCERTAIN"
+  },
+  {
+    "semester": "IV",
+    "course_code": null,
+    "course_title": "Social Problems: Skills and Interventions",
+    "course_type": "Elective",
+    "credits": 4,
+    "unit_count": 4,
+    "inventory_status": "UNCERTAIN"
+  }
+]

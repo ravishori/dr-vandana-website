@@ -1,6 +1,10 @@
 import { Container } from "@/components/ui/Container";
 import { supportHero } from "@/data/support";
 
+/**
+ * Areas of Support hero — keeps established display-scale typography
+ * while aligning spacing/colour with Design System tokens.
+ */
 export function SupportHero() {
   return (
     <section
@@ -13,16 +17,16 @@ export function SupportHero() {
       />
 
       <Container className="relative max-w-3xl py-14 md:py-16 lg:py-20">
-        <p className="text-text-muted text-sm font-medium tracking-[0.18em] uppercase">
+        <p className="text-xs font-semibold tracking-[0.14em] text-[var(--color-text-muted)] uppercase">
           Psychological counselling
         </p>
         <h1
           id="support-hero-heading"
-          className="mt-4 text-[clamp(2rem,4.5vw,3.1rem)] leading-[1.15]"
+          className="mt-3 font-serif text-[clamp(2rem,4.5vw,3.1rem)] leading-[1.15] font-semibold tracking-tight text-[var(--color-brand)]"
         >
           {supportHero.heading}
         </h1>
-        <p className="text-text mt-5 text-base leading-relaxed md:text-lg">
+        <p className="mt-5 text-base leading-relaxed text-[var(--color-text)] md:text-lg">
           {supportHero.supportingText}
         </p>
       </Container>
