@@ -24,6 +24,8 @@ import {
   getEnabledOptions,
 } from "@/data/appointment-enquiry";
 import {
+  appointmentClientValidationSummary,
+  appointmentFormFieldOrder,
   emptyAppointmentFormValues,
   getContactFieldLabel,
   validateAppointmentForm,
@@ -53,6 +55,7 @@ function mapServerFieldErrors(
 export function AppointmentForm() {
   const formId = useId();
   const summaryRef = useRef<HTMLDivElement>(null);
+  const submittingRef = useRef(false);
   const [values, setValues] = useState<AppointmentFormValues>(
     emptyAppointmentFormValues,
   );
@@ -99,16 +102,12 @@ export function AppointmentForm() {
   function focusFirstInvalid(
     nextErrors: AppointmentFormErrors,
   ) {
-    const errorKeys = Object.keys(nextErrors) as Array<
-      keyof AppointmentFormValues
-    >;
-    if (errorKeys.length === 0) {
+    const firstKey = appointmentFormFieldOrder.find((key) => nextErrors[key]);
+    if (!firstKey) {
       summaryRef.current?.focus();
       return;
     }
-    const firstInvalid = document.getElementById(
-      `${formId}-${errorKeys[0]}`,
-    );
+    const firstInvalid = document.getElementById(`${formId}-${firstKey}`);
     if (firstInvalid instanceof HTMLElement) {
       firstInvalid.focus();
     } else {
@@ -143,39 +142,51 @@ export function AppointmentForm() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    // Block duplicate submissions before React re-renders disabled state.
+    if (isPending || submittingRef.current) {
+      return;
+    }
+
     const nextErrors = validateAppointmentForm(values);
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
+      // Client validation failed — do not call submitAppointmentEnquiry().
       setStatusMessage(null);
       focusFirstInvalid(nextErrors);
       return;
     }
 
+    submittingRef.current = true;
     startTransition(async () => {
-      const result = await submitAppointmentEnquiry({
-        ...values,
-        website: honeypot,
-      });
+      try {
+        const result = await submitAppointmentEnquiry({
+          ...values,
+          website: honeypot,
+        });
 
-      if (result.success) {
-        setErrors({});
-        setStatusMessage(result.message);
-        summaryRef.current?.focus();
-        return;
-      }
+        if (result.success) {
+          setErrors({});
+          setStatusMessage(result.message);
+          summaryRef.current?.focus();
+          return;
+        }
 
-      const serverErrors = result.fieldErrors
-        ? mapServerFieldErrors(result.fieldErrors)
-        : {};
-      setErrors(serverErrors);
-      setStatusMessage(
-        Object.keys(serverErrors).length > 0 ? null : result.message,
-      );
-      if (Object.keys(serverErrors).length > 0) {
-        focusFirstInvalid(serverErrors);
-      } else {
-        summaryRef.current?.focus();
+        const serverErrors = result.fieldErrors
+          ? mapServerFieldErrors(result.fieldErrors)
+          : {};
+        setErrors(serverErrors);
+        setStatusMessage(
+          Object.keys(serverErrors).length > 0 ? null : result.message,
+        );
+        if (Object.keys(serverErrors).length > 0) {
+          focusFirstInvalid(serverErrors);
+        } else {
+          summaryRef.current?.focus();
+        }
+      } finally {
+        submittingRef.current = false;
       }
     });
   }
@@ -218,19 +229,14 @@ export function AppointmentForm() {
             />
           </div>
 
-          <div
-            ref={summaryRef}
-            tabIndex={-1}
-            aria-live="polite"
-            className="space-y-3"
-          >
+          <div ref={summaryRef} tabIndex={-1} className="space-y-3">
             {errorSummary.length > 0 ? (
               <div
                 className="border-brand-muted/50 bg-surface rounded-[var(--radius-lg)] border px-4 py-3"
                 role="alert"
               >
                 <p className="text-text text-sm font-medium">
-                  Please review the highlighted fields.
+                  {appointmentClientValidationSummary}
                 </p>
               </div>
             ) : null}
@@ -321,7 +327,7 @@ export function AppointmentForm() {
                 aria-invalid={Boolean(errors.consultationMode)}
                 aria-describedby={
                   errors.consultationMode
-                    ? `${formId}-consultationMode-error`
+                    ? `${formId}-consultationMode-error ${formId}-consultationMode-helper`
                     : `${formId}-consultationMode-helper`
                 }
                 className={appointmentControlClassName}
@@ -544,7 +550,6 @@ export function AppointmentForm() {
               <p
                 id={`${formId}-privacyAccepted-error`}
                 className="text-sm text-[color:var(--color-brand)]"
-                role="alert"
               >
                 {errors.privacyAccepted}
               </p>

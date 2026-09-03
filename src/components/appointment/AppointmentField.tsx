@@ -42,7 +42,7 @@ export function AppointmentField({
       ) : null}
       {children}
       {error ? (
-        <p id={errorId} className="text-sm text-[color:var(--color-brand)]" role="alert">
+        <p id={errorId} className="text-sm text-[color:var(--color-brand)]">
           {error}
         </p>
       ) : null}
