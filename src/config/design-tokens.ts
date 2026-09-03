@@ -3,6 +3,8 @@
  * Runtime styling uses CSS custom properties in `src/app/globals.css`.
  * Theme palettes are registered in `src/config/themes.ts` and applied via `data-theme`.
  * Prefer semantic token names in components — do not scatter raw hex values.
+ *
+ * For Design System V1 semantic maps, also see `@/design-system`.
  */
 
 import {

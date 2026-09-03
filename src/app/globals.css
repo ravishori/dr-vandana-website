@@ -123,6 +123,52 @@
   --theme-transition: background-color 200ms ease, color 200ms ease,
     border-color 200ms ease, box-shadow 200ms ease, fill 200ms ease,
     stroke 200ms ease;
+
+  /*
+    Dr. Vandana Wellness Design System V1 — extended semantic tokens.
+    Palette-driven aliases stay theme-aware; status colors stay calm and fixed.
+  */
+  --color-surface-muted: var(--color-surface-soft);
+  --color-surface-elevated: var(--color-surface);
+  --color-primary: var(--color-brand);
+  --color-primary-hover: color-mix(in srgb, var(--color-brand) 88%, black);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-surface);
+  --color-secondary-foreground: var(--color-brand);
+  --color-accent-muted: color-mix(
+    in srgb,
+    var(--color-accent) 22%,
+    var(--color-surface)
+  );
+  --color-focus: var(--color-focus-ring);
+  --color-success: #3f6b4f;
+  --color-success-soft: color-mix(in srgb, #3f6b4f 12%, var(--color-surface));
+  --color-warning: #8a6a3a;
+  --color-warning-soft: color-mix(in srgb, #8a6a3a 12%, var(--color-surface));
+  --color-emergency: #8b4a4a;
+  --color-emergency-soft: color-mix(in srgb, #8b4a4a 12%, var(--color-surface));
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+
+  --radius-2xl: 1.75rem;
+  --radius-full: 9999px;
+
+  --shadow-none: none;
+  --shadow-subtle: var(--shadow-sm);
+  --shadow-card: var(--shadow-md);
+  --shadow-elevated: var(--shadow-lg);
+
+  --motion-instant: 0ms;
+  --motion-fast: 150ms;
+  --motion-normal: 250ms;
+  --motion-slow: 350ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
