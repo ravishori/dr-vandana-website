@@ -20,6 +20,22 @@ export const emptyAppointmentFormValues: AppointmentFormValues = {
   privacyAccepted: false,
 };
 
+/** Document order used for focus-first-invalid after failed validation. */
+export const appointmentFormFieldOrder = [
+  "fullName",
+  "ageGroup",
+  "consultationMode",
+  "contactMethod",
+  "contactValue",
+  "preferredDay",
+  "preferredTime",
+  "briefReason",
+  "privacyAccepted",
+] as const satisfies ReadonlyArray<keyof AppointmentFormValues>;
+
+export const appointmentClientValidationSummary =
+  "Please complete the required information before submitting your enquiry.";
+
 export function getContactFieldLabel(method: ContactMethodValue | ""): string {
   switch (method) {
     case "email":
