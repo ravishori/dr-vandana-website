@@ -185,7 +185,9 @@ export async function loginWithPassword(
     };
   }
 
-  const mfaRequired = roleList.some((role) => MFA_REQUIRED_ROLES.includes(role));
+  const mfaRequired =
+    roleList.some((role) => MFA_REQUIRED_ROLES.includes(role)) &&
+    user.mfaExempt !== true;
   const [mfa] = await ctx.db
     .select()
     .from(mfaCredentials)
