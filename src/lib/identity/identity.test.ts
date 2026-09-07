@@ -1168,6 +1168,68 @@ describe("phase 1 identity foundation", () => {
       assert.equal([raceA.ok, raceB.ok].filter(Boolean).length, 1);
     });
 
+    it("exempts a single flagged account from MFA without weakening the role requirement for others", async () => {
+      const w = await world();
+      const doctor = await provisionPrivilegedUser(w.ctx, {
+        role: "PSYCHOLOGIST",
+        email: "vandana@example.test",
+        password: STRONG_PASSWORD,
+        displayName: "Dr. Vandana Rajiv Chaudhary",
+      });
+      assert.equal(doctor.ok, true);
+      if (!doctor.ok) {
+        return;
+      }
+      const otherPsychologist = await provisionPrivilegedUser(w.ctx, {
+        role: "PSYCHOLOGIST",
+        email: "associate@example.test",
+        password: STRONG_PASSWORD,
+        displayName: "Associate Psychologist",
+      });
+      assert.equal(otherPsychologist.ok, true);
+      if (!otherPsychologist.ok) {
+        return;
+      }
+
+      await w.ctx.db
+        .update(users)
+        .set({ mfaExempt: true })
+        .where(eq(users.id, doctor.userId));
+
+      const exemptLogin = await loginWithPassword(w.ctx, {
+        email: "vandana@example.test",
+        password: STRONG_PASSWORD,
+        ip: "203.0.113.30",
+        expectedRole: "PSYCHOLOGIST",
+      });
+      assert.equal(exemptLogin.ok, true);
+      if (!exemptLogin.ok) {
+        return;
+      }
+      assert.equal(exemptLogin.mfaRequired, false);
+      const exemptSession = await readSession(w.ctx, exemptLogin.token);
+      assert.equal(exemptSession?.mfaCompleted, true);
+      const allowed = authorizationService.canAccess(
+        await loadPrincipal(w.ctx, exemptSession!),
+        { permission: "MANAGE_APPOINTMENT_SETTINGS" },
+      );
+      assert.equal(allowed.allowed, true);
+
+      const stillRequiredLogin = await loginWithPassword(w.ctx, {
+        email: "associate@example.test",
+        password: STRONG_PASSWORD,
+        ip: "203.0.113.31",
+        expectedRole: "PSYCHOLOGIST",
+      });
+      assert.equal(stillRequiredLogin.ok, true);
+      if (!stillRequiredLogin.ok) {
+        return;
+      }
+      assert.equal(stillRequiredLogin.mfaRequired, true);
+      const stillRequiredSession = await readSession(w.ctx, stillRequiredLogin.token);
+      assert.equal(stillRequiredSession?.mfaCompleted, false);
+    });
+
     it("refuses production privileged provisioning", async () => {
       const w = await world({ nodeEnv: "production", identityProvisionEnabled: true });
       const result = await provisionPrivilegedUser(w.ctx, {

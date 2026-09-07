@@ -103,7 +103,7 @@ export function PracticeLoginForm({
           </a>
         </p>
         <button type="submit" disabled={pending} className={identityButtonClassName}>
-          {pending ? "Signing in…" : "Continue"}
+          {pending ? "Signing in…" : "Log in"}
         </button>
       </form>
     </IdentityShell>
@@ -208,8 +208,7 @@ export function PracticeForgotPasswordForm({
           <p>
             Enter the email or verified mobile number for your practice account.
             If the account is eligible, a verification message will be sent.
-            After resetting, you must sign in with your new password and
-            complete authenticator verification.
+            After resetting, sign in with your new password.
           </p>
           <form
             className="space-y-5"
@@ -313,10 +312,7 @@ export function PracticeForgotPasswordForm({
 
       {step === "password" && resetToken ? (
         <>
-          <p>
-            Choose a new password (at least 12 characters). You will still need
-            your authenticator app after signing in.
-          </p>
+          <p>Choose a new password (at least 12 characters).</p>
           <form
             className="space-y-5"
             onSubmit={(event) => {
@@ -382,10 +378,7 @@ export function PracticeForgotPasswordForm({
               "If the account is eligible, a verification message has been sent."
             }
           />
-          <p className="text-sm">
-            After resetting, sign in with your new password and authenticator
-            code.
-          </p>
+          <p className="text-sm">After resetting, sign in with your new password.</p>
         </div>
       ) : null}
 

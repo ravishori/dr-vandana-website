@@ -112,6 +112,12 @@ export async function practiceLoginAction(input: {
     return { ok: false, message: result.message };
   }
   await setPracticeSessionCookie(identity.ctx, result.token, result.expiresAt);
+  if (!result.mfaRequired) {
+    if (result.mustChangePassword) {
+      redirect(changePasswordPath(input.role));
+    }
+    redirect(postAuthPath(input.role));
+  }
   if (input.role === "PSYCHOLOGIST") {
     redirect(
       result.mfaEnrolled
@@ -303,7 +309,6 @@ export async function practiceResetPasswordWithTokenAction(input: {
   }
   return {
     ok: true,
-    message:
-      "Password updated. Sign in with your new password and authenticator code.",
+    message: "Password updated. Sign in with your new password.",
   };
 }

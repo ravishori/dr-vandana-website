@@ -31,6 +31,12 @@ export const users = pgTable(
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     status: text("status").notNull(),
     mustChangePassword: boolean("must_change_password").notNull().default(false),
+    /**
+     * Per-account MFA override. Enforcement is role-based (MFA_REQUIRED_ROLES),
+     * but an individual account (e.g. a specific psychologist) can be exempted
+     * without weakening MFA for the rest of that role.
+     */
+    mfaExempt: boolean("mfa_exempt").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
