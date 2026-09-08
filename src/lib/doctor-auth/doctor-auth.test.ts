@@ -32,22 +32,22 @@ describe("doctor-auth crypto and session", () => {
     assert.equal(verifyPassword("wrong-password", encoded), false);
   });
 
-  it("creates and reads a signed doctor session token", () => {
+  it("creates and reads a signed doctor session token", async () => {
     const env = testEnv();
-    const token = createSessionToken("doctor@example.com", env);
+    const token = await createSessionToken("doctor@example.com", env);
     assert.ok(token);
-    const session = readSessionToken(token, env);
+    const session = await readSessionToken(token, env);
     assert.ok(session);
     assert.equal(session.email, "doctor@example.com");
     assert.equal(session.role, "DOCTOR");
   });
 
-  it("rejects tampered session tokens", () => {
+  it("rejects tampered session tokens", async () => {
     const env = testEnv();
-    const token = createSessionToken("doctor@example.com", env);
+    const token = await createSessionToken("doctor@example.com", env);
     assert.ok(token);
     const tampered = `${token.slice(0, -4)}xxxx`;
-    assert.equal(readSessionToken(tampered, env), null);
+    assert.equal(await readSessionToken(tampered, env), null);
   });
 });
 

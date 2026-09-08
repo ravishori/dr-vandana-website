@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get(doctorPortalConfig.cookieName)?.value;
-  const session = readSessionToken(token);
+  const session = await readSessionToken(token);
   if (!session) {
     const login = new URL("/doctor/login", request.url);
     login.searchParams.set("from", pathname);

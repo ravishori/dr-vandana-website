@@ -93,7 +93,7 @@ export async function authenticateDoctor(
     return { ok: false, reason: "INVALID_CREDENTIALS" };
   }
 
-  const token = createSessionToken(expectedEmail, env);
+  const token = await createSessionToken(expectedEmail, env);
   if (!token) {
     return { ok: false, reason: "DOCTOR_AUTH_NOT_CONFIGURED" };
   }
@@ -102,4 +102,9 @@ export async function authenticateDoctor(
   return { ok: true, token };
 }
 
-export { createSessionToken, hashPassword, isDoctorAuthConfigured, readSessionToken };
+export {
+  createSessionToken,
+  hashPassword,
+  isDoctorAuthConfigured,
+  readSessionToken,
+};
