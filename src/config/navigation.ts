@@ -105,6 +105,11 @@ export const navigationConfig: NavigationConfig = {
       label: "Resources",
       items: [
         {
+          label: "Articles",
+          href: "/articles",
+          description: "Educational articles on mental wellness and counselling.",
+        },
+        {
           label: "Understanding Counselling",
           href: "/psychology/counselling",
           description: "What counselling is and when it may help.",
@@ -167,6 +172,7 @@ export const navigationConfig: NavigationConfig = {
       href: "/psychology/case-studies",
       enabled: true,
     },
+    { label: "Articles", href: "/articles", enabled: true },
     { label: "Book an Appointment", href: "/book-appointment", enabled: true },
   ],
   legal: [
