@@ -116,13 +116,13 @@ export async function submitAppointmentEnquiry(
     try {
       await createEnquiryConversation({
         fullName: parsed.data.fullName,
-        contactMethod: parsed.data.contactMethod,
-        contactValue: parsed.data.contactValue,
+        contactMethod: parsed.data.contactMethod ?? "unknown",
+        contactValue: parsed.data.contactValue ?? "",
         preferredDay: parsed.data.preferredDay,
         preferredTime: parsed.data.preferredTime,
         consultationMode: parsed.data.consultationMode,
         ageGroup: parsed.data.ageGroup,
-        briefReason: parsed.data.briefReason,
+        briefReason: parsed.data.briefReason ?? "",
       });
     } catch (error) {
       await reportException({
