@@ -6,6 +6,7 @@ import type { Article, ArticlesBundle } from "@/types/articles";
  */
 export const articlesSeedBundle: ArticlesBundle = {
   version: 1,
+  revision: 0,
   articles: [
     {
       id: "22222222-2222-4222-8222-222222222201",
@@ -48,7 +49,7 @@ If stress feels overwhelming, persistent, or interferes with daily life, conside
 };
 
 export function emptyArticlesBundle(): ArticlesBundle {
-  return { version: 1, articles: [] };
+  return { version: 1, revision: 0, articles: [] };
 }
 
 export function cloneArticlesBundle(bundle: ArticlesBundle): ArticlesBundle {

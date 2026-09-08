@@ -6,12 +6,32 @@ import type {
   PaginatedArticles,
 } from "@/types/articles";
 import { emptyArticlesBundle } from "@/data/articles/seed";
+import { runOptimisticUpdate } from "@/lib/persistence/optimistic-update";
 
 export type ArticlesRepository = {
   read(): Promise<ArticlesBundle>;
+  /** Unconditional write — prefer `update` for mutations. */
   write(bundle: ArticlesBundle): Promise<void>;
+  compareAndSet(
+    expectedRevision: number,
+    next: ArticlesBundle,
+  ): Promise<boolean>;
+  update(
+    mutator: (current: ArticlesBundle) => ArticlesBundle | Promise<ArticlesBundle>,
+  ): Promise<ArticlesBundle>;
   ensureSeeded(seed: ArticlesBundle): Promise<void>;
 };
+
+export function normalizeArticlesBundle(value: ArticlesBundle): ArticlesBundle {
+  return {
+    version: 1,
+    revision:
+      typeof value.revision === "number" && Number.isFinite(value.revision)
+        ? value.revision
+        : 0,
+    articles: Array.isArray(value.articles) ? value.articles : [],
+  };
+}
 
 export function isArticlesBundle(value: unknown): value is ArticlesBundle {
   if (!value || typeof value !== "object") {
@@ -19,6 +39,19 @@ export function isArticlesBundle(value: unknown): value is ArticlesBundle {
   }
   const candidate = value as ArticlesBundle;
   return candidate.version === 1 && Array.isArray(candidate.articles);
+}
+
+export async function updateArticlesBundle(
+  repository: Pick<ArticlesRepository, "read" | "compareAndSet">,
+  mutator: (current: ArticlesBundle) => ArticlesBundle | Promise<ArticlesBundle>,
+  clone: (value: ArticlesBundle) => ArticlesBundle,
+): Promise<ArticlesBundle> {
+  return runOptimisticUpdate({
+    read: async () => normalizeArticlesBundle(await repository.read()),
+    compareAndSet: (expected, next) => repository.compareAndSet(expected, next),
+    mutator,
+    clone,
+  });
 }
 
 export function filterArticles(

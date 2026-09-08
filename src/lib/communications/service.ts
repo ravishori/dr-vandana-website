@@ -1,3 +1,4 @@
+import { isBasicEmail } from "@/lib/appointment-form";
 import {
   computeCommunicationsStats,
   filterConversations,
@@ -61,27 +62,46 @@ function buildEnquiryBody(enquiry: AppointmentEnquiryForCommunications): string 
   return lines.join("\n");
 }
 
-function resolveUserEmail(enquiry: AppointmentEnquiryForCommunications): string {
+/**
+ * Resolve a validated email recipient from an enquiry.
+ * Never fabricates a mailbox (no unknown@invalid.local).
+ */
+export function resolveUserEmail(
+  enquiry: AppointmentEnquiryForCommunications,
+): string {
+  const candidates: string[] = [];
   if (enquiry.contactMethod === "email") {
-    return enquiry.contactValue.trim().toLowerCase();
+    candidates.push(enquiry.contactValue);
+  } else {
+    const value = enquiry.contactValue.trim();
+    if (value.includes("@")) {
+      candidates.push(value);
+    }
   }
-  // Non-email contact methods still need a mailbox for outbound replies.
-  // Prefer a synthetic placeholder the doctor can correct later is not ideal;
-  // require email-shaped values when available, else store empty and mark phone.
-  const value = enquiry.contactValue.trim();
-  if (value.includes("@")) {
-    return value.toLowerCase();
+
+  for (const candidate of candidates) {
+    const normalized = candidate.trim().toLowerCase();
+    if (isBasicEmail(normalized)) {
+      return normalized;
+    }
   }
   return "";
 }
 
-function resolveUserPhone(
+export function resolveUserPhone(
   enquiry: AppointmentEnquiryForCommunications,
 ): string | null {
   if (enquiry.contactMethod === "phone" || enquiry.contactMethod === "whatsapp") {
     return enquiry.contactValue.trim();
   }
   return null;
+}
+
+/** True when the conversation has a deliverable user email address. */
+export function conversationHasEmailReplyTarget(
+  conversation: Pick<Conversation, "userEmail">,
+): boolean {
+  return isBasicEmail(conversation.userEmail.trim());
 }
 
 /**
@@ -93,7 +113,6 @@ export async function createEnquiryConversation(
   enquiry: AppointmentEnquiryForCommunications,
 ): Promise<Conversation> {
   const repo = await getCommunicationsRepository();
-  const bundle = await repo.read();
   const timestamp = nowIso();
   const conversationId = crypto.randomUUID();
   const userEmail = resolveUserEmail(enquiry);
@@ -116,7 +135,7 @@ export async function createEnquiryConversation(
   const conversation: Conversation = {
     id: conversationId,
     userName: enquiry.fullName.trim(),
-    userEmail: userEmail || "unknown@invalid.local",
+    userEmail,
     userPhone: resolveUserPhone(enquiry),
     subject,
     status: "NEW",
@@ -127,12 +146,19 @@ export async function createEnquiryConversation(
     assignedTo: null,
     messages: [inbound],
     auditEvents: [
-      makeAudit(conversationId, "CREATED", "system", "appointment_enquiry"),
+      makeAudit(
+        conversationId,
+        "CREATED",
+        "system",
+        userEmail ? "appointment_enquiry" : "appointment_enquiry_no_email",
+      ),
     ],
   };
 
-  bundle.conversations = [conversation, ...bundle.conversations];
-  await repo.write(bundle);
+  await repo.update((bundle) => ({
+    ...bundle,
+    conversations: [conversation, ...bundle.conversations],
+  }));
 
   // Best-effort doctor notification (no full clinical body).
   void getCommunicationsEmailSender()
@@ -177,31 +203,41 @@ export async function markConversationRead(
 ): Promise<Conversation> {
   const doctor = assertDoctor(session);
   const repo = await getCommunicationsRepository();
-  const bundle = await repo.read();
-  const existing = bundle.conversations.find((item) => item.id === id);
-  if (!existing) {
+  let saved: Conversation | null = null;
+
+  await repo.update((bundle) => {
+    const existing = bundle.conversations.find((item) => item.id === id);
+    if (!existing) {
+      throw new Error("NOT_FOUND");
+    }
+    const timestamp = nowIso();
+    const updated: Conversation = {
+      ...existing,
+      status: existing.status === "NEW" ? "READ" : existing.status,
+      updatedAt: timestamp,
+      messages: existing.messages.map((message) =>
+        message.direction === "INBOUND" && !message.readAt
+          ? { ...message, readAt: timestamp }
+          : message,
+      ),
+      auditEvents: [
+        ...existing.auditEvents,
+        makeAudit(id, "MARKED_READ", doctor.email),
+      ],
+    };
+    saved = updated;
+    return {
+      ...bundle,
+      conversations: bundle.conversations.map((item) =>
+        item.id === id ? updated : item,
+      ),
+    };
+  });
+
+  if (!saved) {
     throw new Error("NOT_FOUND");
   }
-  const timestamp = nowIso();
-  const updated: Conversation = {
-    ...existing,
-    status: existing.status === "NEW" ? "READ" : existing.status,
-    updatedAt: timestamp,
-    messages: existing.messages.map((message) =>
-      message.direction === "INBOUND" && !message.readAt
-        ? { ...message, readAt: timestamp }
-        : message,
-    ),
-    auditEvents: [
-      ...existing.auditEvents,
-      makeAudit(id, "MARKED_READ", doctor.email),
-    ],
-  };
-  bundle.conversations = bundle.conversations.map((item) =>
-    item.id === id ? updated : item,
-  );
-  await repo.write(bundle);
-  return updated;
+  return saved;
 }
 
 function lastInboundMessageId(conversation: Conversation): string | null {
@@ -237,12 +273,15 @@ export async function replyToConversation(
   }
 
   const repo = await getCommunicationsRepository();
-  const bundle = await repo.read();
-  const existing = bundle.conversations.find(
+  const existingBundle = await repo.read();
+  const existing = existingBundle.conversations.find(
     (item) => item.id === conversationId,
   );
   if (!existing) {
     throw new Error("NOT_FOUND");
+  }
+  if (!conversationHasEmailReplyTarget(existing)) {
+    throw new Error("EMAIL_REPLY_UNAVAILABLE");
   }
 
   const timestamp = nowIso();
@@ -273,50 +312,78 @@ export async function replyToConversation(
     ],
   };
 
-  bundle.conversations = bundle.conversations.map((item) =>
-    item.id === conversationId ? updated : item,
-  );
-  await repo.write(bundle);
+  await repo.update((bundle) => {
+    const current = bundle.conversations.find((item) => item.id === conversationId);
+    if (!current) {
+      throw new Error("NOT_FOUND");
+    }
+    if (!conversationHasEmailReplyTarget(current)) {
+      throw new Error("EMAIL_REPLY_UNAVAILABLE");
+    }
+    updated = {
+      ...current,
+      status: "REPLIED",
+      updatedAt: timestamp,
+      lastMessageAt: timestamp,
+      messages: [...current.messages, outbound],
+      auditEvents: [
+        ...current.auditEvents,
+        makeAudit(conversationId, "REPLY_SAVED", doctor.email),
+      ],
+    };
+    return {
+      ...bundle,
+      conversations: bundle.conversations.map((item) =>
+        item.id === conversationId ? updated : item,
+      ),
+    };
+  });
 
-  const inReplyTo = lastInboundMessageId(existing);
-  const references = collectReferences(existing);
+  const inReplyTo = lastInboundMessageId(updated);
+  const references = collectReferences(updated);
   const delivery = await getCommunicationsEmailSender().sendUserReply({
-    conversation: existing,
+    conversation: updated,
     replyBody: trimmed,
     inReplyTo,
     references,
   });
 
   const deliveryStatus = delivery.ok ? "sent" : "failed";
-  updated = {
-    ...updated,
-    messages: updated.messages.map((message) =>
-      message.id === messageId
-        ? {
-            ...message,
-            emailDeliveryStatus: deliveryStatus,
-            emailMessageId: delivery.ok
-              ? (delivery.messageId ?? message.emailMessageId)
-              : message.emailMessageId,
-          }
-        : message,
-    ),
-    auditEvents: [
-      ...updated.auditEvents,
-      makeAudit(
-        conversationId,
-        delivery.ok ? "REPLY_EMAIL_SENT" : "REPLY_EMAIL_FAILED",
-        doctor.email,
-        delivery.ok ? undefined : delivery.reason,
+  await repo.update((bundle) => {
+    const current = bundle.conversations.find((item) => item.id === conversationId);
+    if (!current) {
+      throw new Error("NOT_FOUND");
+    }
+    updated = {
+      ...current,
+      messages: current.messages.map((message) =>
+        message.id === messageId
+          ? {
+              ...message,
+              emailDeliveryStatus: deliveryStatus,
+              emailMessageId: delivery.ok
+                ? (delivery.messageId ?? message.emailMessageId)
+                : message.emailMessageId,
+            }
+          : message,
       ),
-    ],
-  };
-
-  const latestBundle = await repo.read();
-  latestBundle.conversations = latestBundle.conversations.map((item) =>
-    item.id === conversationId ? updated : item,
-  );
-  await repo.write(latestBundle);
+      auditEvents: [
+        ...current.auditEvents,
+        makeAudit(
+          conversationId,
+          delivery.ok ? "REPLY_EMAIL_SENT" : "REPLY_EMAIL_FAILED",
+          doctor.email,
+          delivery.ok ? undefined : delivery.reason,
+        ),
+      ],
+    };
+    return {
+      ...bundle,
+      conversations: bundle.conversations.map((item) =>
+        item.id === conversationId ? updated : item,
+      ),
+    };
+  });
 
   return { conversation: updated, emailOk: delivery.ok };
 }
@@ -328,8 +395,8 @@ export async function retrySendReply(
 ): Promise<{ conversation: Conversation; emailOk: boolean }> {
   const doctor = assertDoctor(session);
   const repo = await getCommunicationsRepository();
-  const bundle = await repo.read();
-  const existing = bundle.conversations.find(
+  const existingBundle = await repo.read();
+  const existing = existingBundle.conversations.find(
     (item) => item.id === conversationId,
   );
   if (!existing) {
@@ -338,6 +405,12 @@ export async function retrySendReply(
   const message = existing.messages.find((item) => item.id === messageId);
   if (!message || message.direction !== "OUTBOUND") {
     throw new Error("NOT_FOUND");
+  }
+  if (message.emailDeliveryStatus !== "failed") {
+    throw new Error("RETRY_NOT_ALLOWED");
+  }
+  if (!conversationHasEmailReplyTarget(existing)) {
+    throw new Error("EMAIL_REPLY_UNAVAILABLE");
   }
 
   const inReplyTo = lastInboundMessageId(existing);
@@ -349,35 +422,55 @@ export async function retrySendReply(
     references,
   });
 
-  const updated: Conversation = {
-    ...existing,
-    updatedAt: nowIso(),
-    messages: existing.messages.map((item) =>
-      item.id === messageId
-        ? {
-            ...item,
-            emailDeliveryStatus: delivery.ok ? "sent" : "failed",
-            emailMessageId: delivery.ok
-              ? (delivery.messageId ?? item.emailMessageId)
-              : item.emailMessageId,
-          }
-        : item,
-    ),
-    auditEvents: [
-      ...existing.auditEvents,
-      makeAudit(
-        conversationId,
-        delivery.ok ? "REPLY_EMAIL_RETRY_SENT" : "REPLY_EMAIL_RETRY_FAILED",
-        doctor.email,
-        delivery.ok ? undefined : delivery.reason,
-      ),
-    ],
-  };
+  let updated: Conversation = existing;
+  await repo.update((bundle) => {
+    const current = bundle.conversations.find((item) => item.id === conversationId);
+    if (!current) {
+      throw new Error("NOT_FOUND");
+    }
+    const currentMessage = current.messages.find((item) => item.id === messageId);
+    if (!currentMessage || currentMessage.direction !== "OUTBOUND") {
+      throw new Error("NOT_FOUND");
+    }
+    if (currentMessage.emailDeliveryStatus !== "failed") {
+      throw new Error("RETRY_NOT_ALLOWED");
+    }
+    if (!conversationHasEmailReplyTarget(current)) {
+      throw new Error("EMAIL_REPLY_UNAVAILABLE");
+    }
 
-  bundle.conversations = bundle.conversations.map((item) =>
-    item.id === conversationId ? updated : item,
-  );
-  await repo.write(bundle);
+    updated = {
+      ...current,
+      updatedAt: nowIso(),
+      messages: current.messages.map((item) =>
+        item.id === messageId
+          ? {
+              ...item,
+              emailDeliveryStatus: delivery.ok ? "sent" : "failed",
+              emailMessageId: delivery.ok
+                ? (delivery.messageId ?? item.emailMessageId)
+                : item.emailMessageId,
+            }
+          : item,
+      ),
+      auditEvents: [
+        ...current.auditEvents,
+        makeAudit(
+          conversationId,
+          delivery.ok ? "REPLY_EMAIL_RETRY_SENT" : "REPLY_EMAIL_RETRY_FAILED",
+          doctor.email,
+          delivery.ok ? undefined : delivery.reason,
+        ),
+      ],
+    };
+    return {
+      ...bundle,
+      conversations: bundle.conversations.map((item) =>
+        item.id === conversationId ? updated : item,
+      ),
+    };
+  });
+
   return { conversation: updated, emailOk: delivery.ok };
 }
 
@@ -389,25 +482,35 @@ async function setConversationStatus(
 ): Promise<Conversation> {
   const doctor = assertDoctor(session);
   const repo = await getCommunicationsRepository();
-  const bundle = await repo.read();
-  const existing = bundle.conversations.find((item) => item.id === id);
-  if (!existing) {
+  let saved: Conversation | null = null;
+
+  await repo.update((bundle) => {
+    const existing = bundle.conversations.find((item) => item.id === id);
+    if (!existing) {
+      throw new Error("NOT_FOUND");
+    }
+    const updated: Conversation = {
+      ...existing,
+      status,
+      updatedAt: nowIso(),
+      auditEvents: [
+        ...existing.auditEvents,
+        makeAudit(id, action, doctor.email, status),
+      ],
+    };
+    saved = updated;
+    return {
+      ...bundle,
+      conversations: bundle.conversations.map((item) =>
+        item.id === id ? updated : item,
+      ),
+    };
+  });
+
+  if (!saved) {
     throw new Error("NOT_FOUND");
   }
-  const updated: Conversation = {
-    ...existing,
-    status,
-    updatedAt: nowIso(),
-    auditEvents: [
-      ...existing.auditEvents,
-      makeAudit(id, action, doctor.email, status),
-    ],
-  };
-  bundle.conversations = bundle.conversations.map((item) =>
-    item.id === id ? updated : item,
-  );
-  await repo.write(bundle);
-  return updated;
+  return saved;
 }
 
 export async function closeConversation(

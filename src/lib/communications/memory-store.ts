@@ -2,6 +2,8 @@ import type { CommunicationsBundle } from "@/types/communications";
 import {
   cloneCommunicationsBundle,
   emptyCommunicationsBundle,
+  normalizeCommunicationsBundle,
+  updateCommunicationsBundle,
   type CommunicationsRepository,
 } from "@/lib/communications/repository";
 
@@ -25,6 +27,28 @@ export class MemoryCommunicationsRepository
 
   async write(bundle: CommunicationsBundle): Promise<void> {
     this.state.bundle = cloneCommunicationsBundle(bundle);
+  }
+
+  async compareAndSet(
+    expectedRevision: number,
+    next: CommunicationsBundle,
+  ): Promise<boolean> {
+    const currentRevision = this.state.bundle
+      ? normalizeCommunicationsBundle(this.state.bundle).revision
+      : 0;
+    if (currentRevision !== expectedRevision) {
+      return false;
+    }
+    this.state.bundle = cloneCommunicationsBundle(next);
+    return true;
+  }
+
+  async update(
+    mutator: (
+      current: CommunicationsBundle,
+    ) => CommunicationsBundle | Promise<CommunicationsBundle>,
+  ): Promise<CommunicationsBundle> {
+    return updateCommunicationsBundle(this, mutator);
   }
 
   async ensureSeeded(): Promise<void> {

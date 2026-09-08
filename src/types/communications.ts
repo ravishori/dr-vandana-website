@@ -74,7 +74,13 @@ export type Conversation = {
 };
 
 export type CommunicationsBundle = {
+  /** Schema version for the document shape. */
   version: 1;
+  /**
+   * Optimistic concurrency token. Incremented on every successful write.
+   * Missing/legacy documents are treated as revision 0.
+   */
+  revision: number;
   conversations: Conversation[];
 };
 

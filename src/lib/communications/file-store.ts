@@ -5,11 +5,15 @@ import {
   cloneCommunicationsBundle,
   emptyCommunicationsBundle,
   isCommunicationsBundle,
+  normalizeCommunicationsBundle,
+  updateCommunicationsBundle,
   type CommunicationsRepository,
 } from "@/lib/communications/repository";
 import type { CommunicationsBundle } from "@/types/communications";
 
 export class FileCommunicationsRepository implements CommunicationsRepository {
+  private writeChain: Promise<void> = Promise.resolve();
+
   constructor(private readonly filePath: string) {}
 
   private resolvedPath(): string {
@@ -41,6 +45,32 @@ export class FileCommunicationsRepository implements CommunicationsRepository {
       JSON.stringify(cloneCommunicationsBundle(bundle), null, 2),
       "utf8",
     );
+  }
+
+  async compareAndSet(
+    expectedRevision: number,
+    next: CommunicationsBundle,
+  ): Promise<boolean> {
+    let saved = false;
+    this.writeChain = this.writeChain.then(async () => {
+      const current = await this.read();
+      if (normalizeCommunicationsBundle(current).revision !== expectedRevision) {
+        saved = false;
+        return;
+      }
+      await this.write(next);
+      saved = true;
+    });
+    await this.writeChain;
+    return saved;
+  }
+
+  async update(
+    mutator: (
+      current: CommunicationsBundle,
+    ) => CommunicationsBundle | Promise<CommunicationsBundle>,
+  ): Promise<CommunicationsBundle> {
+    return updateCommunicationsBundle(this, mutator);
   }
 
   async ensureSeeded(): Promise<void> {

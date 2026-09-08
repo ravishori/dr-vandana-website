@@ -82,46 +82,56 @@ export async function upsertArticle(
   const doctor = assertDoctor(session);
   const parsed = articleUpsertSchema.parse(input);
   const repo = await getArticlesRepository();
-  const bundle = await repo.read();
-  const existing = parsed.id
-    ? bundle.articles.find((item) => item.id === parsed.id)
-    : bundle.articles.find((item) => item.slug === parsed.slug);
+  let saved: Article | null = null;
 
-  const slugOwner = bundle.articles.find((item) => item.slug === parsed.slug);
-  if (slugOwner && slugOwner.id !== existing?.id) {
-    throw new Error("DUPLICATE_SLUG");
+  await repo.update((bundle) => {
+    const existing = parsed.id
+      ? bundle.articles.find((item) => item.id === parsed.id)
+      : bundle.articles.find((item) => item.slug === parsed.slug);
+
+    const slugOwner = bundle.articles.find((item) => item.slug === parsed.slug);
+    if (slugOwner && slugOwner.id !== existing?.id) {
+      throw new Error("DUPLICATE_SLUG");
+    }
+
+    const timestamp = nowIso();
+    const article: Article = {
+      id: existing?.id ?? parsed.id ?? crypto.randomUUID(),
+      title: parsed.title,
+      slug: parsed.slug || slugify(parsed.title),
+      excerpt: parsed.excerpt,
+      content: parsed.content,
+      featuredImageUrl: parsed.featuredImageUrl ?? null,
+      authorId: existing?.authorId ?? doctor.email,
+      authorName: existing?.authorName ?? doctorPortalConfig.defaultAuthorName,
+      category: parsed.category,
+      tags: parsed.tags,
+      status: parsed.status,
+      publishedAt:
+        parsed.status === "PUBLISHED"
+          ? (existing?.publishedAt ?? timestamp)
+          : null,
+      createdAt: existing?.createdAt ?? timestamp,
+      updatedAt: timestamp,
+      seoTitle: parsed.seoTitle ?? null,
+      seoDescription: parsed.seoDescription ?? null,
+      readingTimeMinutes: estimateReadingTimeMinutes(parsed.content),
+      showEducationalDisclaimer: parsed.showEducationalDisclaimer,
+    };
+
+    saved = article;
+    return {
+      ...bundle,
+      articles: existing
+        ? bundle.articles.map((item) => (item.id === article.id ? article : item))
+        : [...bundle.articles, article],
+    };
+  });
+
+  if (!saved) {
+    throw new Error("ARTICLE_SAVE_FAILED");
   }
-
-  const timestamp = nowIso();
-  const article: Article = {
-    id: existing?.id ?? parsed.id ?? crypto.randomUUID(),
-    title: parsed.title,
-    slug: parsed.slug || slugify(parsed.title),
-    excerpt: parsed.excerpt,
-    content: parsed.content,
-    featuredImageUrl: parsed.featuredImageUrl ?? null,
-    authorId: existing?.authorId ?? doctor.email,
-    authorName: existing?.authorName ?? doctorPortalConfig.defaultAuthorName,
-    category: parsed.category,
-    tags: parsed.tags,
-    status: parsed.status,
-    publishedAt:
-      parsed.status === "PUBLISHED"
-        ? (existing?.publishedAt ?? timestamp)
-        : null,
-    createdAt: existing?.createdAt ?? timestamp,
-    updatedAt: timestamp,
-    seoTitle: parsed.seoTitle ?? null,
-    seoDescription: parsed.seoDescription ?? null,
-    readingTimeMinutes: estimateReadingTimeMinutes(parsed.content),
-    showEducationalDisclaimer: parsed.showEducationalDisclaimer,
-  };
-
-  bundle.articles = existing
-    ? bundle.articles.map((item) => (item.id === article.id ? article : item))
-    : [...bundle.articles, article];
-  await repo.write(bundle);
-  return article;
+  return saved;
 }
 
 export async function setArticleStatus(
@@ -131,28 +141,36 @@ export async function setArticleStatus(
 ): Promise<Article> {
   assertDoctor(session);
   const repo = await getArticlesRepository();
-  const bundle = await repo.read();
-  const existing = bundle.articles.find((item) => item.id === id);
-  if (!existing) {
+  let saved: Article | null = null;
+
+  await repo.update((bundle) => {
+    const existing = bundle.articles.find((item) => item.id === id);
+    if (!existing) {
+      throw new Error("NOT_FOUND");
+    }
+    const timestamp = nowIso();
+    const updated: Article = {
+      ...existing,
+      status,
+      publishedAt:
+        status === "PUBLISHED"
+          ? (existing.publishedAt ?? timestamp)
+          : status === "DRAFT"
+            ? null
+            : existing.publishedAt,
+      updatedAt: timestamp,
+    };
+    saved = updated;
+    return {
+      ...bundle,
+      articles: bundle.articles.map((item) => (item.id === id ? updated : item)),
+    };
+  });
+
+  if (!saved) {
     throw new Error("NOT_FOUND");
   }
-  const timestamp = nowIso();
-  const updated: Article = {
-    ...existing,
-    status,
-    publishedAt:
-      status === "PUBLISHED"
-        ? (existing.publishedAt ?? timestamp)
-        : status === "DRAFT"
-          ? null
-          : existing.publishedAt,
-    updatedAt: timestamp,
-  };
-  bundle.articles = bundle.articles.map((item) =>
-    item.id === id ? updated : item,
-  );
-  await repo.write(bundle);
-  return updated;
+  return saved;
 }
 
 export async function deleteArticle(
@@ -161,13 +179,14 @@ export async function deleteArticle(
 ): Promise<void> {
   assertDoctor(session);
   const repo = await getArticlesRepository();
-  const bundle = await repo.read();
-  const before = bundle.articles.length;
-  bundle.articles = bundle.articles.filter((item) => item.id !== id);
-  if (bundle.articles.length === before) {
-    throw new Error("NOT_FOUND");
-  }
-  await repo.write(bundle);
+  await repo.update((bundle) => {
+    const before = bundle.articles.length;
+    const articles = bundle.articles.filter((item) => item.id !== id);
+    if (articles.length === before) {
+      throw new Error("NOT_FOUND");
+    }
+    return { ...bundle, articles };
+  });
 }
 
 export async function listRelatedPublishedArticles(

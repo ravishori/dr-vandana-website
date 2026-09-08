@@ -5,21 +5,47 @@ import type {
   ConversationListFilters,
   PaginatedConversations,
 } from "@/types/communications";
+import { runOptimisticUpdate } from "@/lib/persistence/optimistic-update";
 
 export type CommunicationsRepository = {
   read(): Promise<CommunicationsBundle>;
+  /** Unconditional write — prefer `update` for mutations. */
   write(bundle: CommunicationsBundle): Promise<void>;
+  compareAndSet(
+    expectedRevision: number,
+    next: CommunicationsBundle,
+  ): Promise<boolean>;
+  update(
+    mutator: (
+      current: CommunicationsBundle,
+    ) => CommunicationsBundle | Promise<CommunicationsBundle>,
+  ): Promise<CommunicationsBundle>;
   ensureSeeded(): Promise<void>;
 };
 
 export function emptyCommunicationsBundle(): CommunicationsBundle {
-  return { version: 1, conversations: [] };
+  return { version: 1, revision: 0, conversations: [] };
 }
 
 export function cloneCommunicationsBundle(
   bundle: CommunicationsBundle,
 ): CommunicationsBundle {
-  return structuredClone(bundle);
+  return structuredClone(normalizeCommunicationsBundle(bundle));
+}
+
+export function normalizeCommunicationsBundle(
+  value: CommunicationsBundle,
+): CommunicationsBundle {
+  return {
+    version: 1,
+    revision:
+      typeof value.revision === "number" && Number.isFinite(value.revision)
+        ? value.revision
+        : 0,
+    conversations: Array.isArray(value.conversations)
+      ? value.conversations
+      : [],
+  };
 }
 
 export function isCommunicationsBundle(
@@ -30,6 +56,20 @@ export function isCommunicationsBundle(
   }
   const candidate = value as CommunicationsBundle;
   return candidate.version === 1 && Array.isArray(candidate.conversations);
+}
+
+export async function updateCommunicationsBundle(
+  repository: Pick<CommunicationsRepository, "read" | "compareAndSet">,
+  mutator: (
+    current: CommunicationsBundle,
+  ) => CommunicationsBundle | Promise<CommunicationsBundle>,
+): Promise<CommunicationsBundle> {
+  return runOptimisticUpdate({
+    read: async () => normalizeCommunicationsBundle(await repository.read()),
+    compareAndSet: (expected, next) => repository.compareAndSet(expected, next),
+    mutator,
+    clone: cloneCommunicationsBundle,
+  });
 }
 
 export function filterConversations(
