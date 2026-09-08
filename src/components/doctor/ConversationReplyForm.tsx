@@ -11,13 +11,30 @@ const initial: CommunicationsActionState = { ok: false, message: "" };
 
 export function ConversationReplyForm({
   conversationId,
+  emailReplyAvailable,
 }: {
   conversationId: string;
+  emailReplyAvailable: boolean;
 }) {
   const [state, formAction, pending] = useActionState(
     replyConversationAction,
     initial,
   );
+
+  if (!emailReplyAvailable) {
+    return (
+      <div className="space-y-2 text-sm text-[var(--color-text-muted)]">
+        <p className="font-medium text-[var(--color-text)]">
+          Email reply unavailable
+        </p>
+        <p>
+          This enquiry did not include a valid email address. You can still
+          review the conversation here and contact the person by phone or
+          WhatsApp. Do not invent an email recipient.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form action={formAction} className="space-y-3">

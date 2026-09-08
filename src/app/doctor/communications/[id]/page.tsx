@@ -10,7 +10,10 @@ import {
 } from "@/app/doctor/actions";
 import { ConversationReplyForm } from "@/components/doctor/ConversationReplyForm";
 import { requireDoctorSession } from "@/lib/doctor-auth";
-import { getConversation } from "@/lib/communications/service";
+import {
+  conversationHasEmailReplyTarget,
+  getConversation,
+} from "@/lib/communications/service";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -30,6 +33,8 @@ export default async function ConversationDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const emailReplyAvailable = conversationHasEmailReplyTarget(conversation);
+
   return (
     <div className="space-y-6">
       <div>
@@ -43,11 +48,25 @@ export default async function ConversationDetailPage({ params }: PageProps) {
           {conversation.subject}
         </h1>
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          {conversation.userName} · {conversation.userEmail}
+          {conversation.userName} ·{" "}
+          {emailReplyAvailable
+            ? conversation.userEmail
+            : "No valid email on file"}
           {conversation.userPhone ? ` · ${conversation.userPhone}` : ""} ·{" "}
           {conversation.status} · {conversation.source}
         </p>
       </div>
+
+      {!emailReplyAvailable ? (
+        <div
+          role="status"
+          className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-text-muted)]"
+        >
+          Email reply is unavailable for this conversation because the enquiry
+          did not include a valid email address. The conversation remains saved
+          for review. Use phone or WhatsApp if those details were provided.
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <form action={markReadAction}>
@@ -139,7 +158,10 @@ export default async function ConversationDetailPage({ params }: PageProps) {
       </section>
 
       <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-        <ConversationReplyForm conversationId={conversation.id} />
+        <ConversationReplyForm
+          conversationId={conversation.id}
+          emailReplyAvailable={emailReplyAvailable}
+        />
       </section>
     </div>
   );

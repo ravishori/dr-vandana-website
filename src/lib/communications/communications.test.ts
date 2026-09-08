@@ -57,6 +57,7 @@ describe("communications enquiry + reply", () => {
 
     assert.equal(conversation.status, "NEW");
     assert.equal(conversation.source, "appointment_enquiry");
+    assert.equal(conversation.userEmail, "alex@example.com");
     assert.equal(conversation.messages.length, 1);
     assert.equal(conversation.messages[0]?.direction, "INBOUND");
     assert.match(conversation.messages[0]?.body ?? "", /Work stress support/);

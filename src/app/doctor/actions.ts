@@ -47,9 +47,11 @@ export async function loginDoctorAction(
     const message =
       result.reason === "RATE_LIMITED"
         ? "Too many attempts. Please wait and try again."
-        : result.reason === "DOCTOR_AUTH_NOT_CONFIGURED"
-          ? "Doctor login is not configured."
-          : "Invalid email or password.";
+        : result.reason === "RATE_LIMIT_UNAVAILABLE"
+          ? "Sign-in is temporarily unavailable. Please try again later."
+          : result.reason === "DOCTOR_AUTH_NOT_CONFIGURED"
+            ? "Doctor login is not configured."
+            : "Invalid email or password.";
     return { ok: false, message };
   }
 
@@ -189,7 +191,21 @@ export async function replyConversationAction(
         ? "Reply saved and email sent."
         : "Reply saved. Email delivery failed — you can retry.",
     };
-  } catch {
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    if (code === "EMAIL_REPLY_UNAVAILABLE") {
+      return {
+        ok: false,
+        message:
+          "Email reply is unavailable for this enquiry because no valid email address was provided. Contact the person by phone or WhatsApp instead.",
+      };
+    }
+    if (code === "INVALID_RECIPIENT") {
+      return {
+        ok: false,
+        message: "Cannot send email: the recipient address is not valid.",
+      };
+    }
     return { ok: false, message: "Unable to send reply." };
   }
 }

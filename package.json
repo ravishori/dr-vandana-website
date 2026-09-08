@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/ai/**/*.test.ts src/lib/ai/knowledge/**/*.test.ts src/data/ai/knowledge/**/*.test.ts src/lib/appointment-form.test.ts src/lib/doctor-auth/**/*.test.ts src/lib/articles/**/*.test.ts src/lib/communications/**/*.test.ts",
+    "test": "tsx --test src/lib/ai/**/*.test.ts src/lib/ai/knowledge/**/*.test.ts src/data/ai/knowledge/**/*.test.ts src/lib/appointment-form.test.ts src/lib/doctor-auth/**/*.test.ts src/lib/articles/**/*.test.ts src/lib/communications/**/*.test.ts src/config/validate-server-config.test.ts src/lib/persistence/**/*.test.ts",
     "hash:doctor-password": "tsx scripts/hash-doctor-password.ts",
     "curriculum:qa": "tsx scripts/run-curriculum-qa.ts",
     "knowledge:coverage-report": "tsx scripts/generate-knowledge-coverage-report.ts",

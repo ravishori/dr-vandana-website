@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 
 import { getAppointmentEmailConfig } from "@/config/appointment-email";
 import { doctorPortalConfig } from "@/config/doctor-portal";
+import { isBasicEmail } from "@/lib/appointment-form";
 import { escapeHtml } from "@/lib/email/html-escape";
 import { reportException } from "@/lib/observability/error-handler";
 import type { Conversation } from "@/types/communications";
@@ -10,7 +11,7 @@ export type CommunicationsEmailResult =
   | { ok: true; messageId?: string }
   | {
       ok: false;
-      reason: "not_configured" | "provider_error";
+      reason: "not_configured" | "provider_error" | "invalid_recipient";
       correlationId?: string;
     };
 
@@ -126,6 +127,11 @@ export async function sendUserReplyEmail(input: {
   inReplyTo?: string | null;
   references?: string | null;
 }): Promise<CommunicationsEmailResult> {
+  const recipient = input.conversation.userEmail.trim().toLowerCase();
+  if (!isBasicEmail(recipient)) {
+    return { ok: false, reason: "invalid_recipient" };
+  }
+
   const configResult = getAppointmentEmailConfig();
   if (!configResult.ok) {
     const reported = await reportException({
@@ -144,6 +150,9 @@ export async function sendUserReplyEmail(input: {
   }
 
   const { config } = configResult;
+  if (!isBasicEmail(config.toEmail) || !isBasicEmail(config.fromEmail)) {
+    return { ok: false, reason: "not_configured" };
+  }
   const domain = extractDomain(config.fromEmail);
   const messageId = buildMessageId(domain);
   const subject = input.conversation.subject.startsWith("Re:")
@@ -193,7 +202,7 @@ export async function sendUserReplyEmail(input: {
 
     await transporter.sendMail({
       from: `${config.fromName} <${config.fromEmail}>`,
-      to: input.conversation.userEmail,
+      to: recipient,
       subject,
       text,
       html,
