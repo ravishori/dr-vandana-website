@@ -20,5 +20,6 @@ export type DoctorAuthResult =
       reason:
         | "DOCTOR_AUTH_NOT_CONFIGURED"
         | "INVALID_CREDENTIALS"
-        | "RATE_LIMITED";
+        | "RATE_LIMITED"
+        | "RATE_LIMIT_UNAVAILABLE";
     };

@@ -5,17 +5,26 @@ import { doctorPortalConfig } from "@/config/doctor-portal";
 /**
  * Doctor login abuse protection.
  * Counts failed attempts only (IP + email). Never stores passwords or secrets.
+ *
+ * Production: distributed Upstash only — fail CLOSED if unavailable.
+ * Development/test: local memory fallback is allowed.
  */
 
 export type LoginRateLimitResult =
   | { allowed: true }
-  | { allowed: false; retryAfterSeconds: number };
+  | {
+      allowed: false;
+      retryAfterSeconds: number;
+      reason: "RATE_LIMITED" | "STORE_UNAVAILABLE";
+    };
 
 export type LoginAttemptStore = {
   getFailureTimestamps(key: string): Promise<number[]>;
   addFailureTimestamp(key: string, at: number): Promise<void>;
   clearFailures(key: string): Promise<void>;
 };
+
+export type DoctorLoginRateLimitMode = "upstash" | "memory" | "misconfigured";
 
 const { maxFailedAttempts, windowMs } = doctorPortalConfig.loginRateLimit;
 
@@ -48,7 +57,7 @@ export function createMemoryLoginAttemptStore(): LoginAttemptStore {
   };
 }
 
-function createUpstashLoginAttemptStore(redis: Redis): LoginAttemptStore {
+export function createUpstashLoginAttemptStore(redis: Redis): LoginAttemptStore {
   const prefix = "drvandana:doctor:login:fail:";
   return {
     async getFailureTimestamps(key: string): Promise<number[]> {
@@ -66,15 +75,35 @@ function createUpstashLoginAttemptStore(redis: Redis): LoginAttemptStore {
   };
 }
 
-function hasUpstashEnv(): boolean {
-  return Boolean(
-    process.env.UPSTASH_REDIS_REST_URL?.trim() &&
-      process.env.UPSTASH_REDIS_REST_TOKEN?.trim(),
-  );
+function hasUpstashEnv(
+  upstashUrl = process.env.UPSTASH_REDIS_REST_URL,
+  upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN,
+): boolean {
+  return Boolean(upstashUrl?.trim() && upstashToken?.trim());
+}
+
+/**
+ * Resolve doctor login rate-limit store mode.
+ * Production never falls back to memory.
+ */
+export function resolveDoctorLoginRateLimitMode(
+  nodeEnv = process.env.NODE_ENV,
+  upstashUrl = process.env.UPSTASH_REDIS_REST_URL,
+  upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN,
+): DoctorLoginRateLimitMode {
+  const upstashReady = hasUpstashEnv(upstashUrl, upstashToken);
+  if (nodeEnv === "production") {
+    return upstashReady ? "upstash" : "misconfigured";
+  }
+  if (upstashReady) {
+    return "upstash";
+  }
+  return "memory";
 }
 
 const memoryStore = createMemoryLoginAttemptStore();
 let overrideStore: LoginAttemptStore | null = null;
+let overrideMode: DoctorLoginRateLimitMode | null = null;
 
 export function setDoctorLoginAttemptStoreForTests(
   store: LoginAttemptStore | null,
@@ -82,18 +111,27 @@ export function setDoctorLoginAttemptStoreForTests(
   overrideStore = store;
 }
 
-function resolveStore(): LoginAttemptStore {
+export function setDoctorLoginRateLimitModeForTests(
+  mode: DoctorLoginRateLimitMode | null,
+): void {
+  overrideMode = mode;
+}
+
+function resolveMode(): DoctorLoginRateLimitMode {
+  return overrideMode ?? resolveDoctorLoginRateLimitMode();
+}
+
+function resolveStore(mode: DoctorLoginRateLimitMode): LoginAttemptStore {
   if (overrideStore) {
     return overrideStore;
   }
-  if (hasUpstashEnv()) {
-    try {
-      return createUpstashLoginAttemptStore(Redis.fromEnv());
-    } catch {
-      return memoryStore;
-    }
+  if (mode === "upstash") {
+    return createUpstashLoginAttemptStore(Redis.fromEnv());
   }
-  return memoryStore;
+  if (mode === "memory") {
+    return memoryStore;
+  }
+  throw new Error("DOCTOR_LOGIN_RATE_LIMIT_MISCONFIGURED");
 }
 
 export function buildDoctorLoginRateLimitKey(ip: string, email: string): string {
@@ -103,14 +141,24 @@ export function buildDoctorLoginRateLimitKey(ip: string, email: string): string 
 }
 
 /**
- * On store failure, fail open so Redis outages cannot lock out the doctor.
+ * Production: fail CLOSED when the distributed store is unavailable.
+ * Development/test: local memory fallback is permitted.
  */
 export async function checkDoctorLoginRateLimit(
   ip: string,
   email: string,
 ): Promise<LoginRateLimitResult> {
+  const mode = resolveMode();
+  if (mode === "misconfigured") {
+    return {
+      allowed: false,
+      retryAfterSeconds: 60,
+      reason: "STORE_UNAVAILABLE",
+    };
+  }
+
   try {
-    const store = resolveStore();
+    const store = resolveStore(mode);
     const key = buildDoctorLoginRateLimitKey(ip, email);
     const now = Date.now();
     const timestamps = prune(await store.getFailureTimestamps(key), now);
@@ -118,10 +166,19 @@ export async function checkDoctorLoginRateLimit(
       return {
         allowed: false,
         retryAfterSeconds: retryAfterSeconds(timestamps, now),
+        reason: "RATE_LIMITED",
       };
     }
     return { allowed: true };
   } catch {
+    if (process.env.NODE_ENV === "production" || mode === "upstash") {
+      return {
+        allowed: false,
+        retryAfterSeconds: 60,
+        reason: "STORE_UNAVAILABLE",
+      };
+    }
+    // Non-production memory path only: fail open on unexpected local errors.
     return { allowed: true };
   }
 }
@@ -130,14 +187,18 @@ export async function recordDoctorLoginFailure(
   ip: string,
   email: string,
 ): Promise<void> {
+  const mode = resolveMode();
+  if (mode === "misconfigured") {
+    return;
+  }
   try {
-    const store = resolveStore();
+    const store = resolveStore(mode);
     await store.addFailureTimestamp(
       buildDoctorLoginRateLimitKey(ip, email),
       Date.now(),
     );
   } catch {
-    // ignore store errors
+    // Ignore store write errors after an already-rejected attempt.
   }
 }
 
@@ -145,10 +206,14 @@ export async function clearDoctorLoginFailures(
   ip: string,
   email: string,
 ): Promise<void> {
+  const mode = resolveMode();
+  if (mode === "misconfigured") {
+    return;
+  }
   try {
-    const store = resolveStore();
+    const store = resolveStore(mode);
     await store.clearFailures(buildDoctorLoginRateLimitKey(ip, email));
   } catch {
-    // ignore store errors
+    // ignore
   }
 }

@@ -61,7 +61,13 @@ export async function authenticateDoctor(
 
   const rate = await checkDoctorLoginRateLimit(ip, normalizedEmail);
   if (!rate.allowed) {
-    return { ok: false, reason: "RATE_LIMITED" };
+    return {
+      ok: false,
+      reason:
+        rate.reason === "STORE_UNAVAILABLE"
+          ? "RATE_LIMIT_UNAVAILABLE"
+          : "RATE_LIMITED",
+    };
   }
 
   const expectedEmail = env[doctorPortalConfig.loginEmailEnvKey]
