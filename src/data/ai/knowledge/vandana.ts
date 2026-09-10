@@ -21,17 +21,15 @@ export const vandanaKnowledgeDocuments = [
     date: "2026-08-09",
     related_questions: [
       "Who is Dr. Vandana?",
-      "What are Dr. Vandana's qualifications?",
       "How much experience does Dr. Vandana have?",
     ],
     related_routes: ["/about"],
     content: [
       `${professionalProfile.name} is a ${professionalProfile.profession}.`,
-      `Verified qualifications: ${professionalProfile.qualifications.join("; ")}.`,
       professionalProfile.experience,
       `Tagline: ${professionalProfile.tagline}`,
       professionalProfile.positioning,
-      "Institution names, registration numbers, testimonials, patient volumes, success rates and treatment outcomes are not published unless independently verified.",
+      "Academic credentials, institution names, registration numbers, testimonials, patient volumes, success rates and treatment outcomes are not published on this website.",
     ].join("\n\n"),
   }),
   createKnowledgeDocument({
@@ -71,8 +69,8 @@ export const vandanaKnowledgeDocuments = [
     publication: "drvandana.trinetra.net — About",
     date: "2026-08-09",
     related_questions: [
-      "Does Dr. Vandana use naturopathy in counselling?",
       "Is counselling combined with wellness practices?",
+      "Does counselling include everyday wellness habits?",
     ],
     related_routes: ["/about"],
     content: aboutHolisticWellness.paragraphs.join("\n\n"),

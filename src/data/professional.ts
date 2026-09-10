@@ -8,7 +8,11 @@ import type { ProfessionalProfile } from "@/types/professional";
 export const professionalProfile: ProfessionalProfile = {
   name: "Dr. Vandana Rajiv Chaudhary",
   profession: "Psychologist",
-  qualifications: ["Ph.D. in Naturopathy", "M.A. Psychology"],
+  /**
+   * Academic qualifications are intentionally omitted from the public website
+   * per practice instruction. Do not reintroduce public credential lists here.
+   */
+  qualifications: [],
   experience:
     "Over 6 years of professional experience in psychological counselling and emotional wellness.",
   tagline: "Your Mental Well-being Matters.",

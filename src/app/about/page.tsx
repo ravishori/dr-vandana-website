@@ -7,7 +7,6 @@ import { HolisticWellnessSection } from "@/components/about/HolisticWellnessSect
 import { ProfessionalApproach } from "@/components/about/ProfessionalApproach";
 import { ProfessionalIntroduction } from "@/components/about/ProfessionalIntroduction";
 import { ProfessionalValues } from "@/components/about/ProfessionalValues";
-import { QualificationsSection } from "@/components/about/QualificationsSection";
 import { aboutSeo } from "@/data/about";
 
 export const metadata: Metadata = {
@@ -30,7 +29,6 @@ export default function AboutPage() {
     <>
       <AboutHero />
       <ProfessionalIntroduction />
-      <QualificationsSection />
       <ExperienceSection />
       <ProfessionalApproach />
       <ProfessionalValues />

@@ -31,9 +31,9 @@ export const navigationConfig: NavigationConfig = {
           description: "Professional background and counselling philosophy.",
         },
         {
-          label: "Qualifications & Experience",
-          href: "/about#about-qualifications-heading",
-          description: "Education, credentials, and clinical experience.",
+          label: "Professional Experience",
+          href: "/about#about-experience-heading",
+          description: "Professional background and counselling experience.",
         },
         {
           label: "Counselling Approach",

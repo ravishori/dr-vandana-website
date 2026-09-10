@@ -29,14 +29,9 @@ export const homeHighlights: readonly HomeHighlight[] = [
     label: "Professional experience",
   },
   {
-    id: "psychology",
-    value: "M.A.",
-    label: "Psychology",
-  },
-  {
-    id: "naturopathy",
-    value: "Ph.D.",
-    label: "in Naturopathy",
+    id: "profession",
+    value: "Psychologist",
+    label: "Professional practice",
   },
   {
     id: "confidential",
