@@ -34,8 +34,12 @@ export const appointmentEnquiryPage = {
     "Your enquiry has passed validation and is ready for the next processing step.",
   enquirySubmittedMessage:
     "Your enquiry has been submitted successfully. The practice will contact you regarding availability.",
+  enquiryReceivedMessage:
+    "Your enquiry has been received. The practice will contact you regarding availability.",
   deliveryFailedMessage:
     "We couldn't process your enquiry right now. Please try again later.",
+  persistenceFailedMessage:
+    "We couldn't save your enquiry right now. Please try again later.",
   unexpectedSubmissionError:
     "Something went wrong while processing your enquiry. Please try again.",
   abuseRejectedMessage:

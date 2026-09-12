@@ -8,6 +8,7 @@ import {
   getClientIpFromHeaders,
   isHoneypotTriggered,
 } from "@/lib/appointment-abuse";
+import { createEnquiryConversation } from "@/lib/communications/service";
 import { sendAppointmentEnquiryEmail } from "@/lib/email/appointment-enquiry";
 import { reportException } from "@/lib/observability/error-handler";
 import {
@@ -43,8 +44,11 @@ function toFormValues(
 
 /**
  * Authoritative enquiry boundary:
- * sanity → honeypot → rate limit → normalize → Zod/config → email → result.
- * Does not persist or log submitted values.
+ * sanity → honeypot → rate limit → normalize → Zod/config →
+ * persist conversation → best-effort SMTP → result.
+ *
+ * Persistence failure fails the enquiry.
+ * SMTP failure after successful persistence still returns success.
  */
 export async function submitAppointmentEnquiry(
   input: AppointmentEnquirySubmission,
@@ -109,14 +113,48 @@ export async function submitAppointmentEnquiry(
       };
     }
 
+    try {
+      await createEnquiryConversation({
+        fullName: parsed.data.fullName,
+        contactMethod: parsed.data.contactMethod ?? "unknown",
+        contactValue: parsed.data.contactValue ?? "",
+        preferredDay: parsed.data.preferredDay,
+        preferredTime: parsed.data.preferredTime,
+        consultationMode: parsed.data.consultationMode,
+        ageGroup: parsed.data.ageGroup,
+        briefReason: parsed.data.briefReason ?? "",
+      });
+    } catch (error) {
+      await reportException({
+        error,
+        source: "SERVER_ACTION",
+        code: "COMMUNICATIONS_PERSIST_FAILED",
+        severity: "ERROR",
+        message: "Failed to persist appointment enquiry conversation.",
+        operation: "submitAppointmentEnquiry",
+        route: "/book-appointment",
+      });
+      return {
+        success: false,
+        message: appointmentEnquiryPage.persistenceFailedMessage,
+      };
+    }
+
     const delivery = await sendAppointmentEnquiryEmail(parsed.data);
 
     if (!delivery.ok) {
+      await reportException({
+        source: "EMAIL",
+        code: "SMTP_DELIVERY_FAILED_AFTER_PERSIST",
+        severity: "ERROR",
+        message:
+          "Appointment enquiry persisted but SMTP delivery failed (best-effort).",
+        operation: "submitAppointmentEnquiry",
+        route: "/book-appointment",
+      });
       return {
-        success: false,
-        message: delivery.correlationId
-          ? `${appointmentEnquiryPage.deliveryFailedMessage} Reference: ${delivery.correlationId}.`
-          : appointmentEnquiryPage.deliveryFailedMessage,
+        success: true,
+        message: appointmentEnquiryPage.enquiryReceivedMessage,
       };
     }
 

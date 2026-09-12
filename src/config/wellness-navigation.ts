@@ -150,6 +150,13 @@ export const wellnessNavigationConfig: WellnessNavigationConfig = {
         "Educational pages to help you understand counselling and wellness.",
       items: [
         {
+          id: "articles",
+          label: "Articles",
+          description: "Educational articles on mental wellness and counselling.",
+          href: "/articles",
+          icon: "book",
+        },
+        {
           id: "counselling",
           label: "Understanding Counselling",
           description: "What counselling is and when it may help.",

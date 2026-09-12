@@ -1,0 +1,4 @@
+# Local durable stores (dev). Do not commit practice data.
+*
+!.gitignore
+!.gitkeep
