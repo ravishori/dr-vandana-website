@@ -19,3 +19,7 @@ OD-G1 (question content), OD-H1/H1a/H1b/H1c (review targets, PROPOSED), OD-I2 (c
 
 ## Not included
 Persistence, access guard wiring (PR #34), notifications, UI, pre-consultation brief (next PR), instruments, any scoring, classification, prioritisation or AI.
+
+## OD-I2 - patient clarification (PROPOSED; owner supports, not yet formally recorded)
+A clarification is a separate, timestamped record with its own provenance (`patient_clarification`), linked to the original immutable submission. It never overwrites an original answer and never reopens or alters a completed review: it raises its own new review task (default on, configurable via `clarificationRaisesReviewTask`). Tests: `OD-I2` suite in `service.test.ts`. Remains a proposed owner decision until recorded in the register.
+

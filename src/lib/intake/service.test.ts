@@ -423,3 +423,50 @@ describe("doctor review (explicit, never automatic)", () => {
     assert.equal(Object.keys(off.store.read().tasks).length, 1);
   });
 });
+
+describe("OD-I2 (PROPOSED, owner supports): clarification is a separate, linked, timestamped record", () => {
+  it("never overwrites the original submission or silently reopens or alters a completed review", async () => {
+    const w = world();
+    const f = await filled(w, P1, "original synthetic text");
+    const { submission, task } = await w.service.submit(P1, f.id);
+    await w.service.markReviewed(doctor, task.id, "reviewed_no_further_intake_action");
+    const reviewedBefore = w.store.read().tasks[task.id];
+
+    w.clock.now = new Date("2026-11-19T11:00:00+05:30");
+    const c = await w.service.addClarification(P1, submission.id, "synthetic clarification", "q-main-text");
+
+    const after = w.store.read();
+    // separate record, linked to the original, timestamped, with its own provenance
+    assert.equal(c.submissionId, submission.id);
+    assert.equal(c.provenance, "patient_clarification");
+    assert.equal(c.createdAt, "2026-11-19T05:30:00.000Z");
+    assert.notEqual(c.createdAt, submission.submittedAt);
+    // original submission byte-for-byte unchanged
+    assert.equal(JSON.stringify(after.submissions[submission.id]), JSON.stringify(w.store.read().submissions[submission.id]));
+    assert.equal(after.submissions[submission.id].snapshotHash, submission.snapshotHash);
+    assert.deepEqual(after.submissions[submission.id].answers, submission.answers);
+    // completed review untouched
+    assert.deepEqual(after.tasks[task.id], reviewedBefore);
+    assert.equal(after.tasks[task.id].status, "reviewed");
+    // a new, separate pending task refers to the clarification
+    const created = Object.values(after.tasks).filter((t) => t.clarificationId === c.id);
+    assert.equal(created.length, 1);
+    assert.equal(created[0].status, "pending");
+    assert.notEqual(created[0].id, task.id);
+    assert.equal(created[0].submissionId, submission.id);
+  });
+
+  it("keeps several clarifications as separate ordered records", async () => {
+    const w = world();
+    const f = await filled(w);
+    const { submission } = await w.service.submit(P1, f.id);
+    w.clock.now = new Date("2026-11-18T10:00:00+05:30");
+    await w.service.addClarification(P1, submission.id, "first");
+    w.clock.now = new Date("2026-11-18T11:00:00+05:30");
+    await w.service.addClarification(P1, submission.id, "second");
+    const view = w.service.readSubmissionForReview(doctor, submission.id);
+    assert.deepEqual(view.clarifications.map((c) => c.text), ["first", "second"]);
+    assert.ok(view.clarifications[0].createdAt < view.clarifications[1].createdAt);
+  });
+});
+
