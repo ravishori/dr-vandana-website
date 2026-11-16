@@ -9,6 +9,8 @@ import { computeIntakeReviewDue } from "@/lib/practice-schedule/intake-review-du
 import {
   INTERPRETATIONS,
   interpretationA,
+  interpretationAWithConsultation,
+  interpretationCWithConsultation,
   interpretationB,
   interpretationC,
   interpretationD,
@@ -83,3 +85,32 @@ describe("OD-H1c interpretations (analysis only)", () => {
     assert.equal((interpretationC(t).getTime() - t.getTime()) / 3_600_000 > 32, true);
   });
 });
+
+describe("owner-requested alternative: close of next operating day, earlier if a consultation comes first", () => {
+  const sub = ist("2026-11-17T14:00");
+  it("without a consultation equals reading C", () => {
+    assert.equal(show(interpretationCWithConsultation(sub, null)), "2026-11-18T18:00");
+  });
+  it("uses the consultation start when it is earlier than the close of the next day", () => {
+    assert.equal(show(interpretationCWithConsultation(sub, ist("2026-11-18T10:00"))), "2026-11-18T10:00");
+    assert.equal(show(interpretationCWithConsultation(sub, ist("2026-11-18T16:00"))), "2026-11-18T16:00");
+  });
+  it("keeps the close of the next day when the consultation is later or already past", () => {
+    assert.equal(show(interpretationCWithConsultation(sub, ist("2026-11-24T10:00"))), "2026-11-18T18:00");
+    assert.equal(show(interpretationCWithConsultation(sub, ist("2026-11-17T10:00"))), "2026-11-18T18:00");
+  });
+  it("skips declared holidays", () => {
+    const hol = new Set(["2026-11-18"]);
+    assert.equal(show(interpretationCWithConsultation(sub, null, undefined, hol)), "2026-11-19T18:00");
+  });
+  it("A with the same earlier-of rule differs: it can be earlier on the clock", () => {
+    assert.equal(show(interpretationAWithConsultation(sub, ist("2026-11-19T10:00"))), "2026-11-18T14:00");
+    assert.equal(show(interpretationCWithConsultation(sub, ist("2026-11-19T10:00"))), "2026-11-18T18:00");
+  });
+  it("never produces a due time before submission", () => {
+    for (const t of sweep()) {
+      assert.ok(interpretationCWithConsultation(t, null).getTime() >= t.getTime());
+    }
+  });
+});
+

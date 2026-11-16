@@ -22,3 +22,7 @@ Persistence, access guard wiring (PR #34), notifications, UI, pre-consultation b
 
 ## Pre-consultation brief (`src/lib/intake/brief.ts`)
 Deterministic template over stored fields: no AI, inference, scoring, flags, highlighting or content-based ordering. Items follow questionnaire order; free text is verbatim; every patient item is labelled "Patient-reported"; clarifications and clinician notes are separate labelled blocks; unanswered/skipped/declined/discuss-in-person items are listed distinctly; the static lines state that no interpretation was made and that safety-related questions are clinician-led and were not asked. Review status comes only from the explicit review task; building or opening a brief never changes it. Synthetic content carries a banner. Available only to an MFA-completed psychologist (service layer; to be placed behind the clinical access guard when persistence exists).
+
+## OD-I2 - patient clarification (PROPOSED; owner supports, not yet formally recorded)
+A clarification is a separate, timestamped record with its own provenance (`patient_clarification`), linked to the original immutable submission. It never overwrites an original answer and never reopens or alters a completed review: it raises its own new review task (default on, configurable via `clarificationRaisesReviewTask`). Tests: `OD-I2` suite in `service.test.ts`. Remains a proposed owner decision until recorded in the register.
+
