@@ -45,8 +45,8 @@ export const practiceContact = {
   /** Primary instant booking CTA (Bitly). Do not silently replace. */
   bookingUrl: "http://bit.ly/4c2u9te",
   /** Patient-facing practice email — display value and mailto target. */
-  email: "Dr.VandanaPsychologist@gmail.com",
-  emailMailtoHref: "mailto:Dr.VandanaPsychologist@gmail.com",
+  email: "dr.vandanarchaudhary@gmail.com",
+  emailMailtoHref: "mailto:dr.vandanarchaudhary@gmail.com",
   labels: {
     visitPractice: "Visit the Practice",
     practiceAddress: "Practice Address",
@@ -61,7 +61,7 @@ export const practiceContact = {
       "Get directions to Dr. Vandana Rajiv Chaudhary’s practice",
     callAria: "Call Dr. Vandana at +91 93223 69829",
     whatsappAria: "Contact Dr. Vandana on WhatsApp",
-    emailAria: "Email Dr. Vandana at Dr.VandanaPsychologist@gmail.com",
+    emailAria: "Email Dr. Vandana at dr.vandanarchaudhary@gmail.com",
     bookingAria: "Book an appointment on WhatsApp",
     copyDigipin: "Copy practice DIGIPIN 4FK 29KJ F74",
     digipinCopied: "DIGIPIN copied",
