@@ -465,8 +465,7 @@ export class ContinuityService {
       if (item.status !== "draft" || item.authorUserId !== principal.userId) throw new DomainError("item_not_editable");
       const next = text(content, MAX_ITEM_CHARS);
       const saved = ops.putItem(grant, { ...item, content: next, updatedAt: this.iso() }, expectedVersion);
-      const cyc = ops.peekCycle(item.journeyCycleId)!;
-        // No journey event: private draft activity must not be visible to the psychologist.
+      // No journey event: private draft activity must not be visible to the psychologist.
       return saved;
     });
   }
@@ -517,8 +516,7 @@ export class ContinuityService {
       if (item.status !== "draft") throw new DomainError("item_not_editable");
       const now = this.iso();
       const saved = ops.putItem(grant, { ...item, status: "withdrawn", withdrawnAt: now, updatedAt: now }, expectedVersion);
-      const cyc = ops.peekCycle(item.journeyCycleId)!;
-        // No journey event: private draft activity must not be visible to the psychologist.
+      // No journey event: private draft activity must not be visible to the psychologist.
       return saved;
     });
   }
