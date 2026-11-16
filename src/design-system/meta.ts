@@ -5,7 +5,7 @@
 export const designSystemMeta = {
   name: "Dr. Vandana Wellness Design System",
   version: "1.0.0",
-  tagline: "Your Mental Well-being Matters.",
+  tagline: "Heal Your Mind, Body & Soul",
   principles: [
     "Calm and emotionally safe",
     "Premium but approachable",
