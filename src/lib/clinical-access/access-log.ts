@@ -1,18 +1,18 @@
-import { evaluateClinicalAccess } from "@/lib/clinical-access/policy";
 import type {
   AccessPurpose,
-  ClinicalAccessDecision,
-  ClinicalAccessFacts,
-  ClinicalAccessRequest,
-  ClinicalDenyReason,
-  ClinicalPrincipal,
-  DataCategory,
   ClinicalAction,
+  ClinicalDenyReason,
+  DataCategory,
 } from "@/lib/clinical-access/types";
 
 /**
  * Access-log event. Contains only opaque identifiers and enumerated values.
  * It must never carry names, contact details, free text or clinical content.
+ *
+ * outcome:
+ *  - allowed: the guard granted access (written BEFORE the operation runs)
+ *  - denied:  the guard refused access
+ *  - failed:  access was granted but the operation then threw (best effort)
  */
 export type ClinicalAccessEvent = {
   at: Date;
@@ -22,7 +22,7 @@ export type ClinicalAccessEvent = {
   action: ClinicalAction;
   resourceKind: string;
   resourceId: string;
-  outcome: "allowed" | "denied";
+  outcome: "allowed" | "denied" | "failed";
   reason: ClinicalDenyReason | null;
   purpose: AccessPurpose | null;
 };
@@ -53,67 +53,6 @@ export function assertLogSafe(event: ClinicalAccessEvent): void {
   if (!RESOURCE_KIND.test(event.resourceKind)) {
     throw new Error("access log event rejected: invalid resource kind");
   }
-}
-
-export type GuardedResult<T> =
-  | { allowed: true; value: T }
-  | { allowed: false; reason: ClinicalDenyReason };
-
-export type AccessGuardDeps = {
-  sink: ClinicalAccessLogSink;
-  now: () => Date;
-};
-
-/**
- * Evaluate access, write the access-log row, and only then run `operation`.
- * Fail closed: if the log cannot be written (or the event is not log-safe),
- * the operation is NOT run and the caller receives `audit_unavailable`.
- * Denials are logged too (best effort; the denial stands either way).
- */
-export async function withClinicalAccess<T>(
-  deps: AccessGuardDeps,
-  principal: ClinicalPrincipal | null,
-  request: ClinicalAccessRequest,
-  facts: ClinicalAccessFacts,
-  operation: () => Promise<T>,
-): Promise<GuardedResult<T>> {
-  const decision: ClinicalAccessDecision = evaluateClinicalAccess(
-    principal,
-    request,
-    facts,
-  );
-
-  const event: ClinicalAccessEvent = {
-    at: deps.now(),
-    actorUserId: principal?.userId ?? null,
-    patientProfileId: request.patientProfileId ?? null,
-    category: request.category,
-    action: request.action,
-    resourceKind: request.resourceKind,
-    resourceId: request.resourceId,
-    outcome: decision.allowed ? "allowed" : "denied",
-    reason: decision.allowed ? null : decision.reason,
-    purpose: request.purpose ?? null,
-  };
-
-  if (!decision.allowed) {
-    try {
-      assertLogSafe(event);
-      await deps.sink.append(event);
-    } catch {
-      // Denial stands regardless of logging outcome.
-    }
-    return { allowed: false, reason: decision.reason };
-  }
-
-  try {
-    assertLogSafe(event);
-    await deps.sink.append(event);
-  } catch {
-    return { allowed: false, reason: "audit_unavailable" };
-  }
-
-  return { allowed: true, value: await operation() };
 }
 
 /** In-memory sink for tests and local development with synthetic data only. */

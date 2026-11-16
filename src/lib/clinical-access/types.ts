@@ -72,7 +72,8 @@ export type ClinicalDenyReason =
   | "step_up_required"
   | "not_released"
   | "invalid_request"
-  | "audit_unavailable";
+  | "audit_unavailable"
+  | "internal_error";
 
 export type ClinicalAccessDecision =
   | { allowed: true }

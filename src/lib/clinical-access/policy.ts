@@ -68,7 +68,7 @@ export function evaluateClinicalAccess(
 
   // Mandatory MFA: roles that require it get nothing without a completed MFA
   // session. There is no exemption path in this module.
-  if (requiresMfa(principal) && !principal.mfaCompleted) {
+  if (requiresMfa(principal) && principal.mfaCompleted !== true) {
     return deny("mfa_required");
   }
 

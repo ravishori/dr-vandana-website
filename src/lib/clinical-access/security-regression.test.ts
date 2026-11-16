@@ -63,6 +63,27 @@ describe("clinical safety guards (static)", () => {
     assert.deepEqual(offenders, []);
   });
 
+  it("lets only the clinical-access module use the raw policy (no bypass of the guard)", () => {
+    const clinicalDir = join(ROOT, "src", "lib", "clinical-access");
+    const offenders = sourceFiles.filter((f) => {
+      if (f.startsWith(clinicalDir)) return false;
+      const text = readFileSync(f, "utf8");
+      return (
+        /from\s+["']@\/lib\/clinical-access\/(policy|guard)["']/.test(text) ||
+        /evaluateClinicalAccess/.test(text)
+      );
+    });
+    assert.deepEqual(offenders, []);
+  });
+
+  it("does not re-export the raw policy from the public index", () => {
+    const text = readFileSync(
+      join(ROOT, "src", "lib", "clinical-access", "index.ts"),
+      "utf8",
+    );
+    assert.equal(/export\s*\*\s*from\s*["']@\/lib\/clinical-access\/policy["']/.test(text), false);
+  });
+
   it("does not import analytics or external AI SDKs into clinical-access code", () => {
     const dir = join(ROOT, "src", "lib", "clinical-access");
     const files = walk(dir).filter((f) => f.endsWith(".ts"));
