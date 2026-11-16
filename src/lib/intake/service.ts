@@ -26,6 +26,7 @@ import {
   visibleQuestions,
   type IntakeEngineConfig,
 } from "@/lib/intake/definition";
+import { buildPreConsultationBrief, type PreConsultationBrief } from "@/lib/intake/brief";
 import type { IntakeStore, Tx } from "@/lib/intake/store";
 import type {
   Actor,
@@ -392,6 +393,29 @@ export class IntakeService {
       };
       tx.state.annotations[a.id] = a;
       return structuredClone(a);
+    });
+  }
+
+  /**
+   * Deterministic pre-consultation brief for the treating psychologist.
+   * Read-only: opening a brief never changes review status; only an explicit
+   * `markReviewed` does.
+   */
+  getPreConsultationBrief(actor: Actor, submissionId: string): PreConsultationBrief {
+    this.requirePsychologist(actor);
+    const state = this.deps.store.read();
+    const submission = state.submissions[submissionId];
+    if (!submission) throw new IntakeError("submission_not_found");
+    const def = this.registry.get(submission.questionnaireId, submission.version);
+    if (!def) throw new IntakeError("definition_not_found");
+    const reviewTask = Object.values(state.tasks).find(
+      (t) => t.submissionId === submissionId && t.clarificationId === null,
+    );
+    if (!reviewTask) throw new IntakeError("review_task_missing");
+    return buildPreConsultationBrief(def, submission, {
+      clarifications: Object.values(state.clarifications).filter((c) => c.submissionId === submissionId),
+      annotations: Object.values(state.annotations).filter((a) => a.submissionId === submissionId),
+      reviewTask,
     });
   }
 
