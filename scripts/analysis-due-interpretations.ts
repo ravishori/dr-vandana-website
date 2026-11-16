@@ -1,6 +1,10 @@
 // Analysis helper (not part of the application): prints due times for the
 // alternative readings of the proposed one-business-day target (OD-H1c).
-import { INTERPRETATIONS } from "@/lib/practice-schedule/due-time-interpretations";
+import {
+  INTERPRETATIONS,
+  interpretationAWithConsultation,
+  interpretationCWithConsultation,
+} from "@/lib/practice-schedule/due-time-interpretations";
 
 const ist = (s: string) => new Date(`${s}:00+05:30`);
 const show = (d: Date) =>
@@ -45,4 +49,22 @@ console.log("\nHOLIDAY/WEEKEND (Wed 2026-11-18 14:00; holiday Thu 2026-11-19)");
 const hol = new Set(["2026-11-19"]);
 for (const [name, f] of Object.entries(INTERPRETATIONS)) {
   console.log(name, show(f(ist("2026-11-18T14:00"), undefined, hol)), "| Sat 21 14:00 ->", show(f(ist("2026-11-21T14:00"))));
+}
+
+console.log("\nCONSULTATION SCENARIOS (submitted Tue 2026-11-17 14:00; A+ = A earlier-of, C+ = close of next day earlier-of)");
+const sub = ist("2026-11-17T14:00");
+for (const c of [null, "2026-11-18T10:00", "2026-11-18T16:00", "2026-11-19T10:00", "2026-11-24T10:00"]) {
+  const cs = c ? ist(c) : null;
+  console.log(
+    `consultation ${c ?? "none"}\tA+ ${show(interpretationAWithConsultation(sub, cs))}\tC+ ${show(interpretationCWithConsultation(sub, cs))}`,
+  );
+}
+console.log("\nBATCHING (due times of 24 forms submitted hourly across Tue 2026-11-17)");
+for (const [name, f] of Object.entries(INTERPRETATIONS)) {
+  const dues = new Map<string, number>();
+  for (let h = 0; h < 24; h += 1) {
+    const d = show(f(ist(`2026-11-17T${String(h).padStart(2, "0")}:00`)));
+    dues.set(d, (dues.get(d) ?? 0) + 1);
+  }
+  console.log(name, [...dues.entries()].map(([k, v]) => `${k} x${v}`).join(" | "));
 }

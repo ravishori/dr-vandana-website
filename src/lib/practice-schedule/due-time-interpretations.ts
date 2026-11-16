@@ -108,3 +108,36 @@ export const INTERPRETATIONS: Record<string, DueInterpretation> = {
   C: interpretationC,
   D: interpretationD,
 };
+
+/**
+ * Owner-requested alternative (OD-H1 analysis): review by the close of the
+ * next operating day (reading C) and, where a consultation is already
+ * scheduled, review before that consultation if it comes earlier.
+ * ANALYSIS ONLY - not wired, not selected, not an SLA.
+ */
+export function interpretationCWithConsultation(
+  submittedAt: Date,
+  consultationStart: Date | null,
+  schedule: PracticeSchedule = APPROVED_PRACTICE_SCHEDULE,
+  holidays: DeclaredHolidays = new Set(),
+): Date {
+  const byClose = interpretationC(submittedAt, schedule, holidays);
+  if (consultationStart && consultationStart.getTime() > submittedAt.getTime()) {
+    return consultationStart.getTime() < byClose.getTime() ? consultationStart : byClose;
+  }
+  return byClose;
+}
+
+/** Reading A with the same "earlier of consultation" rule, for comparison. */
+export function interpretationAWithConsultation(
+  submittedAt: Date,
+  consultationStart: Date | null,
+  schedule: PracticeSchedule = APPROVED_PRACTICE_SCHEDULE,
+  holidays: DeclaredHolidays = new Set(),
+): Date {
+  const byDay = interpretationA(submittedAt, schedule, holidays);
+  if (consultationStart && consultationStart.getTime() > submittedAt.getTime()) {
+    return consultationStart.getTime() < byDay.getTime() ? consultationStart : byDay;
+  }
+  return byDay;
+}
