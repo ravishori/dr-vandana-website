@@ -151,6 +151,22 @@ function evaluateCategoryA(
   request: ClinicalAccessRequest,
   facts: ClinicalAccessFacts,
 ): ClinicalAccessDecision {
+  const isOwnerPatient =
+    principal.roles.includes("PATIENT") &&
+    !!request.patientProfileId &&
+    principal.patientProfileId === request.patientProfileId;
+
+  // Private-to-patient content: only the owning patient, only their own words.
+  if (request.privateToPatient) {
+    if (!isOwnerPatient) {
+      return principal.roles.includes("PATIENT") ? deny("not_owner") : deny("private_to_patient");
+    }
+    if (!request.patientAuthored || request.restricted) return deny("forbidden_permission");
+    return request.action === "read" || request.action === "write" || request.action === "submit"
+      ? ALLOW
+      : deny("forbidden_permission");
+  }
+
   if (principal.roles.includes("PSYCHOLOGIST")) {
     const required = DOCTOR_PERMISSION_FOR_ACTION[request.action];
     if (!principal.permissions.includes(required)) {
@@ -180,6 +196,9 @@ function evaluateCategoryA(
     }
     if (request.action === "submit") {
       return ALLOW; // patient's own submissions (intake, messages)
+    }
+    if (request.patientAuthored && (request.action === "read" || request.action === "write")) {
+      return ALLOW; // the patient's own words (e.g. preparation notes)
     }
     if (request.action === "read") {
       return request.releasedToPatient ? ALLOW : deny("not_released");

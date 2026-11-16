@@ -307,3 +307,61 @@ describe("roles with no clinical-content access", () => {
     assert.equal(d.allowed, false);
   });
 });
+
+describe("patient-authored and private-to-patient content (Continuity Loop contracts)", () => {
+  const priv = (over: Partial<ClinicalAccessRequest> = {}) =>
+    req({ privateToPatient: true, patientAuthored: true, ...over });
+
+  it("lets the owning patient read, write and submit their private items", () => {
+    for (const action of ["read", "write", "submit"] as const) {
+      assert.equal(evaluateClinicalAccess(principal("PATIENT"), priv({ action }), facts()).allowed, true, action);
+    }
+  });
+
+  it("never lets the psychologist, staff or administrators reach private items", () => {
+    for (const role of ["PSYCHOLOGIST", "STAFF", "SUPER_ADMIN"] as const) {
+      const d = evaluateClinicalAccess(
+        principal(role, { permissions: ["VIEW_CLINICAL_RECORDS", "MANAGE_CLINICAL_NOTES", "VIEW_PRIVATE_CLINICAL_NOTES", "VIEW_AUDIT_LOGS"] }),
+        priv(),
+        facts({ stepUpSatisfied: true }),
+      );
+      assert.deepEqual(d, { allowed: false, reason: "private_to_patient" }, role);
+    }
+  });
+
+  it("denies another patient, and denies sign, export and release even to the owner", () => {
+    assert.deepEqual(
+      evaluateClinicalAccess(principal("PATIENT"), priv({ patientProfileId: PATIENT_B }), facts()),
+      { allowed: false, reason: "not_owner" },
+    );
+    for (const action of ["sign", "export", "release"] as const) {
+      assert.equal(evaluateClinicalAccess(principal("PATIENT"), priv({ action }), facts()).allowed, false, action);
+    }
+  });
+
+  it("requires private items to be flagged as patient-authored", () => {
+    assert.equal(
+      evaluateClinicalAccess(principal("PATIENT"), priv({ patientAuthored: false }), facts()).allowed,
+      false,
+    );
+  });
+
+  it("lets the owning patient read and write their own shared words, but not export them", () => {
+    const shared = req({ patientAuthored: true });
+    assert.equal(evaluateClinicalAccess(principal("PATIENT"), shared, facts()).allowed, true);
+    assert.equal(evaluateClinicalAccess(principal("PATIENT"), { ...shared, action: "write" }, facts()).allowed, true);
+    assert.equal(evaluateClinicalAccess(principal("PATIENT"), { ...shared, action: "export" }, facts()).allowed, false);
+    assert.equal(
+      evaluateClinicalAccess(principal("PATIENT"), { ...shared, patientProfileId: PATIENT_B }, facts()).allowed,
+      false,
+    );
+  });
+
+  it("does not let the patient read doctor-authored items just because patientAuthored is absent", () => {
+    assert.deepEqual(
+      evaluateClinicalAccess(principal("PATIENT"), req(), facts()),
+      { allowed: false, reason: "not_released" },
+    );
+  });
+});
+

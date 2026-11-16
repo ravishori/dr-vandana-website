@@ -51,6 +51,13 @@ export type ClinicalAccessRequest = {
   restricted?: boolean;
   /** Category A only: the doctor has released this item to the patient. */
   releasedToPatient?: boolean;
+  /** Category A only: the content was written by the owning patient. */
+  patientAuthored?: boolean;
+  /**
+   * Category A only: the patient has not shared this item. Only the owning
+   * patient may reach it; clinicians, staff and administrators never can.
+   */
+  privateToPatient?: boolean;
   purpose?: AccessPurpose;
 };
 
@@ -71,6 +78,7 @@ export type ClinicalDenyReason =
   | "no_care_relationship"
   | "step_up_required"
   | "not_released"
+  | "private_to_patient"
   | "invalid_request"
   | "audit_unavailable"
   | "internal_error";
