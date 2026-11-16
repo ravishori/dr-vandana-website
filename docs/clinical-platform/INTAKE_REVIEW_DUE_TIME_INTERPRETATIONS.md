@@ -46,3 +46,28 @@ All four are monotone (a later submission is never due earlier). Declared-holida
 - If keeping them: A (implemented) or B?
 - Should a consultation far in the future also carry the business-day target (OD-H1a, `earlier_of` is available as an option)?
 - Clinical reviewer to confirm that a due time of up to 24 hours (A/B) or 33 hours (C) is acceptable as an operational review target.
+
+## Addendum: owner-requested alternative - review by close of the next operating day, earlier before a scheduled consultation
+**Still PROPOSED. The implementation and the default are unchanged; no SLA is activated.** Analysis only (`interpretationCWithConsultation`, tested). Rule: due = close (18:00) of the next operating day after submission clock start; if a consultation is already scheduled and starts earlier, due = consultation start. Compared with reading A given the same "earlier of consultation" rule (`interpretationAWithConsultation`).
+
+Consultation scenarios (submitted Tue 17 Nov 14:00 IST):
+| Consultation | A + earlier-of | C + earlier-of (requested alternative) |
+|---|---|---|
+| none | Wed 14:00 | Wed 18:00 |
+| Wed 10:00 | Wed 10:00 | Wed 10:00 |
+| Wed 16:00 | Wed 14:00 | Wed 16:00 |
+| Thu 10:00 | Wed 14:00 | Wed 18:00 |
+| following Tue 10:00 | Wed 14:00 | Wed 18:00 |
+
+Batching (24 forms submitted one per hour across Tue 17 Nov): A spreads due times over many different clock times; **C puts 15 of 24 on one deadline (Wed 18:00) and the other 9 on Tue 18:00**, D puts 18 on Tue 18:00.
+
+Operational consequences (descriptive, for the owner's decision):
+- **Predictability and workload:** C gives a fixed daily review point (end of working day), easy to explain and to schedule as one sitting; A produces rolling deadlines through the day.
+- **Longest wait:** C up to 33 hours (a form sent just after opening is due close of the next day); A at most 24 hours. C is therefore less strict on the clock for daytime forms.
+- **Consultation rule:** with "earlier of consultation", C never waits beyond the next close of day and never lets a review fall after the consultation start; but a consultation in the next few days adds no extra urgency beyond that day's close.
+- **Cliff:** C has one 24-hour jump at opening time (08:59 due 18:00 same day; 09:00 due 18:00 next day) instead of A's 15-hour jump; forms sent before opening are treated more urgently than ones sent a minute later in both readings.
+- **Holidays and weekends:** both skip declared holidays; weekends are working days.
+- **Safety framing:** none of these is an emergency response guarantee or a clinical safety SLA. Free-text disclosures are not assessed by the system under any reading; the doctor-review queue and the patient "not continuously monitored" wording are what apply. A longer maximum wait (C) should be weighed against that wording and the clinical reviewer's view (OD-H1 / clinical approval).
+
+Owner questions added: choose A, B or the requested C+ (or keep rules 2 and 3 as proposed); whether a 33-hour maximum is acceptable as an operational target; whether the "earlier of consultation" rule applies to consultations beyond the next working day (it is available as `earlier_of_consultation_and_business_day` in the implemented option for reading A).
+
