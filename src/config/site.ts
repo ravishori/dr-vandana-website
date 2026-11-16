@@ -10,7 +10,7 @@ export const siteConfig: SiteConfig = {
   name: "Dr. Vandana Rajiv Chaudhary — Professional Psychology Practice",
   professionalName: practiceContact.practiceName,
   profession: practiceContact.profession,
-  tagline: "Your Mental Well-being Matters.",
+  tagline: "Heal Your Mind, Body & Soul",
   domain: "drvandana.trinetralab.net",
   url: "https://drvandana.trinetralab.net",
   description:

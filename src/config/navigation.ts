@@ -4,6 +4,7 @@ import type {
   NavigationConfig,
   PrimaryNavItem,
 } from "@/types/navigation";
+import { hasPublishedArticles } from "@/lib/articles/service";
 
 /**
  * Central navigation configuration.
@@ -104,6 +105,13 @@ export const navigationConfig: NavigationConfig = {
       id: "resources",
       label: "Resources",
       items: [
+        ...(hasPublishedArticles()
+          ? [{
+              label: "Articles",
+              href: "/articles",
+              description: "Educational articles on mental wellness and counselling.",
+            }]
+          : []),
         {
           label: "Understanding Counselling",
           href: "/psychology/counselling",
@@ -167,6 +175,9 @@ export const navigationConfig: NavigationConfig = {
       href: "/psychology/case-studies",
       enabled: true,
     },
+    ...(hasPublishedArticles()
+      ? [{ label: "Articles", href: "/articles", enabled: true }]
+      : []),
     { label: "Book an Appointment", href: "/book-appointment", enabled: true },
   ],
   legal: [

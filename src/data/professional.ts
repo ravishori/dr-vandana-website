@@ -15,7 +15,7 @@ export const professionalProfile: ProfessionalProfile = {
   qualifications: [],
   experience:
     "Over 6 years of professional experience in psychological counselling and emotional wellness.",
-  tagline: "Your Mental Well-being Matters.",
+  tagline: "Heal Your Mind, Body & Soul",
   positioning:
     "Compassionate, confidential and evidence-informed psychological support.",
   verificationNote:

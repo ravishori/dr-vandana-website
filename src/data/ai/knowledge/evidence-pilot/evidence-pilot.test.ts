@@ -16,6 +16,7 @@ import {
 } from "@/lib/ai/knowledge/library/semantics";
 import { knowledgeRepository } from "@/lib/ai/knowledge/repository";
 import type { KnowledgeDocument } from "@/types/ai";
+import { fetchExternalOrSkip } from "@/lib/testing/external-fetch";
 
 const PILOT_URLS = [
   "https://www.who.int/news-room/questions-and-answers/item/stress",
@@ -125,9 +126,15 @@ describe("Phase 3–4 controlled evidence sources", () => {
     assert.equal(cbt!.published_source_count, 1);
   });
 
-  it("validates pilot source URLs resolve to official pages", async () => {
+  it("validates pilot source URLs resolve to official pages", async (t) => {
     for (const url of PILOT_URLS) {
-      const response = await fetch(url, { method: "GET", redirect: "follow" });
+      const response = await fetchExternalOrSkip(t, url, {
+        method: "GET",
+        redirect: "follow",
+      });
+      if (!response) {
+        return;
+      }
       assert.ok(response.ok, `${url} returned ${response.status}`);
       const finalUrl = response.url;
       assert.match(finalUrl, /who\.int|nih\.gov/);

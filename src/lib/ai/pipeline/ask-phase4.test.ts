@@ -28,6 +28,7 @@ import { resetConversationsForTests } from "@/lib/ai/conversation/memory";
 import { resetEducationalCacheForTests } from "@/lib/ai/pipeline/cache";
 import { runAskPipeline } from "@/lib/ai/pipeline/ask";
 import { LexicalRetrievalService } from "@/lib/ai/retrieval/service";
+import { fetchExternalOrSkip } from "@/lib/testing/external-fetch";
 
 const provider = new ControlledAnswerProvider();
 const retrieval = new LexicalRetrievalService();
@@ -353,12 +354,15 @@ describe("Phase 4 source URL validation", () => {
   ] as const;
 
   for (const url of PHASE4_URLS) {
-    it(`validates ${url}`, async () => {
-      const response = await fetch(url, {
+    it(`validates ${url}`, async (t) => {
+      const response = await fetchExternalOrSkip(t, url, {
         method: "GET",
         redirect: "follow",
         headers: FETCH_HEADERS,
       });
+      if (!response) {
+        return;
+      }
       assert.ok(response.ok, `${url} returned ${response.status}`);
       assert.match(response.url, /nih\.gov|cdc\.gov|medlineplus\.gov/);
     });

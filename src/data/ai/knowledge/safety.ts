@@ -32,7 +32,7 @@ export const safetyKnowledgeDocuments = [
     evidence_level: "ethics",
     source: "Approved practice emergency notice",
     author: "Practice education team",
-    publication: "drvandana.trinetra.net — emergency notice",
+    publication: "drvandana.trinetralab.net — emergency notice",
     date: "2026-08-13",
     related_routes: ["/contact"],
     content: [
