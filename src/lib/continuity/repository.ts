@@ -55,7 +55,7 @@ export interface ContinuityOps {
   /** Metadata for lookups where only the owning patient is known. */
   journeyIdsForPatient(patientProfileId: string): string[];
   peekCyclesOfJourney(journeyId: string): { id: string; status: CycleStatus; sequenceNumber: number }[];
-  peekTopicsOfCycle(cycleId: string): { id: string; status: TopicStatus; displayOrder: number }[];
+  peekTopicsOfCycle(cycleId: string): { id: string; status: TopicStatus; displayOrder: number; carriedFromTopicId: string | null }[];
 
   getJourney(grant: AccessGrant, id: string): CareJourney | null;
   listJourneys(grant: AccessGrant, patientProfileId: string): CareJourney[];
@@ -74,6 +74,8 @@ export interface ContinuityOps {
 
   getTopic(grant: AccessGrant, id: string): AgendaTopic | null;
   listTopics(grant: AccessGrant, cycleId: string): AgendaTopic[];
+  /** Patient's view: only topics this user created. Other authors' topics are never loaded. */
+  listTopicsCreatedBy(grant: AccessGrant, cycleId: string, authorUserId: string): AgendaTopic[];
   putTopic(grant: AccessGrant, topic: AgendaTopic, expectedVersion: number | null): AgendaTopic;
   /** Grant bound to the cycle's topic list. Ids must be exactly the non-removed topics. */
   reorderTopics(grant: AccessGrant, cycleId: string, orderedIds: string[]): AgendaTopic[];

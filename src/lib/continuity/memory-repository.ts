@@ -113,7 +113,7 @@ class Ops implements ContinuityOps {
   peekTopicsOfCycle(cycleId: string) {
     return Object.values(this.s.topics)
       .filter((t) => t.journeyCycleId === cycleId)
-      .map((t) => ({ id: t.id, status: t.status, displayOrder: t.displayOrder }));
+      .map((t) => ({ id: t.id, status: t.status, displayOrder: t.displayOrder, carriedFromTopicId: t.carriedFromTopicId }));
   }
 
   // ---- grant-checked content ---------------------------------------------
@@ -235,6 +235,15 @@ class Ops implements ContinuityOps {
     this.need(grant, "A", RESOURCE_KINDS.topicList, cycleId, c.patientProfileId, false);
     return Object.values(this.s.topics)
       .filter((t) => t.journeyCycleId === cycleId)
+      .sort((a, b) => a.displayOrder - b.displayOrder || a.id.localeCompare(b.id))
+      .map((t) => structuredClone(t));
+  }
+  listTopicsCreatedBy(grant: AccessGrant, cycleId: string, authorUserId: string): AgendaTopic[] {
+    const c = this.s.cycles[cycleId];
+    if (!c) return [];
+    this.need(grant, "A", RESOURCE_KINDS.topicList, cycleId, c.patientProfileId, false);
+    return Object.values(this.s.topics)
+      .filter((t) => t.journeyCycleId === cycleId && t.createdBy === authorUserId)
       .sort((a, b) => a.displayOrder - b.displayOrder || a.id.localeCompare(b.id))
       .map((t) => structuredClone(t));
   }

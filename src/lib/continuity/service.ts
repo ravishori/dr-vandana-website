@@ -61,6 +61,7 @@ export type ErrorCode =
   | "open_journey_exists"
   | "open_cycle_exists"
   | "item_not_editable"
+  | "already_carried_forward"
   | "explicit_review_required"
   | "withdrawal_after_sharing_policy_undecided"
   | "audit_unavailable"
@@ -427,7 +428,7 @@ export class ContinuityService {
           },
           null,
         );
-        this.event(ops, grant, principal, { journeyId: current.journeyId, cycleId, patientProfileId: meta.patientProfileId }, "preparation_item_created", "preparation_item", id, { itemType: input.itemType, visibility: "private" }, this.d.newId());
+        // No journey event: private draft activity must not be visible to the psychologist.
         return item;
       },
     );
@@ -465,7 +466,7 @@ export class ContinuityService {
       const next = text(content, MAX_ITEM_CHARS);
       const saved = ops.putItem(grant, { ...item, content: next, updatedAt: this.iso() }, expectedVersion);
       const cyc = ops.peekCycle(item.journeyCycleId)!;
-      this.event(ops, grant, principal, { journeyId: cyc.journeyId, cycleId: item.journeyCycleId, patientProfileId: item.patientProfileId }, "preparation_item_edited", "preparation_item", itemId, {}, this.d.newId());
+        // No journey event: private draft activity must not be visible to the psychologist.
       return saved;
     });
   }
@@ -517,7 +518,7 @@ export class ContinuityService {
       const now = this.iso();
       const saved = ops.putItem(grant, { ...item, status: "withdrawn", withdrawnAt: now, updatedAt: now }, expectedVersion);
       const cyc = ops.peekCycle(item.journeyCycleId)!;
-      this.event(ops, grant, principal, { journeyId: cyc.journeyId, cycleId: item.journeyCycleId, patientProfileId: item.patientProfileId }, "preparation_item_withdrawn", "preparation_item", itemId, {}, this.d.newId());
+        // No journey event: private draft activity must not be visible to the psychologist.
       return saved;
     });
   }
@@ -585,7 +586,11 @@ export class ContinuityService {
         const description = spec.description == null ? null : text(spec.description, MAX_DESCRIPTION_CHARS);
         const cyc = ops.peekCycle(cycleId);
         if (!cyc || cyc.status !== "preparation") throw new DomainError("stage_not_open");
-        const order = ops.peekTopicsOfCycle(cycleId).reduce((m, t) => Math.max(m, t.displayOrder), 0) + 1;
+        const existing = ops.peekTopicsOfCycle(cycleId);
+        if (spec.carriedFromTopicId && existing.some((t) => t.carriedFromTopicId === spec.carriedFromTopicId)) {
+          throw new DomainError("already_carried_forward");
+        }
+        const order = existing.reduce((m, t) => Math.max(m, t.displayOrder), 0) + 1;
         const now = this.iso();
         const topic = ops.putTopic(
           grant,
@@ -765,18 +770,19 @@ export class ContinuityService {
     return created;
   }
 
-  /** Psychologist: every topic. Patient: only the topics they proposed themselves (agenda visibility is an open question). */
+  /** Psychologist: every topic. Patient: only the topics they proposed themselves (agenda visibility is an open question, OD-K6). */
   async listAgenda(principal: ClinicalPrincipal | null, cycleId: string): Promise<Result<AgendaTopic[]>> {
     const meta = await this.peek((o) => o.peekCycle(cycleId));
     if (!meta) return { ok: false, code: "not_found" };
     const patient = isPatient(principal);
-    const result = await this.guarded(
+    return this.guarded(
       principal,
       { category: "A", action: "read", patientProfileId: meta.patientProfileId, resourceKind: RESOURCE_KINDS.topicList, resourceId: cycleId, patientAuthored: patient, purpose: patient ? "patient_self_service" : "consultation" },
-      async (grant, ops) => ops.listTopics(grant, cycleId),
+      async (grant, ops) =>
+        patient && principal
+          ? ops.listTopicsCreatedBy(grant, cycleId, principal.userId)
+          : ops.listTopics(grant, cycleId),
     );
-    if (!result.ok || !patient || !principal) return result;
-    return { ok: true, value: result.value.filter((t) => t.createdBy === principal.userId) };
   }
 
   private denyRole<T>(principal: ClinicalPrincipal | null): Result<T> {
