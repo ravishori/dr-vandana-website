@@ -1,4 +1,5 @@
 import type { WellnessNavigationConfig } from "@/types/wellness-navigation";
+import { hasPublishedArticles } from "@/lib/articles/service";
 
 /**
  * Smart Wellness Navigation V2 — mobile drawer information architecture.
@@ -149,6 +150,15 @@ export const wellnessNavigationConfig: WellnessNavigationConfig = {
       intro:
         "Educational pages to help you understand counselling and wellness.",
       items: [
+        ...(hasPublishedArticles()
+          ? [{
+              id: "articles",
+              label: "Articles",
+              description: "Educational articles on mental wellness and counselling.",
+              href: "/articles",
+              icon: "book" as const,
+            }]
+          : []),
         {
           id: "counselling",
           label: "Understanding Counselling",
